@@ -1,5 +1,9 @@
-﻿const API_BASE = import.meta.env.VITE_API_URL || '/api';
+﻿
+const BACKEND_URL = (
+  import.meta.env.VITE_API_URL || 'http://localhost:5000'
+).replace(/\/$/, '');
 
+const API_BASE = `${BACKEND_URL}/api`;
 import { handleInvalidSession } from '../utils/session';
 
 const pendingGetRequests = new Map();
