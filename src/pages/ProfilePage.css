@@ -317,3 +317,39 @@
     flex: 1;
   }
 }
+
+
+/* Motion layer: lightweight, transform-based interactions */
+.account-page {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: radial-gradient(circle at 8% 10%, rgba(151, 199, 180, .24), transparent 28rem), radial-gradient(circle at 92% 42%, rgba(211, 231, 218, .3), transparent 24rem), linear-gradient(180deg, #eef7f3 0%, #f9fcfa 58%, #fff 100%);
+}
+.account-main > * { animation: account-rise 620ms cubic-bezier(.22, 1, .36, 1) both; }
+.account-main > :nth-child(2) { animation-delay: 90ms; }
+.account-main > :nth-child(3) { animation-delay: 180ms; }
+.account-card {
+  box-shadow: 0 10px 30px rgba(42, 61, 52, .055);
+  transition: transform 320ms cubic-bezier(.22, 1, .36, 1), box-shadow 320ms ease, border-color 320ms ease;
+}
+.account-card:hover { border-color: rgba(85, 118, 105, .25); box-shadow: 0 16px 42px rgba(42, 61, 52, .09); transform: translateY(-3px); }
+.account-edit-button { border-radius: 999px; padding: 7px 10px; transition: color 180ms ease, background-color 180ms ease, transform 180ms ease; }
+.account-edit-button:hover { background: rgba(85, 118, 105, .09); transform: translateY(-1px); }
+.account-edit-button:active { transform: scale(.96); }
+.account-edit-button[aria-expanded='true'] { background: #557669; color: #fff; }
+.account-details { animation: account-content-in 360ms cubic-bezier(.22, 1, .36, 1) both; }
+.account-form { animation: account-content-in 420ms cubic-bezier(.22, 1, .36, 1) both; }
+.account-form input, .account-form textarea { transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease, background-color 180ms ease; }
+.account-form input:focus, .account-form textarea:focus { background: #fcfffd; transform: translateY(-1px); }
+.profile-account-actions button { transition: transform 180ms ease, box-shadow 180ms ease; }
+.profile-account-actions button:not(:disabled):hover { box-shadow: 0 7px 16px rgba(42, 61, 52, .12); transform: translateY(-2px); }
+.profile-account-actions button:not(:disabled):active { box-shadow: none; transform: scale(.97); }
+.account-alert { animation: account-alert-in 420ms cubic-bezier(.22, 1, .36, 1) both; }
+@keyframes account-rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes account-content-in { from { opacity: 0; transform: translateY(-7px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes account-alert-in { from { opacity: 0; transform: translateY(-8px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@media (prefers-reduced-motion: reduce) {
+  .account-main > *, .account-details, .account-form, .account-alert { animation: none; }
+  .account-card, .account-edit-button, .account-form input, .account-form textarea, .profile-account-actions button { transition-duration: .01ms; }
+}

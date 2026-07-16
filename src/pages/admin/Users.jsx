@@ -1,4 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
+import Pagination from '../../components/Pagination';
+import usePagination from '../../hooks/usePagination';
 import { deleteUser, fetchUsers, updateUser } from '../../api/admin';
 
 const ROLE_LABELS = {
@@ -7,8 +9,8 @@ const ROLE_LABELS = {
 };
 
 const STATUS_LABELS = {
-  active: 'ใช้งาน',
-  suspended: 'ระงับ',
+  active: 'à¹ƒà¸Šà¹‰à¸‡à¸²à¸™',
+  suspended: 'à¸£à¸°à¸‡à¸±à¸š',
 };
 
 function normalizeText(value) {
@@ -55,7 +57,7 @@ export default function Users({ currentUser }) {
 
   const handleStatusToggle = async (user) => {
     if (user.user_id === currentUser?.user_id) {
-      setError('ไม่สามารถระงับบัญชีของตัวเองได้');
+      setError('à¹„à¸¡à¹ˆà¸ªà¸²à¸¡à¸²à¸£à¸–à¸£à¸°à¸‡à¸±à¸šà¸šà¸±à¸à¸Šà¸µà¸‚à¸­à¸‡à¸•à¸±à¸§à¹€à¸­à¸‡à¹„à¸”à¹‰');
       return;
     }
 
@@ -77,7 +79,7 @@ export default function Users({ currentUser }) {
 
   const handleRoleToggle = async (user) => {
     if (user.user_id === currentUser?.user_id) {
-      setError('ไม่สามารถเปลี่ยนบทบาทบัญชีของตัวเองได้');
+      setError('à¹„à¸¡à¹ˆà¸ªà¸²à¸¡à¸²à¸£à¸–à¹€à¸›à¸¥à¸µà¹ˆà¸¢à¸™à¸šà¸—à¸šà¸²à¸—à¸šà¸±à¸à¸Šà¸µà¸‚à¸­à¸‡à¸•à¸±à¸§à¹€à¸­à¸‡à¹„à¸”à¹‰');
       return;
     }
 
@@ -99,11 +101,11 @@ export default function Users({ currentUser }) {
 
   const handleDelete = async (user) => {
     if (user.user_id === currentUser?.user_id) {
-      setError('ไม่สามารถลบบัญชีของตัวเองได้');
+      setError('à¹„à¸¡à¹ˆà¸ªà¸²à¸¡à¸²à¸£à¸–à¸¥à¸šà¸šà¸±à¸à¸Šà¸µà¸‚à¸­à¸‡à¸•à¸±à¸§à¹€à¸­à¸‡à¹„à¸”à¹‰');
       return;
     }
 
-    const confirmed = window.confirm(`ลบผู้ใช้ "${user.full_name}" หรือไม่?`);
+    const confirmed = window.confirm(`à¸¥à¸šà¸œà¸¹à¹‰à¹ƒà¸Šà¹‰ "${user.full_name}" à¸«à¸£à¸·à¸­à¹„à¸¡à¹ˆ?`);
     if (!confirmed) return;
 
     setSavingId(user.user_id);
@@ -119,8 +121,10 @@ export default function Users({ currentUser }) {
     }
   };
 
+  const pagination = usePagination(filteredUsers, 10, [filters]);
+
   if (loading) {
-    return <div className="admin-loading">กำลังโหลดผู้ใช้งาน...</div>;
+    return <div className="admin-loading">à¸à¸³à¸¥à¸±à¸‡à¹‚à¸«à¸¥à¸”à¸œà¸¹à¹‰à¹ƒà¸Šà¹‰à¸‡à¸²à¸™...</div>;
   }
 
   if (error && users.length === 0) {
@@ -135,7 +139,7 @@ export default function Users({ currentUser }) {
         <input
           type="search"
           value={filters.search}
-          placeholder="ค้นหา (ชื่อ, อีเมล, รหัสผู้ใช้)..."
+          placeholder="à¸„à¹‰à¸™à¸«à¸² (à¸Šà¸·à¹ˆà¸­, à¸­à¸µà¹€à¸¡à¸¥, à¸£à¸«à¸±à¸ªà¸œà¸¹à¹‰à¹ƒà¸Šà¹‰)..."
           onChange={(event) =>
             setFilters((current) => ({ ...current, search: event.target.value }))
           }
@@ -146,7 +150,7 @@ export default function Users({ currentUser }) {
             setFilters((current) => ({ ...current, role: event.target.value }))
           }
         >
-          <option value="all">ทุกบทบาท</option>
+          <option value="all">à¸—à¸¸à¸à¸šà¸—à¸šà¸²à¸—</option>
           <option value="customer">User</option>
           <option value="admin">Admin</option>
         </select>
@@ -156,12 +160,12 @@ export default function Users({ currentUser }) {
             setFilters((current) => ({ ...current, status: event.target.value }))
           }
         >
-          <option value="all">ทุกสถานะ</option>
-          <option value="active">ใช้งาน</option>
-          <option value="suspended">ระงับ</option>
+          <option value="all">à¸—à¸¸à¸à¸ªà¸–à¸²à¸™à¸°</option>
+          <option value="active">à¹ƒà¸Šà¹‰à¸‡à¸²à¸™</option>
+          <option value="suspended">à¸£à¸°à¸‡à¸±à¸š</option>
         </select>
         <button type="button" onClick={() => setFilters({ search: '', role: 'all', status: 'all' })}>
-          ล้าง
+          à¸¥à¹‰à¸²à¸‡
         </button>
       </section>
 
@@ -170,30 +174,30 @@ export default function Users({ currentUser }) {
           <table className="admin-table users-table">
             <thead>
               <tr>
-                <th>ลำดับ</th>
-                <th>ชื่อ</th>
-                <th>อีเมล</th>
-                <th>เบอร์โทร</th>
-                <th>บทบาท</th>
-                <th>สถานะ</th>
-                <th>การจัดการ</th>
+                <th>à¸¥à¸³à¸”à¸±à¸š</th>
+                <th>à¸Šà¸·à¹ˆà¸­</th>
+                <th>à¸­à¸µà¹€à¸¡à¸¥</th>
+                <th>à¹€à¸šà¸­à¸£à¹Œà¹‚à¸—à¸£</th>
+                <th>à¸šà¸—à¸šà¸²à¸—</th>
+                <th>à¸ªà¸–à¸²à¸™à¸°</th>
+                <th>à¸à¸²à¸£à¸ˆà¸±à¸”à¸à¸²à¸£</th>
               </tr>
             </thead>
             <tbody>
               {filteredUsers.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="admin-table-empty">
-                    ไม่พบผู้ใช้งาน
+                    à¹„à¸¡à¹ˆà¸žà¸šà¸œà¸¹à¹‰à¹ƒà¸Šà¹‰à¸‡à¸²à¸™
                   </td>
                 </tr>
               ) : (
-                filteredUsers.map((user, index) => {
+                pagination.pageItems.map((user, index) => {
                   const isSaving = savingId === user.user_id;
                   const isCurrentUser = user.user_id === currentUser?.user_id;
 
                   return (
                     <tr key={user.user_id}>
-                      <td>{index + 1}</td>
+                      <td>{(pagination.page - 1) * pagination.pageSize + index + 1}</td>
                       <td>{user.full_name}</td>
                       <td>{user.email}</td>
                       <td>{user.phone || '-'}</td>
@@ -215,7 +219,7 @@ export default function Users({ currentUser }) {
                             disabled={isSaving || isCurrentUser}
                             onClick={() => handleRoleToggle(user)}
                           >
-                            {user.role === 'admin' ? 'เป็น User' : 'เป็น Admin'}
+                            {user.role === 'admin' ? 'à¹€à¸›à¹‡à¸™ User' : 'à¹€à¸›à¹‡à¸™ Admin'}
                           </button>
                           <button
                             type="button"
@@ -223,7 +227,7 @@ export default function Users({ currentUser }) {
                             disabled={isSaving || isCurrentUser}
                             onClick={() => handleStatusToggle(user)}
                           >
-                            {user.status === 'active' ? 'ระงับ' : 'เปิดใช้'}
+                            {user.status === 'active' ? 'à¸£à¸°à¸‡à¸±à¸š' : 'à¹€à¸›à¸´à¸”à¹ƒà¸Šà¹‰'}
                           </button>
                           <button
                             type="button"
@@ -231,7 +235,7 @@ export default function Users({ currentUser }) {
                             disabled={isSaving || isCurrentUser}
                             onClick={() => handleDelete(user)}
                           >
-                            ลบ
+                            à¸¥à¸š
                           </button>
                         </div>
                       </td>
@@ -242,7 +246,11 @@ export default function Users({ currentUser }) {
             </tbody>
           </table>
         </div>
+        <Pagination page={pagination.page} totalPages={pagination.totalPages} onPageChange={pagination.setPage} className="admin-pagination" />
       </section>
     </>
   );
 }
+
+
+

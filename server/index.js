@@ -122,7 +122,15 @@ app.use((error, _req, res, _next) => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-  startOrderExpirationJob();
-});
+// เริ่มเซิร์ฟเวอร์เฉพาะตอนรันในเครื่อง
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+
+    // ใช้ได้เฉพาะตอนรันเป็นเซิร์ฟเวอร์ปกติในเครื่องหรือ VPS
+    startOrderExpirationJob();
+  });
+}
+
+// ส่ง Express app ให้ Vercel
+module.exports = app;

@@ -1,7 +1,9 @@
 ﻿import { useEffect, useMemo, useRef, useState } from 'react';
 import { fetchCatalogCategories, fetchCatalogProducts } from '../api/catalog';
 import BrandLogo from '../components/BrandLogo';
+import Pagination from '../components/Pagination';
 import { useCart } from '../context/CartContext';
+import usePagination from '../hooks/usePagination';
 import { isCustomerUser } from '../utils/roles';
 import './Home.css';
 import './ProductsPage.css';
@@ -199,6 +201,8 @@ export default function ProductsPage({ user, onNavigate, onLogout }) {
     return sortProducts(filtered, sortBy);
   }, [products, categoryId, search, sortBy, categoryById]);
 
+  const productPagination = usePagination(visibleProducts, 12, [search, categoryId, sortBy]);
+
   const profileInitial = user?.full_name?.trim()?.charAt(0)?.toUpperCase() || 'U';
   const isCustomer = isCustomerUser(user);
   const profileMenuItems = [
@@ -240,7 +244,7 @@ export default function ProductsPage({ user, onNavigate, onLogout }) {
             <button type="button" className="active">สินค้า</button>
             <button type="button" onClick={() => onNavigate('/knowledge')}>ความรู้</button>
             <button type="button" onClick={() => onNavigate('/')}>ข่าว</button>
-            <button type="button" onClick={() => onNavigate('/')}>ติดต่อ</button>
+            <button type="button" onClick={() => onNavigate('/contact')}>ติดต่อ</button>
           </nav>
 
           <div className="account-actions">
@@ -378,7 +382,7 @@ export default function ProductsPage({ user, onNavigate, onLogout }) {
 
           {!loading && !error && visibleProducts.length > 0 && (
             <div className="catalog-grid">
-              {visibleProducts.map((product, index) => {
+              {productPagination.pageItems.map((product, index) => {
                 const categoryName = getProductCategoryName(product);
                 const stock = Number(product.stock_quantity || 0);
 
@@ -419,6 +423,9 @@ export default function ProductsPage({ user, onNavigate, onLogout }) {
                 );
               })}
             </div>
+          )}
+          {!loading && !error && (
+            <Pagination page={productPagination.page} totalPages={productPagination.totalPages} onPageChange={productPagination.setPage} className="catalog-pagination" />
           )}
         </section>
       </main>
@@ -485,4 +492,7 @@ export default function ProductsPage({ user, onNavigate, onLogout }) {
     </div>
   );
 }
+
+
+
 

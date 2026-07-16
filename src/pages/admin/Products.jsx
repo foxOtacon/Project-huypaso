@@ -1,4 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
+import Pagination from '../../components/Pagination';
+import usePagination from '../../hooks/usePagination';
 import {
   createProduct,
   deleteProduct,
@@ -51,7 +53,7 @@ function fileToDataUrl(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result);
-    reader.onerror = () => reject(new Error('ไม่สามารถอ่านไฟล์รูปภาพได้'));
+    reader.onerror = () => reject(new Error('à¹„à¸¡à¹ˆà¸ªà¸²à¸¡à¸²à¸£à¸–à¸­à¹ˆà¸²à¸™à¹„à¸Ÿà¸¥à¹Œà¸£à¸¹à¸›à¸ à¸²à¸žà¹„à¸”à¹‰'));
     reader.readAsDataURL(file);
   });
 }
@@ -201,7 +203,7 @@ export default function Products({ user }) {
   };
 
   const handleDelete = async (product) => {
-    const confirmed = window.confirm(`ลบสินค้า "${product.product_name}" หรือไม่?`);
+    const confirmed = window.confirm(`à¸¥à¸šà¸ªà¸´à¸™à¸„à¹‰à¸² "${product.product_name}" à¸«à¸£à¸·à¸­à¹„à¸¡à¹ˆ?`);
     if (!confirmed) return;
 
     setError('');
@@ -215,8 +217,10 @@ export default function Products({ user }) {
     }
   };
 
+  const pagination = usePagination(filteredProducts, 10, [filters]);
+
   if (loading) {
-    return <div className="admin-loading">กำลังโหลดสินค้า...</div>;
+    return <div className="admin-loading">à¸à¸³à¸¥à¸±à¸‡à¹‚à¸«à¸¥à¸”à¸ªà¸´à¸™à¸„à¹‰à¸²...</div>;
   }
 
   if (error && products.length === 0) {
@@ -231,14 +235,14 @@ export default function Products({ user }) {
         <input
           type="search"
           value={filters.search}
-          placeholder="ค้นหา (ชื่อสินค้า, แหล่งผลิต)..."
+          placeholder="à¸„à¹‰à¸™à¸«à¸² (à¸Šà¸·à¹ˆà¸­à¸ªà¸´à¸™à¸„à¹‰à¸², à¹à¸«à¸¥à¹ˆà¸‡à¸œà¸¥à¸´à¸•)..."
           onChange={(event) => setFilters((current) => ({ ...current, search: event.target.value }))}
         />
         <select
           value={filters.category}
           onChange={(event) => setFilters((current) => ({ ...current, category: event.target.value }))}
         >
-          <option value="all">ทุกหมวดหมู่</option>
+          <option value="all">à¸—à¸¸à¸à¸«à¸¡à¸§à¸”à¸«à¸¡à¸¹à¹ˆ</option>
           {categories.map((category) => (
             <option key={category.category_id} value={category.category_id}>
               {category.category_name}
@@ -249,12 +253,12 @@ export default function Products({ user }) {
           value={filters.stock}
           onChange={(event) => setFilters((current) => ({ ...current, stock: event.target.value }))}
         >
-          <option value="all">ทุกสถานะ</option>
-          <option value="available">มีสินค้า</option>
-          <option value="empty">หมด</option>
+          <option value="all">à¸—à¸¸à¸à¸ªà¸–à¸²à¸™à¸°</option>
+          <option value="available">à¸¡à¸µà¸ªà¸´à¸™à¸„à¹‰à¸²</option>
+          <option value="empty">à¸«à¸¡à¸”</option>
         </select>
         <button type="button" onClick={openCreateForm}>
-          เพิ่มสินค้า
+          à¹€à¸žà¸´à¹ˆà¸¡à¸ªà¸´à¸™à¸„à¹‰à¸²
         </button>
       </section>
 
@@ -263,29 +267,29 @@ export default function Products({ user }) {
           <table className="admin-table products-table">
             <thead>
               <tr>
-                <th>ลำดับ</th>
-                <th>สินค้า</th>
-                <th>หมวดหมู่</th>
-                <th>ราคา</th>
-                <th>หน่วย</th>
-                <th>คงเหลือ</th>
-                <th>สถานะ</th>
-                <th>การจัดการ</th>
+                <th>à¸¥à¸³à¸”à¸±à¸š</th>
+                <th>à¸ªà¸´à¸™à¸„à¹‰à¸²</th>
+                <th>à¸«à¸¡à¸§à¸”à¸«à¸¡à¸¹à¹ˆ</th>
+                <th>à¸£à¸²à¸„à¸²</th>
+                <th>à¸«à¸™à¹ˆà¸§à¸¢</th>
+                <th>à¸„à¸‡à¹€à¸«à¸¥à¸·à¸­</th>
+                <th>à¸ªà¸–à¸²à¸™à¸°</th>
+                <th>à¸à¸²à¸£à¸ˆà¸±à¸”à¸à¸²à¸£</th>
               </tr>
             </thead>
             <tbody>
               {filteredProducts.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="admin-table-empty">
-                    ไม่พบสินค้า
+                    à¹„à¸¡à¹ˆà¸žà¸šà¸ªà¸´à¸™à¸„à¹‰à¸²
                   </td>
                 </tr>
               ) : (
-                filteredProducts.map((product, index) => {
+                pagination.pageItems.map((product, index) => {
                   const stock = Number(product.stock_quantity || 0);
                   return (
                     <tr key={product.product_id}>
-                      <td>{index + 1}</td>
+                      <td>{(pagination.page - 1) * pagination.pageSize + index + 1}</td>
                       <td>
                         <div className="products-name-cell">
                           {product.image_url ? (
@@ -305,16 +309,16 @@ export default function Products({ user }) {
                       <td>{stock.toLocaleString('th-TH')}</td>
                       <td>
                         <span className={`product-stock-badge ${stock > 0 ? 'available' : 'empty'}`}>
-                          {stock > 0 ? 'มีสินค้า' : 'หมด'}
+                          {stock > 0 ? 'à¸¡à¸µà¸ªà¸´à¸™à¸„à¹‰à¸²' : 'à¸«à¸¡à¸”'}
                         </span>
                       </td>
                       <td>
                         <div className="products-actions">
                           <button type="button" className="products-edit-button" onClick={() => openEditForm(product)}>
-                            แก้ไข
+                            à¹à¸à¹‰à¹„à¸‚
                           </button>
                           <button type="button" className="products-delete-button" onClick={() => handleDelete(product)}>
-                            ลบ
+                            à¸¥à¸š
                           </button>
                         </div>
                       </td>
@@ -325,27 +329,28 @@ export default function Products({ user }) {
             </tbody>
           </table>
         </div>
+        <Pagination page={pagination.page} totalPages={pagination.totalPages} onPageChange={pagination.setPage} className="admin-pagination" />
       </section>
 
       {(editingProduct || form !== EMPTY_FORM) && (
         <div className="products-modal-backdrop" role="presentation" onMouseDown={closeForm}>
           <form className="products-modal" onSubmit={handleSubmit} onMouseDown={(event) => event.stopPropagation()}>
             <header className="products-modal-header">
-              <h2>{editingProduct ? 'แก้ไขสินค้า' : 'เพิ่มสินค้า'}</h2>
-              <button type="button" aria-label="ปิด" onClick={closeForm}>
-                ×
+              <h2>{editingProduct ? 'à¹à¸à¹‰à¹„à¸‚à¸ªà¸´à¸™à¸„à¹‰à¸²' : 'à¹€à¸žà¸´à¹ˆà¸¡à¸ªà¸´à¸™à¸„à¹‰à¸²'}</h2>
+              <button type="button" aria-label="à¸›à¸´à¸”" onClick={closeForm}>
+                Ã—
               </button>
             </header>
 
             <div className="products-form-grid">
               <label>
-                ชื่อสินค้า
+                à¸Šà¸·à¹ˆà¸­à¸ªà¸´à¸™à¸„à¹‰à¸²
                 <input value={form.product_name} onChange={(event) => handleChange('product_name', event.target.value)} required />
               </label>
               <label>
-                หมวดหมู่
+                à¸«à¸¡à¸§à¸”à¸«à¸¡à¸¹à¹ˆ
                 <select value={form.category_id} onChange={(event) => handleChange('category_id', event.target.value)} required>
-                  <option value="">เลือกหมวดหมู่</option>
+                  <option value="">à¹€à¸¥à¸·à¸­à¸à¸«à¸¡à¸§à¸”à¸«à¸¡à¸¹à¹ˆ</option>
                   {categories.map((category) => (
                     <option key={category.category_id} value={category.category_id}>
                       {category.category_name}
@@ -354,35 +359,35 @@ export default function Products({ user }) {
                 </select>
               </label>
               <label>
-                ราคา
+                à¸£à¸²à¸„à¸²
                 <input type="number" min="0" step="0.01" value={form.price} onChange={(event) => handleChange('price', event.target.value)} required />
               </label>
               <label>
-                หน่วย
+                à¸«à¸™à¹ˆà¸§à¸¢
                 <input value={form.unit} onChange={(event) => handleChange('unit', event.target.value)} required />
               </label>
               <label>
-                จำนวนคงเหลือ
+                à¸ˆà¸³à¸™à¸§à¸™à¸„à¸‡à¹€à¸«à¸¥à¸·à¸­
                 <input type="number" min="0" value={form.stock_quantity} onChange={(event) => handleChange('stock_quantity', event.target.value)} />
               </label>
               <label>
-                แหล่งผลิต
+                à¹à¸«à¸¥à¹ˆà¸‡à¸œà¸¥à¸´à¸•
                 <input value={form.production_source} onChange={(event) => handleChange('production_source', event.target.value)} />
               </label>
               <label>
-                วันที่ปลูก
+                à¸§à¸±à¸™à¸—à¸µà¹ˆà¸›à¸¥à¸¹à¸
                 <input type="date" value={form.planting_date} onChange={(event) => handleChange('planting_date', event.target.value)} />
               </label>
               <label>
-                วันที่เก็บเกี่ยว
+                à¸§à¸±à¸™à¸—à¸µà¹ˆà¹€à¸à¹‡à¸šà¹€à¸à¸µà¹ˆà¸¢à¸§
                 <input type="date" value={form.harvest_date} onChange={(event) => handleChange('harvest_date', event.target.value)} />
               </label>
               <label className="products-form-wide">
-                รูปภาพ URL
+                à¸£à¸¹à¸›à¸ à¸²à¸ž URL
                 <input value={form.image_url} onChange={(event) => handleChange('image_url', event.target.value)} />
               </label>
               <label className="products-form-wide">
-                อัปโหลดรูปภาพ
+                à¸­à¸±à¸›à¹‚à¸«à¸¥à¸”à¸£à¸¹à¸›à¸ à¸²à¸ž
                 <input
                   type="file"
                   accept="image/png,image/jpeg,image/webp,image/gif"
@@ -391,22 +396,22 @@ export default function Products({ user }) {
               </label>
               {imagePreview ? (
                 <div className="products-image-preview products-form-wide">
-                  <img src={imagePreview} alt="ตัวอย่างรูปสินค้า" />
-                  <span>{imageFile ? imageFile.name : 'รูปภาพปัจจุบัน'}</span>
+                  <img src={imagePreview} alt="à¸•à¸±à¸§à¸­à¸¢à¹ˆà¸²à¸‡à¸£à¸¹à¸›à¸ªà¸´à¸™à¸„à¹‰à¸²" />
+                  <span>{imageFile ? imageFile.name : 'à¸£à¸¹à¸›à¸ à¸²à¸žà¸›à¸±à¸ˆà¸ˆà¸¸à¸šà¸±à¸™'}</span>
                 </div>
               ) : null}
               <label className="products-form-wide">
-                รายละเอียด
+                à¸£à¸²à¸¢à¸¥à¸°à¹€à¸­à¸µà¸¢à¸”
                 <textarea rows="3" value={form.description} onChange={(event) => handleChange('description', event.target.value)} />
               </label>
             </div>
 
             <footer className="products-modal-actions">
               <button type="submit" className="products-save-button" disabled={saving}>
-                {saving ? 'กำลังบันทึก...' : 'บันทึก'}
+                {saving ? 'à¸à¸³à¸¥à¸±à¸‡à¸šà¸±à¸™à¸—à¸¶à¸...' : 'à¸šà¸±à¸™à¸—à¸¶à¸'}
               </button>
               <button type="button" className="products-cancel-button" onClick={closeForm} disabled={saving}>
-                ยกเลิก
+                à¸¢à¸à¹€à¸¥à¸´à¸
               </button>
             </footer>
           </form>
@@ -415,3 +420,6 @@ export default function Products({ user }) {
     </>
   );
 }
+
+
+

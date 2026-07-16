@@ -1,0 +1,32 @@
+.contact-page { min-height: 100svh; background: #edf5f2; color: #263a31; font-family: var(--sans, 'Noto Sans Thai', system-ui, sans-serif); }
+.contact-hero { min-height: 270px; display: grid; place-items: center; position: relative; overflow: hidden; color: #fff; text-align: center; background: linear-gradient(rgba(15, 35, 26, .46), rgba(15, 35, 26, .6)), url('https://images.unsplash.com/photo-1447933601403-0c6688de566e?auto=format&fit=crop&w=1800&q=85') center 56%/cover; }
+.contact-hero::after { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(20, 48, 35, .28), transparent 40%, rgba(20, 48, 35, .18)); content: ''; }
+.contact-hero div { z-index: 1; padding: 44px 20px; animation: contact-rise 650ms cubic-bezier(.22, 1, .36, 1) both; }
+.contact-hero p, .contact-eyebrow, .contact-form-heading p { margin: 0 0 8px; color: #bcd2c8; font-size: 11px; font-weight: 900; letter-spacing: .17em; }
+.contact-hero h1 { margin: 0; font-size: clamp(34px, 5vw, 52px); font-weight: 900; text-shadow: 0 3px 18px rgba(0,0,0,.25); }
+.contact-hero span { display: block; margin-top: 9px; font-size: 15px; font-weight: 600; }
+.contact-main { width: min(100% - 40px, 1040px); margin: 0 auto; padding: 54px 0 72px; display: grid; grid-template-columns: minmax(0, .9fr) minmax(360px, 1.1fr); gap: 64px; align-items: start; }
+.contact-information { padding-top: 16px; }
+.contact-information h2, .contact-form h2 { margin: 0; font-size: 25px; font-weight: 900; }
+.contact-eyebrow, .contact-form-heading p { color: #628171; }
+.contact-intro { max-width: 470px; margin: 12px 0 30px; color: #718179; font-size: 13px; line-height: 1.8; }
+.contact-list { display: grid; gap: 23px; }
+.contact-item { display: grid; grid-template-columns: 48px 1fr; gap: 15px; align-items: start; }
+.contact-icon { width: 48px; height: 48px; display: grid; place-items: center; border-radius: 12px; background: #d4e2dc; color: #557669; }
+.contact-icon svg { width: 22px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
+.contact-item h3 { margin: 1px 0 4px; font-size: 14px; font-weight: 900; }
+.contact-item p, .contact-item a { display: block; margin: 0; color: #63766d; font-size: 13px; line-height: 1.65; text-decoration: none; }
+.contact-item a:hover { color: #315c49; text-decoration: underline; }
+.contact-form { padding: 31px 34px 34px; border: 1px solid rgba(57, 83, 70, .08); border-radius: 15px; background: rgba(255,255,255,.94); box-shadow: 0 18px 50px rgba(42, 67, 54, .09); animation: contact-rise 650ms 100ms cubic-bezier(.22, 1, .36, 1) both; }
+.contact-form-heading { margin-bottom: 22px; }
+.contact-form label { display: grid; gap: 7px; margin-top: 15px; color: #3d5147; font-size: 13px; font-weight: 800; }
+.contact-form input, .contact-form textarea { width: 100%; border: 1px solid #dfe7e3; border-radius: 7px; background: #fff; color: #263a31; font: inherit; font-size: 13px; padding: 11px 13px; transition: border-color 180ms ease, box-shadow 180ms ease; }
+.contact-form textarea { resize: vertical; }
+.contact-form input:focus, .contact-form textarea:focus { outline: 0; border-color: #557669; box-shadow: 0 0 0 3px rgba(85,118,105,.14); }
+.contact-form > button { width: 100%; min-height: 44px; margin-top: 20px; border: 0; border-radius: 7px; background: #46675a; color: #fff; font: inherit; font-weight: 900; cursor: pointer; transition: transform 180ms ease, background-color 180ms ease, box-shadow 180ms ease; }
+.contact-form > button:hover { background: #375548; box-shadow: 0 8px 20px rgba(55,85,72,.2); transform: translateY(-1px); }
+.contact-form > button span { margin-left: 7px; font-size: 18px; }
+.contact-success { margin-bottom: 12px; padding: 11px 13px; border-radius: 7px; background: #e5f5eb; color: #176d43; font-size: 13px; font-weight: 800; }
+@keyframes contact-rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+@media (max-width: 760px) { .contact-hero { min-height: 220px; } .contact-main { grid-template-columns: 1fr; gap: 36px; padding: 36px 0 54px; } .contact-form { padding: 25px 20px; } }
+@media (prefers-reduced-motion: reduce) { .contact-hero div, .contact-form { animation: none; } .contact-form input, .contact-form textarea, .contact-form > button { transition: none; } }

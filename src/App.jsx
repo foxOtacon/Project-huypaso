@@ -4,6 +4,7 @@ import { CartProvider } from "./context/CartContext";
 import { useHashRoute } from "./hooks/useHashRoute";
 import AdminApp from "./pages/admin/AdminApp";
 import CartPage from "./pages/CartPage";
+import ContactPage from "./pages/ContactPage";
 import { isAdminRoute } from "./pages/admin/adminRoutes";
 import CustomerAccountPage from "./pages/CustomerAccountPage";
 import GoogleCallback from "./pages/GoogleCallback";
@@ -27,6 +28,7 @@ const CUSTOMER_ACCOUNT_ROUTES = [
 const CUSTOMER_ROUTES = [
   "/",
   "/products",
+  "/contact",
   "/news",
   "/knowledge",
   "/cart",
@@ -168,6 +170,8 @@ function AppRoutes() {
   }
 
   switch (route) {
+    case "/contact":
+      return <ContactPage user={user} onNavigate={navigate} onLogout={handleLogout} />;
     case "/products":
       return (
         <ProductsPage
@@ -284,4 +288,5 @@ function App() {
 }
 
 export default App;
+
 

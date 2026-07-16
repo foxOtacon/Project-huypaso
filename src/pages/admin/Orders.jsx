@@ -1,4 +1,6 @@
 ﻿import { useEffect, useMemo, useState } from 'react';
+import Pagination from '../../components/Pagination';
+import usePagination from '../../hooks/usePagination';
 import {
   fetchOrderItems,
   fetchOrders,
@@ -189,6 +191,8 @@ export default function Orders() {
     }
   };
 
+  const pagination = usePagination(filteredRows, 10, [filters]);
+
   if (loading) {
     return <div className="admin-loading">กำลังโหลดคำสั่งซื้อ...</div>;
   }
@@ -280,9 +284,9 @@ export default function Orders() {
                   </td>
                 </tr>
               ) : (
-                filteredRows.map((order, index) => (
+                pagination.pageItems.map((order, index) => (
                   <tr key={order.order_id}>
-                    <td>{index + 1}</td>
+                    <td>{(pagination.page - 1) * pagination.pageSize + index + 1}</td>
                     <td className="orders-code">{order.code}</td>
                     <td>
                       <strong>{order.customerName}</strong>
@@ -309,6 +313,7 @@ export default function Orders() {
             </tbody>
           </table>
         </div>
+        <Pagination page={pagination.page} totalPages={pagination.totalPages} onPageChange={pagination.setPage} className="admin-pagination" />
       </section>
 
       {selectedOrder ? (
@@ -438,3 +443,4 @@ export default function Orders() {
     </>
   );
 }
+

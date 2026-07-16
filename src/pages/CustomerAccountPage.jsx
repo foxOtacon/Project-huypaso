@@ -1,6 +1,8 @@
 ﻿import { useEffect, useState } from 'react';
 import { fetchMyOrderDetail, fetchMyOrders } from '../api/customer';
 import CustomerNavbar from '../components/CustomerNavbar';
+import Pagination from '../components/Pagination';
+import usePagination from '../hooks/usePagination';
 import { buildTrackingLink, copyTrackingNumber } from '../utils/tracking';
 import { useAuth } from '../context/AuthContext';
 import './CustomerAccountPage.css';
@@ -60,6 +62,7 @@ export default function CustomerAccountPage({ user, onNavigate, onLogout }) {
   const [detailError, setDetailError] = useState('');
   const [trackingNotice, setTrackingNotice] = useState('');
   const latestOrder = orders[0];
+  const orderPagination = usePagination(orders, 5);
 
   async function loadOrders() {
     if (!token) return;
@@ -137,7 +140,7 @@ export default function CustomerAccountPage({ user, onNavigate, onLogout }) {
               </button>
             </div>
           ) : (
-            orders.map((order) => (
+            orderPagination.pageItems.map((order) => (
               <article className="customer-order-card" key={`${order.order_id}-${order.payment_id || 'order'}`}>
                 <div className="customer-order-main">
                   <div>
@@ -182,6 +185,9 @@ export default function CustomerAccountPage({ user, onNavigate, onLogout }) {
             ))
           )}
         </section>
+        {!loading && orders.length > 0 ? (
+          <Pagination page={orderPagination.page} totalPages={orderPagination.totalPages} onPageChange={orderPagination.setPage} className="customer-pagination" />
+        ) : null}
       </main>
 
       {selectedOrder && (
@@ -298,4 +304,7 @@ export default function CustomerAccountPage({ user, onNavigate, onLogout }) {
     </div>
   );
 }
+
+
+
 

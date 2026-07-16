@@ -77,7 +77,7 @@ export default function CustomerNavbar({ user, onNavigate, onLogout }) {
           <button type="button" onClick={() => onNavigate('/products')}>สินค้า</button>
           <button type="button" onClick={() => onNavigate('/knowledge')}>ความรู้</button>
           <button type="button" onClick={() => onNavigate('/news')}>ข่าว</button>
-          <button type="button" onClick={() => onNavigate('/')}>ติดต่อ</button>
+          <button type="button" onClick={() => onNavigate('/contact')}>ติดต่อ</button>
         </nav>
 
         <div className="account-actions">
@@ -214,5 +214,6 @@ export default function CustomerNavbar({ user, onNavigate, onLogout }) {
     </>
   );
 }
+
 
 

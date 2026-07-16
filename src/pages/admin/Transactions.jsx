@@ -1,4 +1,6 @@
 ﻿import { useEffect, useMemo, useState } from 'react';
+import Pagination from '../../components/Pagination';
+import usePagination from '../../hooks/usePagination';
 import {
   fetchOrderItems,
   fetchOrders,
@@ -172,6 +174,8 @@ export default function Transactions() {
     }
   };
 
+  const pagination = usePagination(filteredRows, 10, [filters]);
+
   if (loading) {
     return <div className="admin-loading">กำลังโหลดธุรกรรม...</div>;
   }
@@ -252,9 +256,9 @@ export default function Transactions() {
                   </td>
                 </tr>
               ) : (
-                filteredRows.map((transaction, index) => (
+                pagination.pageItems.map((transaction, index) => (
                   <tr key={transaction.payment_id}>
-                    <td>{index + 1}</td>
+                    <td>{(pagination.page - 1) * pagination.pageSize + index + 1}</td>
                     <td>{transaction.customerName}</td>
                     <td>{transaction.customerPhone}</td>
                     <td className="transactions-amount">{formatCurrency(transaction.amount)}</td>
@@ -293,6 +297,7 @@ export default function Transactions() {
             </tbody>
           </table>
         </div>
+        <Pagination page={pagination.page} totalPages={pagination.totalPages} onPageChange={pagination.setPage} className="admin-pagination" />
       </section>
 
       {selectedTransaction ? (
@@ -385,3 +390,4 @@ export default function Transactions() {
     </>
   );
 }
+

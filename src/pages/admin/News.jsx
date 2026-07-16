@@ -1,4 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
+import Pagination from '../../components/Pagination';
+import usePagination from '../../hooks/usePagination';
 import {
   createNews,
   deleteNews,
@@ -12,7 +14,7 @@ const EMPTY_FORM = {
   summary: '',
   content: '',
   image_url: '',
-  category: 'ข่าวชุมชน',
+  category: 'à¸‚à¹ˆà¸²à¸§à¸Šà¸¸à¸¡à¸Šà¸™',
   status: 'draft',
 };
 
@@ -34,7 +36,7 @@ function fileToDataUrl(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result);
-    reader.onerror = () => reject(new Error('ไม่สามารถอ่านไฟล์รูปภาพได้'));
+    reader.onerror = () => reject(new Error('à¹„à¸¡à¹ˆà¸ªà¸²à¸¡à¸²à¸£à¸–à¸­à¹ˆà¸²à¸™à¹„à¸Ÿà¸¥à¹Œà¸£à¸¹à¸›à¸ à¸²à¸žà¹„à¸”à¹‰'));
     reader.readAsDataURL(file);
   });
 }
@@ -45,7 +47,7 @@ function buildPayload(form, user) {
     summary: form.summary.trim() || null,
     content: form.content.trim(),
     image_url: form.image_url.trim() || null,
-    category: form.category.trim() || 'ข่าวชุมชน',
+    category: form.category.trim() || 'à¸‚à¹ˆà¸²à¸§à¸Šà¸¸à¸¡à¸Šà¸™',
     status: form.status,
     created_by: user?.user_id,
   };
@@ -106,7 +108,7 @@ export default function News({ user }) {
       summary: item.summary || '',
       content: item.content || '',
       image_url: item.image_url || '',
-      category: item.category || 'ข่าวชุมชน',
+      category: item.category || 'à¸‚à¹ˆà¸²à¸§à¸Šà¸¸à¸¡à¸Šà¸™',
       status: item.status || 'draft',
     });
     setImageFile(null);
@@ -172,7 +174,7 @@ export default function News({ user }) {
   }
 
   async function handleDelete(item) {
-    const confirmed = window.confirm(`ลบข่าว "${item.title}" หรือไม่?`);
+    const confirmed = window.confirm(`à¸¥à¸šà¸‚à¹ˆà¸²à¸§ "${item.title}" à¸«à¸£à¸·à¸­à¹„à¸¡à¹ˆ?`);
     if (!confirmed) return;
 
     setError('');
@@ -185,8 +187,10 @@ export default function News({ user }) {
     }
   }
 
+  const pagination = usePagination(filteredItems, 10, [filters]);
+
   if (loading) {
-    return <div className="admin-loading">กำลังโหลดข่าว...</div>;
+    return <div className="admin-loading">à¸à¸³à¸¥à¸±à¸‡à¹‚à¸«à¸¥à¸”à¸‚à¹ˆà¸²à¸§...</div>;
   }
 
   if (error && items.length === 0) {
@@ -201,19 +205,19 @@ export default function News({ user }) {
         <input
           type="search"
           value={filters.search}
-          placeholder="ค้นหาข่าว..."
+          placeholder="à¸„à¹‰à¸™à¸«à¸²à¸‚à¹ˆà¸²à¸§..."
           onChange={(event) => setFilters((current) => ({ ...current, search: event.target.value }))}
         />
         <select
           value={filters.status}
           onChange={(event) => setFilters((current) => ({ ...current, status: event.target.value }))}
         >
-          <option value="all">ทุกสถานะ</option>
-          <option value="published">เผยแพร่</option>
-          <option value="draft">ฉบับร่าง</option>
+          <option value="all">à¸—à¸¸à¸à¸ªà¸–à¸²à¸™à¸°</option>
+          <option value="published">à¹€à¸œà¸¢à¹à¸žà¸£à¹ˆ</option>
+          <option value="draft">à¸‰à¸šà¸±à¸šà¸£à¹ˆà¸²à¸‡</option>
         </select>
         <button type="button" onClick={openCreateForm}>
-          เพิ่มข่าว
+          à¹€à¸žà¸´à¹ˆà¸¡à¸‚à¹ˆà¸²à¸§
         </button>
       </section>
 
@@ -222,25 +226,25 @@ export default function News({ user }) {
           <table className="admin-table products-table">
             <thead>
               <tr>
-                <th>ลำดับ</th>
-                <th>ข่าว</th>
-                <th>หมวดหมู่</th>
-                <th>สถานะ</th>
-                <th>วันที่</th>
-                <th>การจัดการ</th>
+                <th>à¸¥à¸³à¸”à¸±à¸š</th>
+                <th>à¸‚à¹ˆà¸²à¸§</th>
+                <th>à¸«à¸¡à¸§à¸”à¸«à¸¡à¸¹à¹ˆ</th>
+                <th>à¸ªà¸–à¸²à¸™à¸°</th>
+                <th>à¸§à¸±à¸™à¸—à¸µà¹ˆ</th>
+                <th>à¸à¸²à¸£à¸ˆà¸±à¸”à¸à¸²à¸£</th>
               </tr>
             </thead>
             <tbody>
               {filteredItems.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="admin-table-empty">
-                    ไม่พบข่าว
+                    à¹„à¸¡à¹ˆà¸žà¸šà¸‚à¹ˆà¸²à¸§
                   </td>
                 </tr>
               ) : (
-                filteredItems.map((item, index) => (
+                pagination.pageItems.map((item, index) => (
                   <tr key={item.news_id}>
-                    <td>{index + 1}</td>
+                    <td>{(pagination.page - 1) * pagination.pageSize + index + 1}</td>
                     <td>
                       <div className="products-name-cell">
                         {item.image_url ? (
@@ -257,17 +261,17 @@ export default function News({ user }) {
                     <td>{item.category || '-'}</td>
                     <td>
                       <span className={`news-status-badge news-status-${item.status || 'draft'}`}>
-                        {item.status === 'published' ? 'เผยแพร่' : 'ฉบับร่าง'}
+                        {item.status === 'published' ? 'à¹€à¸œà¸¢à¹à¸žà¸£à¹ˆ' : 'à¸‰à¸šà¸±à¸šà¸£à¹ˆà¸²à¸‡'}
                       </span>
                     </td>
                     <td>{formatDate(item.created_at)}</td>
                     <td>
                       <div className="products-actions">
                         <button type="button" className="products-edit-button" onClick={() => openEditForm(item)}>
-                          แก้ไข
+                          à¹à¸à¹‰à¹„à¸‚
                         </button>
                         <button type="button" className="products-delete-button" onClick={() => handleDelete(item)}>
-                          ลบ
+                          à¸¥à¸š
                         </button>
                       </div>
                     </td>
@@ -277,44 +281,45 @@ export default function News({ user }) {
             </tbody>
           </table>
         </div>
+        <Pagination page={pagination.page} totalPages={pagination.totalPages} onPageChange={pagination.setPage} className="admin-pagination" />
       </section>
 
       {(editingItem || form !== EMPTY_FORM) && (
         <div className="products-modal-backdrop" role="presentation" onMouseDown={closeForm}>
           <form className="products-modal" onSubmit={handleSubmit} onMouseDown={(event) => event.stopPropagation()}>
             <header className="products-modal-header">
-              <h2>{editingItem ? 'แก้ไขข่าว' : 'เพิ่มข่าว'}</h2>
-              <button type="button" aria-label="ปิด" onClick={closeForm}>
+              <h2>{editingItem ? 'à¹à¸à¹‰à¹„à¸‚à¸‚à¹ˆà¸²à¸§' : 'à¹€à¸žà¸´à¹ˆà¸¡à¸‚à¹ˆà¸²à¸§'}</h2>
+              <button type="button" aria-label="à¸›à¸´à¸”" onClick={closeForm}>
                 x
               </button>
             </header>
 
             <div className="products-form-grid">
               <label className="products-form-wide">
-                หัวข้อข่าว
+                à¸«à¸±à¸§à¸‚à¹‰à¸­à¸‚à¹ˆà¸²à¸§
                 <input value={form.title} onChange={(event) => handleChange('title', event.target.value)} required />
               </label>
               <label>
-                หมวดหมู่
+                à¸«à¸¡à¸§à¸”à¸«à¸¡à¸¹à¹ˆ
                 <input value={form.category} onChange={(event) => handleChange('category', event.target.value)} />
               </label>
               <label>
-                สถานะ
+                à¸ªà¸–à¸²à¸™à¸°
                 <select value={form.status} onChange={(event) => handleChange('status', event.target.value)}>
-                  <option value="draft">ฉบับร่าง</option>
-                  <option value="published">เผยแพร่</option>
+                  <option value="draft">à¸‰à¸šà¸±à¸šà¸£à¹ˆà¸²à¸‡</option>
+                  <option value="published">à¹€à¸œà¸¢à¹à¸žà¸£à¹ˆ</option>
                 </select>
               </label>
               <label className="products-form-wide">
-                สรุปข่าว
+                à¸ªà¸£à¸¸à¸›à¸‚à¹ˆà¸²à¸§
                 <textarea rows="2" value={form.summary} onChange={(event) => handleChange('summary', event.target.value)} />
               </label>
               <label className="products-form-wide">
-                รูปภาพ URL
+                à¸£à¸¹à¸›à¸ à¸²à¸ž URL
                 <input value={form.image_url} onChange={(event) => handleChange('image_url', event.target.value)} />
               </label>
               <label className="products-form-wide">
-                อัปโหลดรูปข่าว
+                à¸­à¸±à¸›à¹‚à¸«à¸¥à¸”à¸£à¸¹à¸›à¸‚à¹ˆà¸²à¸§
                 <input
                   type="file"
                   accept="image/png,image/jpeg,image/webp,image/gif"
@@ -323,22 +328,22 @@ export default function News({ user }) {
               </label>
               {imagePreview ? (
                 <div className="products-image-preview products-form-wide">
-                  <img src={imagePreview} alt="ตัวอย่างรูปข่าว" />
-                  <span>{imageFile ? imageFile.name : 'รูปภาพปัจจุบัน'}</span>
+                  <img src={imagePreview} alt="à¸•à¸±à¸§à¸­à¸¢à¹ˆà¸²à¸‡à¸£à¸¹à¸›à¸‚à¹ˆà¸²à¸§" />
+                  <span>{imageFile ? imageFile.name : 'à¸£à¸¹à¸›à¸ à¸²à¸žà¸›à¸±à¸ˆà¸ˆà¸¸à¸šà¸±à¸™'}</span>
                 </div>
               ) : null}
               <label className="products-form-wide">
-                เนื้อหาข่าว
+                à¹€à¸™à¸·à¹‰à¸­à¸«à¸²à¸‚à¹ˆà¸²à¸§
                 <textarea rows="7" value={form.content} onChange={(event) => handleChange('content', event.target.value)} required />
               </label>
             </div>
 
             <footer className="products-modal-actions">
               <button type="submit" className="products-save-button" disabled={saving}>
-                {saving ? 'กำลังบันทึก...' : 'บันทึก'}
+                {saving ? 'à¸à¸³à¸¥à¸±à¸‡à¸šà¸±à¸™à¸—à¸¶à¸...' : 'à¸šà¸±à¸™à¸—à¸¶à¸'}
               </button>
               <button type="button" className="products-cancel-button" onClick={closeForm} disabled={saving}>
-                ยกเลิก
+                à¸¢à¸à¹€à¸¥à¸´à¸
               </button>
             </footer>
           </form>
@@ -347,3 +352,6 @@ export default function News({ user }) {
     </>
   );
 }
+
+
+

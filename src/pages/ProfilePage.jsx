@@ -150,7 +150,7 @@ export default function ProfilePage({ user, onNavigate, onLogout }) {
         <section className="account-card">
           <div className="account-card-header">
             <h2>ตั้งค่าข้อมูลส่วนตัว</h2>
-            <button type="button" className="account-edit-button" onClick={() => setEditingProfile((open) => !open)}>
+            <button type="button" className="account-edit-button" aria-expanded={editingProfile} onClick={() => setEditingProfile((open) => !open)}>
               ✎ แก้ไข
             </button>
           </div>
@@ -279,7 +279,7 @@ export default function ProfilePage({ user, onNavigate, onLogout }) {
         <section className="account-card">
           <div className="account-card-header">
             <h2>เปลี่ยนรหัสผ่าน</h2>
-            <button type="button" className="account-edit-button" onClick={() => setEditingPassword((open) => !open)}>
+            <button type="button" className="account-edit-button" aria-expanded={editingPassword} onClick={() => setEditingPassword((open) => !open)}>
               ✎ แก้ไข
             </button>
           </div>
