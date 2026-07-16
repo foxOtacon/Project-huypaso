@@ -1,20 +1,62 @@
-const API_BASE = import.meta.env.VITE_API_URL || '/api';
+﻿const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
-async function request(path, options = {}) {
+import { handleInvalidSession } from '../utils/session';
+
+const pendingGetRequests = new Map();
+
+function getAuthHeaders() {
+  const token = localStorage.getItem('token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+async function performRequest(path, options = {}) {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    const error = new Error('กรุณาเข้าสู่ระบบใหม่');
+    error.code = 'AUTH_REQUIRED';
+    throw error;
+  }
+
   const response = await fetch(`${API_BASE}${path}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
+      ...getAuthHeaders(),
       ...options.headers,
     },
   });
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
+    handleInvalidSession(response, data);
     throw new Error(data.message || 'ไม่สามารถโหลดข้อมูลได้');
   }
 
   return data;
+}
+
+async function request(path, options = {}) {
+  const method = (options.method || 'GET').toUpperCase();
+
+  if (method !== 'GET') {
+    return performRequest(path, options);
+  }
+
+  const token = localStorage.getItem('token') || '';
+  const requestKey = `${token}:${path}`;
+
+  if (pendingGetRequests.has(requestKey)) {
+    return pendingGetRequests.get(requestKey);
+  }
+
+  const requestPromise = performRequest(path, options);
+  pendingGetRequests.set(requestKey, requestPromise);
+
+  try {
+    return await requestPromise;
+  } finally {
+    pendingGetRequests.delete(requestKey);
+  }
 }
 
 export async function fetchOrders() {
@@ -57,6 +99,11 @@ export async function fetchProducts() {
   return res.data || [];
 }
 
+
+export async function fetchShippingCarriers() {
+  const res = await request('/shipping-carriers');
+  return res.data || [];
+}
 export async function fetchCategories() {
   const res = await request('/categories');
   return res.data || [];
@@ -93,6 +140,14 @@ export async function uploadProductImage({ fileName, dataUrl }) {
   return res.data;
 }
 
+export async function uploadNewsImage({ fileName, dataUrl }) {
+  const res = await request('/uploads/news-image', {
+    method: 'POST',
+    body: JSON.stringify({ fileName, dataUrl }),
+  });
+  return res.data;
+}
+
 export async function updateOrder(orderId, payload) {
   const res = await request(`/orders/${orderId}`, {
     method: 'PUT',
@@ -107,4 +162,51 @@ export async function updatePayment(paymentId, payload) {
     body: JSON.stringify(payload),
   });
   return res.data;
+}
+
+export async function fetchAdminPayments() {
+  const res = await request('/admin/payments');
+  return res.data || [];
+}
+
+export async function approveAdminPayment(paymentId) {
+  const res = await request(`/admin/payment/${paymentId}/approve`, {
+    method: 'PUT',
+  });
+  return res.data;
+}
+
+export async function rejectAdminPayment(paymentId) {
+  const res = await request(`/admin/payment/${paymentId}/reject`, {
+    method: 'PUT',
+  });
+  return res.data;
+}
+
+export async function fetchNews() {
+  const res = await request('/news/admin/all');
+  return res.data || [];
+}
+
+export async function createNews(payload) {
+  const res = await request('/news', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+  return res.data;
+}
+
+export async function updateNews(newsId, payload) {
+  const res = await request(`/news/${newsId}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+  return res.data;
+}
+
+export async function deleteNews(newsId) {
+  const res = await request(`/news/${newsId}`, {
+    method: 'DELETE',
+  });
+  return res;
 }

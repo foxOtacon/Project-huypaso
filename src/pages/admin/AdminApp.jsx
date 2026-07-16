@@ -1,6 +1,7 @@
 import AdminLayout from '../../components/admin/AdminLayout';
 import AdminPlaceholder from './AdminPlaceholder';
 import Dashboard from './Dashboard';
+import News from './News';
 import Orders from './Orders';
 import Products from './Products';
 import Transactions from './Transactions';
@@ -23,6 +24,10 @@ function AdminPageContent({ route, user }) {
     return <Products user={user} />;
   }
 
+  if (route === '/admin/news') {
+    return <News user={user} />;
+  }
+
   if (route === '/admin/users') {
     return <Users currentUser={user} />;
   }
@@ -33,7 +38,7 @@ function AdminPageContent({ route, user }) {
 export default function AdminApp({ route, user, onNavigate, onLogout }) {
   return (
     <AdminLayout route={route} user={user} onNavigate={onNavigate} onLogout={onLogout}>
-      <AdminPageContent route={route} user={user} />
+      <AdminPageContent key={route} route={route} user={user} />
     </AdminLayout>
   );
 }

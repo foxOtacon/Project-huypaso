@@ -1,0 +1,155 @@
+.google-profile-alert-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(19, 32, 25, 0.58);
+  backdrop-filter: blur(5px);
+  animation: google-profile-alert-fade 180ms ease-out both;
+}
+
+.google-profile-alert {
+  position: relative;
+  width: min(440px, 100%);
+  padding: 32px;
+  border: 1px solid rgba(83, 112, 96, 0.2);
+  border-radius: 20px;
+  background: #ffffff;
+  box-shadow: 0 24px 70px rgba(17, 34, 25, 0.28);
+  color: #293c32;
+  text-align: center;
+  animation: google-profile-alert-rise 220ms ease-out both;
+}
+
+.google-profile-alert-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 36px;
+  height: 36px;
+  border: 1px solid #dbe5df;
+  border-radius: 50%;
+  background: #f8fbf9;
+  color: #506359;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.google-profile-alert-icon {
+  display: grid;
+  width: 62px;
+  height: 62px;
+  margin: 0 auto 18px;
+  place-items: center;
+  border-radius: 50%;
+  background: #eaf4ee;
+  color: #3f6b55;
+  font-size: 30px;
+  font-weight: 900;
+}
+
+.google-profile-alert-icon.is-success {
+  background: #e3f4e9;
+  color: #2f754f;
+}
+
+.google-profile-alert-eyebrow {
+  margin: 0 0 7px;
+  color: #648071;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+}
+
+.google-profile-alert h2 {
+  margin: 0 0 10px;
+  font-size: clamp(22px, 4vw, 27px);
+}
+
+.google-profile-alert > p:not(.google-profile-alert-eyebrow) {
+  margin: 0;
+  color: #64736b;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.google-profile-alert-fields {
+  display: grid;
+  gap: 8px;
+  margin: 20px 0;
+  padding: 14px 16px;
+  border: 1px solid #dfe9e3;
+  border-radius: 12px;
+  background: #f5f9f7;
+  color: #395446;
+  font-size: 14px;
+  font-weight: 800;
+  text-align: left;
+}
+
+.google-profile-alert-actions {
+  display: grid;
+  grid-template-columns: 1fr 1.25fr;
+  gap: 10px;
+}
+
+.google-profile-alert-actions.is-complete {
+  grid-template-columns: 1fr;
+  margin-top: 22px;
+}
+
+.google-profile-alert-actions button {
+  min-height: 46px;
+  border: 1px solid #cfdcd5;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #40584c;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.google-profile-alert-actions button:last-child {
+  border-color: #3e6752;
+  background: #3e6752;
+  color: #ffffff;
+}
+
+.google-profile-alert-actions button:hover {
+  transform: translateY(-1px);
+}
+
+@keyframes google-profile-alert-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes google-profile-alert-rise {
+  from { opacity: 0; transform: translateY(12px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (max-width: 575.98px) {
+  .google-profile-alert-backdrop {
+    place-items: end center;
+    padding: 0;
+  }
+
+  .google-profile-alert {
+    width: 100%;
+    padding: 30px 20px max(22px, env(safe-area-inset-bottom));
+    border-radius: 22px 22px 0 0;
+  }
+
+  .google-profile-alert-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .google-profile-alert-actions button:last-child {
+    grid-row: 1;
+  }
+}

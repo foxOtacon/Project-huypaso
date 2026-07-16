@@ -17,11 +17,17 @@ function translateError(message) {
   return ERROR_MESSAGES[message] || message || 'เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง';
 }
 
+function readSessionMessage() {
+  const message = sessionStorage.getItem('auth_message') || '';
+  sessionStorage.removeItem('auth_message');
+  return message;
+}
+
 export default function Login({ onNavigate, onSuccess, variant, onClose }) {
   const { loginSuccess } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [error, setError] = useState(readSessionMessage);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 

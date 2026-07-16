@@ -1,12 +1,14 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import {
   fetchOrderItems,
   fetchOrders,
   fetchProducts,
+  fetchShippingCarriers,
   fetchUsers,
   updateOrder,
 } from '../../api/admin';
 import { formatCurrency, getStatusLabel } from '../../utils/dashboardStats';
+import { getSafeTrackingUrl } from '../../utils/tracking';
 
 const STATUS_OPTIONS = [
   { value: 'all', label: 'ทั้งหมด' },
@@ -36,24 +38,25 @@ function normalizeText(value) {
 }
 
 function buildOrderRows(orders, users, orderItems, products) {
-  const userMap = new Map(users.map((user) => [user.user_id, user]));
-  const productMap = new Map(products.map((product) => [product.product_id, product]));
+  const userMap = new Map(users.map((user) => [Number(user.user_id), user]));
+  const productMap = new Map(products.map((product) => [Number(product.product_id), product]));
 
   const itemsByOrder = orderItems.reduce((grouped, item) => {
-    const list = grouped.get(item.order_id) || [];
+    const orderId = Number(item.order_id);
+    const list = grouped.get(orderId) || [];
     list.push({
       ...item,
-      product: productMap.get(item.product_id),
+      product: productMap.get(Number(item.product_id)),
     });
-    grouped.set(item.order_id, list);
+    grouped.set(orderId, list);
     return grouped;
   }, new Map());
 
   return [...orders]
     .sort((a, b) => new Date(b.order_date) - new Date(a.order_date))
     .map((order) => {
-      const customer = userMap.get(order.user_id);
-      const items = itemsByOrder.get(order.order_id) || [];
+      const customer = userMap.get(Number(order.user_id));
+      const items = itemsByOrder.get(Number(order.order_id)) || [];
 
       return {
         ...order,
@@ -73,9 +76,15 @@ export default function Orders() {
   const [users, setUsers] = useState([]);
   const [orderItems, setOrderItems] = useState([]);
   const [products, setProducts] = useState([]);
+  const [shippingCarriers, setShippingCarriers] = useState([]);
   const [filters, setFilters] = useState({ status: 'all', customer: '', orderCode: '' });
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [selectedStatus, setSelectedStatus] = useState('pending');
+  const [trackingForm, setTrackingForm] = useState({
+    tracking_number: '',
+    shipping_carrier: '',
+    tracking_url: '',
+  });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -83,17 +92,19 @@ export default function Orders() {
   useEffect(() => {
     async function loadOrders() {
       try {
-        const [ordersData, usersData, orderItemsData, productsData] = await Promise.all([
+        const [ordersData, usersData, orderItemsData, productsData, carrierData] = await Promise.all([
           fetchOrders(),
           fetchUsers(),
           fetchOrderItems(),
           fetchProducts(),
+          fetchShippingCarriers(),
         ]);
 
         setOrders(ordersData);
         setUsers(usersData);
         setOrderItems(orderItemsData);
         setProducts(productsData);
+        setShippingCarriers(carrierData.filter((carrier) => carrier.status !== 'inactive'));
       } catch (err) {
         setError(err.message);
       } finally {
@@ -138,6 +149,11 @@ export default function Orders() {
   const openOrder = (order) => {
     setSelectedOrder(order);
     setSelectedStatus(order.order_status);
+    setTrackingForm({
+      tracking_number: order.tracking_number || '',
+      shipping_carrier: order.shipping_carrier || '',
+      tracking_url: order.tracking_url || '',
+    });
   };
 
   const closeOrder = () => {
@@ -155,7 +171,12 @@ export default function Orders() {
     setError('');
 
     try {
-      const updated = await updateOrder(selectedOrder.order_id, { order_status: selectedStatus });
+      const updated = await updateOrder(selectedOrder.order_id, {
+        order_status: selectedStatus,
+        tracking_number: trackingForm.tracking_number.trim(),
+        shipping_carrier: trackingForm.shipping_carrier.trim(),
+        tracking_url: trackingForm.tracking_url.trim(),
+      });
       setOrders((current) =>
         current.map((order) => (order.order_id === updated.order_id ? updated : order)),
       );
@@ -336,9 +357,63 @@ export default function Orders() {
               </section>
 
               <section>
-                <h3>ข้อมูลอื่นๆ</h3>
+                <h3>ข้อมูลอื่น ๆ</h3>
                 <p>วันที่สั่งซื้อ: {formatDate(selectedOrder.order_date)}</p>
                 <p>สถานะปัจจุบัน: {getStatusLabel(selectedOrder.order_status)}</p>
+              </section>
+
+              <section>
+                <h3>ข้อมูลติดตามพัสดุ</h3>
+                <div className="orders-tracking-fields">
+                  <label>
+                    เลขพัสดุ
+                    <input
+                      value={trackingForm.tracking_number}
+                      onChange={(event) => setTrackingForm((current) => ({ ...current, tracking_number: event.target.value }))}
+                      placeholder="เช่น TH123456789"
+                    />
+                    {trackingForm.tracking_number && getSafeTrackingUrl(trackingForm.tracking_url) ? (
+                      <a
+                        className="orders-tracking-preview"
+                        href={getSafeTrackingUrl(trackingForm.tracking_url)}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        ทดลองเปิดลิงก์: {trackingForm.tracking_number} ↗
+                      </a>
+                    ) : null}
+                  </label>
+                  <label>
+                    บริษัทขนส่ง
+                    <select
+                      value={trackingForm.shipping_carrier}
+                      onChange={(event) => {
+                        const carrier = shippingCarriers.find((item) => item.carrier_name === event.target.value);
+                        setTrackingForm((current) => ({
+                          ...current,
+                          shipping_carrier: event.target.value,
+                          tracking_url: carrier?.tracking_url || current.tracking_url,
+                        }));
+                      }}
+                    >
+                      <option value="">เลือกบริษัทขนส่ง</option>
+                      {shippingCarriers.map((carrier) => (
+                        <option key={carrier.carrier_id} value={carrier.carrier_name}>
+                          {carrier.carrier_name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    ลิงก์ติดตามพัสดุ
+                    <input
+                      value={trackingForm.tracking_url}
+                      onChange={(event) => setTrackingForm((current) => ({ ...current, tracking_url: event.target.value }))}
+                      placeholder="https://..."
+                    />
+                    <small>เลขพัสดุจะแสดงเป็นลิงก์นี้ในหน้าของลูกค้า</small>
+                  </label>
+                </div>
               </section>
             </div>
 

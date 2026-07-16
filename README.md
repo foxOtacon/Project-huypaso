@@ -1,16 +1,28 @@
-# React + Vite
+# Village Products
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Migration to Supabase
 
-Currently, two official plugins are available:
+The server now supports Supabase/Postgres via the connection string in the environment file.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+### 1. Add environment variables
+Create a .env file in the project root with:
 
-## React Compiler
+```env
+VITE_API_URL=/api
+SUPABASE_DB_URL=postgresql://postgres:YOUR_PASSWORD@db.YOUR_PROJECT_REF.supabase.co:5432/postgres
+```
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### 2. Apply the schema
+Run the SQL from [server/database/supabase-schema.sql](server/database/supabase-schema.sql) in the Supabase SQL editor.
 
-## Expanding the ESLint configuration
+### 3. Start the backend
+```bash
+cd server
+npm install
+npm run dev
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### Notes
+- The server still uses the same API routes and controller logic.
+- SQL placeholders were converted from MySQL-style ? to PostgreSQL-style $1, $2, etc.
+- The adapter also maps common MySQL error codes to Supabase/Postgres equivalents.

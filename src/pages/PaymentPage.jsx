@@ -1,0 +1,454 @@
+﻿import { useEffect, useMemo, useState } from 'react';
+import {
+  cancelPromptPayOrder,
+  createPromptPayOrder,
+  fetchPromptPayQr,
+  uploadPromptPaySlip,
+} from '../api/checkout';
+import { useRef } from 'react';
+import CustomerNavbar from '../components/CustomerNavbar';
+import { useAuth } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
+import './PaymentPage.css';
+
+function formatPrice(value) {
+  return new Intl.NumberFormat('th-TH', {
+    style: 'currency',
+    currency: 'THB',
+    maximumFractionDigits: 0,
+  }).format(Number(value || 0));
+}
+
+function formatCountdown(seconds) {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  return `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
+}
+
+export default function PaymentPage({ user, onNavigate, onLogout }) {
+  const { token } = useAuth();
+  const { items, totalAmount, clearCart, removeItem } = useCart();
+  const [form, setForm] = useState({
+    shipping_name: user?.full_name || '',
+    shipping_phone: user?.phone || '',
+    shipping_address: user?.address || '',
+  });
+  const [createdOrder, setCreatedOrder] = useState(null);
+  const [promptPayQr, setPromptPayQr] = useState(null);
+  const [secondsLeft, setSecondsLeft] = useState(0);
+  const [slipFile, setSlipFile] = useState(null);
+  const [slipPreview, setSlipPreview] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [completed, setCompleted] = useState(false);
+  const [error, setError] = useState('');
+  const [validationAlert, setValidationAlert] = useState(null);
+  const [cancelAlertOpen, setCancelAlertOpen] = useState(false);
+  const paymentFormRef = useRef(null);
+
+  const canCreateOrder = useMemo(() => {
+    return (
+      form.shipping_name.trim() &&
+      form.shipping_phone.trim() &&
+      form.shipping_address.trim() &&
+      totalAmount >= 20 &&
+      items.length > 0
+    );
+  }, [form, items.length, totalAmount]);
+
+  function updateField(field, value) {
+    setForm((current) => ({ ...current, [field]: value }));
+  }
+
+  async function handleCreateOrder(event) {
+    event.preventDefault();
+    setError('');
+
+    const missingFields = [];
+    if (!form.shipping_phone.trim()) missingFields.push('เบอร์โทร');
+    if (!form.shipping_address.trim()) missingFields.push('ที่อยู่จัดส่ง');
+
+    if (missingFields.length > 0) {
+      setValidationAlert({
+        fields: missingFields,
+        firstField: !form.shipping_phone.trim() ? 'shipping_phone' : 'shipping_address',
+      });
+      return;
+    }
+
+    if (!canCreateOrder) {
+      setError(
+        totalAmount < 20
+          ? 'ยอดชำระผ่าน PromptPay ต้องไม่น้อยกว่า 20 บาท'
+          : 'กรุณากรอกข้อมูลจัดส่งให้ครบถ้วน',
+      );
+      return;
+    }
+
+    const orderItems = items.map((item) => ({
+      product_id: Number(item.product_id),
+      quantity: Number(item.quantity),
+    }));
+
+    if (orderItems.some((item) => !Number.isInteger(item.product_id) || item.product_id <= 0 || !Number.isInteger(item.quantity) || item.quantity <= 0)) {
+      setError('Cart has invalid product data. Please remove the item and add it again.');
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+
+      const order = await createPromptPayOrder(token, {
+        items: orderItems,
+        shipping_name: form.shipping_name.trim(),
+        shipping_phone: form.shipping_phone.trim(),
+        shipping_address: form.shipping_address.trim(),
+      });
+      const qr = await fetchPromptPayQr(order.order_id);
+
+      setCreatedOrder(order);
+      setPromptPayQr(qr);
+      setSecondsLeft(Number(qr.expires_in_seconds || 10 * 60));
+    } catch (err) {
+      if (err.message?.includes('Product not found')) {
+        clearCart();
+        setError('Some products in your cart are no longer available. Please add them again from the products page.');
+        return;
+      }
+
+      setError(err.message || 'ไม่สามารถสร้างคำสั่งซื้อได้');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  function handleSlipChange(event) {
+    const file = event.target.files?.[0] || null;
+    setSlipFile(file);
+    setError('');
+
+    if (slipPreview) {
+      URL.revokeObjectURL(slipPreview);
+    }
+
+    setSlipPreview(file ? URL.createObjectURL(file) : '');
+  }
+
+  async function handleUploadSlip() {
+    setError('');
+
+    if (secondsLeft <= 0) {
+      setError('หมดเวลาชำระเงิน คำสั่งซื้อนี้ถูกยกเลิกแล้ว กรุณาสั่งซื้อใหม่');
+      return;
+    }
+
+    if (!createdOrder || !slipFile) {
+      setError('กรุณาแนบสลิปก่อนส่งตรวจสอบ');
+      return;
+    }
+
+    try {
+      setUploading(true);
+      await uploadPromptPaySlip(token, {
+        orderId: createdOrder.order_id,
+        paymentMethod: 'promptpay',
+        file: slipFile,
+      });
+      clearCart();
+      setCompleted(true);
+    } catch (err) {
+      setError(err.message || 'ไม่สามารถอัปโหลดสลิปได้');
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function handleCancelOrder() {
+    if (!createdOrder || cancelling) return;
+
+    setError('');
+    setCancelling(true);
+
+    try {
+      await cancelPromptPayOrder(token, createdOrder.order_id);
+      setCancelAlertOpen(false);
+      setCreatedOrder(null);
+      setPromptPayQr(null);
+      setSecondsLeft(0);
+      setSlipFile(null);
+
+      if (slipPreview) {
+        URL.revokeObjectURL(slipPreview);
+        setSlipPreview('');
+      }
+
+      onNavigate('/cart');
+    } catch (err) {
+      setCancelAlertOpen(false);
+      setError(err.message || 'ไม่สามารถยกเลิกคำสั่งซื้อได้');
+    } finally {
+      setCancelling(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!createdOrder || completed || secondsLeft <= 0) {
+      return undefined;
+    }
+
+    const timer = window.setInterval(() => {
+      setSecondsLeft((current) => Math.max(0, current - 1));
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [completed, createdOrder, secondsLeft]);
+
+  useEffect(() => {
+    return () => {
+      if (slipPreview) {
+        URL.revokeObjectURL(slipPreview);
+      }
+    };
+  }, [slipPreview]);
+
+  if (completed) {
+    return (
+      <div className="payment-page">
+        <CustomerNavbar user={user} onNavigate={onNavigate} onLogout={onLogout} />
+
+        <main className="payment-success">
+          <section>
+            <p>Payment Submitted</p>
+            <h1>ส่งสลิปเรียบร้อย</h1>
+            <span>คำสั่งซื้อ #{createdOrder.order_id} กำลังรอแอดมินตรวจสอบการชำระเงิน</span>
+            <div className="payment-success-actions">
+              <button type="button" onClick={() => onNavigate('/order-status')}>
+                ดูคำสั่งซื้อของฉัน
+              </button>
+              <button type="button" onClick={() => onNavigate('/products')}>
+                เลือกสินค้าต่อ
+              </button>
+            </div>
+          </section>
+        </main>
+      </div>
+    );
+  }
+
+  return (
+    <div className="payment-page">
+        <CustomerNavbar user={user} onNavigate={onNavigate} onLogout={onLogout} />
+
+      <main className="payment-main">
+        <section className="payment-title">
+          <p>Checkout</p>
+          <h1>ชำระเงิน</h1>
+          <span>สร้าง QR PromptPay แล้วแนบสลิปเพื่อส่งให้แอดมินตรวจสอบ</span>
+        </section>
+
+        {items.length === 0 && !createdOrder ? (
+          <section className="payment-empty">
+            <h2>ไม่มีสินค้าในตะกร้า</h2>
+            <p>กรุณาเลือกสินค้าก่อนชำระเงิน</p>
+            <button type="button" onClick={() => onNavigate('/products')}>
+              ไปเลือกสินค้า
+            </button>
+          </section>
+        ) : (
+          <form ref={paymentFormRef} className="payment-layout" onSubmit={handleCreateOrder}>
+            <section className="payment-card">
+              <h2>ข้อมูลจัดส่ง</h2>
+              <label>
+                ชื่อผู้รับ
+                <input
+                  value={form.shipping_name}
+                  onChange={(event) => updateField('shipping_name', event.target.value)}
+                  placeholder="ชื่อ-นามสกุล"
+                  disabled={Boolean(createdOrder)}
+                />
+              </label>
+              <label>
+                เบอร์โทร
+                <input
+                  name="shipping_phone"
+                  value={form.shipping_phone}
+                  onChange={(event) => updateField('shipping_phone', event.target.value)}
+                  placeholder="เบอร์โทรสำหรับติดต่อ"
+                  disabled={Boolean(createdOrder)}
+                />
+              </label>
+              <label>
+                ที่อยู่จัดส่ง
+                <textarea
+                  name="shipping_address"
+                  value={form.shipping_address}
+                  onChange={(event) => updateField('shipping_address', event.target.value)}
+                  placeholder="บ้านเลขที่ หมู่ ตำบล อำเภอ จังหวัด รหัสไปรษณีย์"
+                  rows="4"
+                  disabled={Boolean(createdOrder)}
+                />
+              </label>
+            </section>
+
+            <section className="payment-card">
+              <h2>PromptPay</h2>
+              <div className="payment-bank-box">
+                <strong>ยอดที่ต้องชำระ {formatPrice(createdOrder?.total_amount || totalAmount)}</strong>
+                <span>PromptPay: 0634126252</span>
+                <span>หลังโอนเงินแล้วแนบสลิปเพื่อส่งตรวจสอบ</span>
+              </div>
+
+              {promptPayQr && (
+                <div className="payment-qr-box">
+                  <img src={promptPayQr.qr_code || promptPayQr.qrCode} alt="PromptPay QR Code" />
+                  <strong>PromptPay 0634126252</strong>
+                  <span>ยอดชำระ {formatPrice(promptPayQr.amount)}</span>
+                  <small>Order ID: {promptPayQr.order_id || promptPayQr.orderId}</small>
+                  <small>
+                    {secondsLeft > 0
+                      ? `กรุณาแนบสลิปภายใน ${formatCountdown(secondsLeft)}`
+                      : 'หมดเวลาชำระเงิน คำสั่งซื้อถูกยกเลิกแล้ว'}
+                  </small>
+                </div>
+              )}
+
+              {createdOrder && (
+                <label>
+                  แนบสลิปโอนเงิน
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg"
+                    onChange={handleSlipChange}
+                    disabled={secondsLeft <= 0}
+                  />
+                </label>
+              )}
+
+              {slipPreview && (
+                <img className="payment-slip-preview" src={slipPreview} alt="ตัวอย่างสลิปโอนเงิน" />
+              )}
+            </section>
+
+            <aside className="payment-summary">
+              <h2>สรุปรายการ</h2>
+              <div className="payment-summary-list">
+                {items.map((item) => (
+                  <div key={item.product_id}>
+                    <span>
+                      {item.product_name}
+                      <small>x {item.quantity}</small>
+                    </span>
+                    <strong>{formatPrice(item.price * item.quantity)}</strong>
+                  </div>
+                ))}
+              </div>
+              <div className="payment-total">
+                <span>ยอดรวม</span>
+                <strong>{formatPrice(createdOrder?.total_amount || totalAmount)}</strong>
+              </div>
+              {totalAmount < 20 && !createdOrder && (
+                <p className="payment-error">ยอดชำระผ่าน PromptPay ต้องไม่น้อยกว่า 20 บาท</p>
+              )}
+              {error && <p className="payment-error">{error}</p>}
+              {createdOrder && secondsLeft <= 0 && (
+                <p className="payment-error">
+                  หมดเวลาชำระเงิน เนื่องจากไม่ได้แนบสลิป คำสั่งซื้อถูกยกเลิกแล้ว
+                </p>
+              )}
+              {!createdOrder ? (
+                <div className="payment-checkout-actions">
+                  <button type="submit" disabled={submitting || items.length === 0}>
+                    {submitting ? 'กำลังสร้าง QR...' : 'สร้าง QR PromptPay'}
+                  </button>
+                  
+                </div>
+              ) : (
+                <div className="payment-summary-actions">
+                  <button
+                    type="button"
+                    onClick={handleUploadSlip}
+                    disabled={!slipFile || uploading || cancelling || secondsLeft <= 0}
+                  >
+                    {uploading ? 'กำลังส่งสลิป...' : 'ส่งสลิปให้ตรวจสอบ'}
+                  </button>
+                  <button
+                    type="button"
+                    className="payment-cancel-order"
+                    onClick={() => setCancelAlertOpen(true)}
+                    disabled={uploading || cancelling}
+                  >
+                    ยกเลิกคำสั่งซื้อ
+                  </button>
+                </div>
+              )}
+            </aside>
+          </form>
+        )}
+      </main>
+
+      {validationAlert && (
+        <div className="payment-alert-backdrop" role="presentation" onMouseDown={() => setValidationAlert(null)}>
+          <section
+            className="payment-alert-dialog"
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="payment-alert-title"
+            aria-describedby="payment-alert-description"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <div className="payment-alert-icon" aria-hidden="true">!</div>
+            <div className="payment-alert-content">
+              <p>ข้อมูลยังไม่ครบ</p>
+              <h2 id="payment-alert-title">กรุณากรอกข้อมูลจัดส่ง</h2>
+              <div id="payment-alert-description">
+                {validationAlert.fields.map((field) => <span key={field}>✓ {field}</span>)}
+              </div>
+            </div>
+            <button
+              type="button"
+              autoFocus
+              onClick={() => {
+                const fieldName = validationAlert.firstField;
+                setValidationAlert(null);
+                window.requestAnimationFrame(() => paymentFormRef.current?.elements[fieldName]?.focus());
+              }}
+            >
+              กลับไปกรอกข้อมูล
+            </button>
+          </section>
+        </div>
+      )}
+
+      {cancelAlertOpen && (
+        <div className="payment-alert-backdrop" role="presentation" onMouseDown={() => !cancelling && setCancelAlertOpen(false)}>
+          <section
+            className="payment-alert-dialog payment-cancel-dialog"
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="payment-cancel-title"
+            aria-describedby="payment-cancel-description"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <div className="payment-alert-icon payment-cancel-icon" aria-hidden="true">!</div>
+            <div className="payment-alert-content">
+              <p>ยืนยันการยกเลิก</p>
+              <h2 id="payment-cancel-title">ต้องการยกเลิกคำสั่งซื้อนี้หรือไม่?</h2>
+              <div id="payment-cancel-description" className="payment-cancel-description">
+                ระบบจะคืนสินค้าเข้าสต็อก และพาคุณกลับไปแก้ไขสินค้าในตะกร้า
+              </div>
+            </div>
+            <div className="payment-cancel-actions">
+              <button type="button" onClick={() => setCancelAlertOpen(false)} disabled={cancelling}>
+                ไม่ยกเลิก
+              </button>
+              <button type="button" autoFocus onClick={handleCancelOrder} disabled={cancelling}>
+                {cancelling ? 'กำลังยกเลิก...' : 'ยืนยันยกเลิก'}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+    </div>
+  );
+}

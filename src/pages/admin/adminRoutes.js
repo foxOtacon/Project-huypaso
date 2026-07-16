@@ -4,6 +4,7 @@ const ADMIN_ROUTES = new Set([
   '/admin/orders',
   '/admin/transactions',
   '/admin/products',
+  '/admin/news',
   '/admin/users',
   '/admin/analytics',
 ]);

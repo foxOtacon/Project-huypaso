@@ -1,4 +1,4 @@
-CREATE DATABASE IF NOT EXISTS village_products;
+﻿CREATE DATABASE IF NOT EXISTS village_products;
 USE village_products;
 
 CREATE TABLE users (
@@ -79,6 +79,9 @@ CREATE TABLE orders (
     shipping_name VARCHAR(150),
     shipping_phone VARCHAR(20),
     shipping_address TEXT,
+    tracking_number VARCHAR(100),
+    shipping_carrier VARCHAR(100),
+    tracking_url VARCHAR(255),
     order_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_orders_user
     FOREIGN KEY (user_id)
@@ -120,6 +123,22 @@ CREATE TABLE payments (
     REFERENCES orders(order_id)
 );
 
+CREATE TABLE news (
+    news_id INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(200) NOT NULL,
+    summary TEXT,
+    content TEXT NOT NULL,
+    image_url VARCHAR(255),
+    category VARCHAR(100),
+    status ENUM('draft','published') NOT NULL DEFAULT 'draft',
+    created_by INT,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_news_user
+    FOREIGN KEY (created_by)
+    REFERENCES users(user_id)
+);
+
 CREATE TABLE sales_prediction (
     prediction_id INT AUTO_INCREMENT PRIMARY KEY,
     product_id INT NOT NULL,
@@ -143,4 +162,13 @@ CREATE TABLE user_product_views (
     CONSTRAINT fk_views_product
     FOREIGN KEY (product_id)
     REFERENCES products(product_id)
+);
+
+CREATE TABLE IF NOT EXISTS shipping_carriers (
+    carrier_id INT AUTO_INCREMENT PRIMARY KEY,
+    carrier_name VARCHAR(120) NOT NULL UNIQUE,
+    tracking_url VARCHAR(255),
+    description TEXT,
+    status ENUM('active','inactive') NOT NULL DEFAULT 'active',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

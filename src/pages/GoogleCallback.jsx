@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { queueGoogleProfileReminder } from '../utils/googleProfileReminder';
 
 export default function GoogleCallback({ onNavigate }) {
   const { loginSuccess } = useAuth();
@@ -25,6 +26,7 @@ export default function GoogleCallback({ onNavigate }) {
     try {
       const user = JSON.parse(decodeURIComponent(encodedUser));
       loginSuccess({ token, user });
+      queueGoogleProfileReminder(user);
       onNavigate(user.role === 'admin' ? '/admin' : '/');
     } catch {
       window.setTimeout(() => onNavigate('/login'), 1200);

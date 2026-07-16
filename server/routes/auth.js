@@ -137,6 +137,7 @@ router.post(
   "/register",
   asyncHandler(async (req, res) => {
     const { full_name, email, password, phone, address } = req.body;
+    const normalizedEmail = String(email || "").trim().toLowerCase();
 
     if (!full_name || !email || !password) {
       res.status(400).json({
@@ -154,7 +155,7 @@ router.post(
       return;
     }
 
-    const existingUsers = await query("SELECT user_id FROM users WHERE email = ?", [email]);
+    const existingUsers = await query("SELECT user_id FROM users WHERE LOWER(TRIM(email)) = ?", [normalizedEmail]);
 
     if (existingUsers.length > 0) {
       res.status(409).json({ success: false, message: "Email already registered" });
@@ -166,7 +167,7 @@ router.post(
     const result = await query(
       `INSERT INTO users (full_name, email, password_hash, role, phone, address, status)
        VALUES (?, ?, ?, 'customer', ?, ?, 'active')`,
-      [full_name, email, password_hash, phone || null, address || null]
+      [String(full_name).trim(), normalizedEmail, password_hash, phone || null, address || null]
     );
 
     const rows = await query("SELECT * FROM users WHERE user_id = ?", [result.insertId]);
@@ -183,6 +184,7 @@ router.post(
   "/login",
   asyncHandler(async (req, res) => {
     const { email, password } = req.body;
+    const normalizedEmail = String(email || "").trim().toLowerCase();
 
     if (!email || !password) {
       res.status(400).json({
@@ -192,7 +194,7 @@ router.post(
       return;
     }
 
-    const rows = await query("SELECT * FROM users WHERE email = ?", [email]);
+    const rows = await query("SELECT * FROM users WHERE LOWER(TRIM(email)) = ?", [normalizedEmail]);
 
     if (rows.length === 0) {
       res.status(401).json({ success: false, message: "Invalid email or password" });

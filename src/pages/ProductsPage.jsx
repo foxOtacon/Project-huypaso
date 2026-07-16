@@ -1,0 +1,488 @@
+﻿import { useEffect, useMemo, useRef, useState } from 'react';
+import { fetchCatalogCategories, fetchCatalogProducts } from '../api/catalog';
+import BrandLogo from '../components/BrandLogo';
+import { useCart } from '../context/CartContext';
+import { isCustomerUser } from '../utils/roles';
+import './Home.css';
+import './ProductsPage.css';
+
+const fallbackImages = [
+  'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=900&q=80',
+  'https://images.unsplash.com/photo-1464226184884-fa280b87c399?auto=format&fit=crop&w=900&q=80',
+  'https://images.unsplash.com/photo-1518843875459-f738682238a6?auto=format&fit=crop&w=900&q=80',
+  'https://images.unsplash.com/photo-1506807803488-8eafc15316c7?auto=format&fit=crop&w=900&q=80',
+];
+
+function getImageUrl(product, index) {
+  const imageUrl = product.image_url?.trim();
+
+  if (!imageUrl) {
+    return fallbackImages[index % fallbackImages.length];
+  }
+
+  if (imageUrl.startsWith('http') || imageUrl.startsWith('/')) {
+    return imageUrl;
+  }
+
+  return `/${imageUrl}`;
+}
+
+function formatPrice(value) {
+  const number = Number(value || 0);
+  return new Intl.NumberFormat('th-TH', {
+    style: 'currency',
+    currency: 'THB',
+    maximumFractionDigits: 0,
+  }).format(number);
+}
+
+function sortProducts(products, sortBy) {
+  const sorted = [...products];
+
+  if (sortBy === 'price-low') {
+    return sorted.sort((a, b) => Number(a.price || 0) - Number(b.price || 0));
+  }
+
+  if (sortBy === 'price-high') {
+    return sorted.sort((a, b) => Number(b.price || 0) - Number(a.price || 0));
+  }
+
+  if (sortBy === 'name') {
+    return sorted.sort((a, b) =>
+      String(a.product_name || '').localeCompare(String(b.product_name || ''), 'th'),
+    );
+  }
+
+  return sorted.sort((a, b) => Number(b.product_id || 0) - Number(a.product_id || 0));
+}
+
+function ProfileMenuIcon({ name }) {
+  if (name === 'profile') {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" />
+        <path d="M4.5 20a7.5 7.5 0 0 1 15 0" />
+      </svg>
+    );
+  }
+
+  if (name === 'card') {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M4 7.5A2.5 2.5 0 0 1 6.5 5h11A2.5 2.5 0 0 1 20 7.5v9a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 16.5v-9Z" />
+        <path d="M4 9h16M7 15h4" />
+      </svg>
+    );
+  }
+
+  if (name === 'box') {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z" />
+        <path d="m4.5 8 7.5 4 7.5-4M12 12v8.5" />
+      </svg>
+    );
+  }
+
+  if (name === 'receipt') {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M7 3h10v18l-2-1.3-2 1.3-2-1.3-2 1.3-2-1.3V3Z" />
+        <path d="M9.5 8h5M9.5 12h5M9.5 16h3" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M15.5 8.5 19 12l-3.5 3.5M19 12H9" />
+      <path d="M12 5H6.5A2.5 2.5 0 0 0 4 7.5v9A2.5 2.5 0 0 0 6.5 19H12" />
+    </svg>
+  );
+}
+
+export default function ProductsPage({ user, onNavigate, onLogout }) {
+  const { addItem, itemCount } = useCart();
+  const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [search, setSearch] = useState('');
+  const [categoryId, setCategoryId] = useState('all');
+  const [sortBy, setSortBy] = useState('newest');
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [addedProductId, setAddedProductId] = useState(null);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const profileRef = useRef(null);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadCatalog() {
+      try {
+        setLoading(true);
+        setError('');
+        const [productRows, categoryRows] = await Promise.all([
+          fetchCatalogProducts(),
+          fetchCatalogCategories(),
+        ]);
+
+        if (!active) return;
+        setProducts(productRows);
+        setCategories(categoryRows);
+      } catch (err) {
+        if (!active) return;
+        setError(err.message || 'ไม่สามารถโหลดข้อมูลสินค้าได้');
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+
+    loadCatalog();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!profileOpen) return undefined;
+
+    function handlePointerDown(event) {
+      if (!profileRef.current?.contains(event.target)) {
+        setProfileOpen(false);
+      }
+    }
+
+    function handleKeyDown(event) {
+      if (event.key === 'Escape') {
+        setProfileOpen(false);
+        setSelectedProduct(null);
+      }
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [profileOpen]);
+
+  const categoryById = useMemo(() => {
+    return categories.reduce((map, category) => {
+      map[String(category.category_id)] = category.category_name;
+      return map;
+    }, {});
+  }, [categories]);
+
+  const visibleProducts = useMemo(() => {
+    const keyword = search.trim().toLowerCase();
+
+    const filtered = products.filter((product) => {
+      const matchesCategory =
+        categoryId === 'all' || String(product.category_id) === String(categoryId);
+      const haystack = [
+        product.product_name,
+        product.description,
+        product.production_source,
+        categoryById[String(product.category_id)],
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+
+      return matchesCategory && (!keyword || haystack.includes(keyword));
+    });
+
+    return sortProducts(filtered, sortBy);
+  }, [products, categoryId, search, sortBy, categoryById]);
+
+  const profileInitial = user?.full_name?.trim()?.charAt(0)?.toUpperCase() || 'U';
+  const isCustomer = isCustomerUser(user);
+  const profileMenuItems = [
+    { label: 'การสั่งซื้อของฉัน', path: '/order-status', icon: 'box' },
+    { label: 'บัญชีของฉัน', path: '/profile', icon: 'profile' },
+  ];
+
+  function goToProfilePage(path) {
+    setProfileOpen(false);
+    onNavigate(path);
+  }
+
+  function handleAddToCart(product) {
+    if (!isCustomerUser(user)) {
+      onNavigate('/login');
+      return;
+    }
+
+    addItem(product, 1);
+    setAddedProductId(product.product_id);
+    window.setTimeout(() => setAddedProductId(null), 1300);
+  }
+
+  function getProductCategoryName(product) {
+    return categoryById[String(product.category_id)] || 'สินค้าเกษตร';
+  }
+
+  return (
+    <div className="catalog-page">
+      <header className="site-header">
+        <div className="site-shell nav-shell">
+          <button type="button" className="brand-link" onClick={() => onNavigate('/')}>
+            <BrandLogo />
+            ห้วยหยวกปากโซ
+          </button>
+
+          <nav className="main-nav" aria-label="เมนูหลัก">
+            <button type="button" onClick={() => onNavigate('/')}>หน้าหลัก</button>
+            <button type="button" className="active">สินค้า</button>
+            <button type="button" onClick={() => onNavigate('/knowledge')}>ความรู้</button>
+            <button type="button" onClick={() => onNavigate('/')}>ข่าว</button>
+            <button type="button" onClick={() => onNavigate('/')}>ติดต่อ</button>
+          </nav>
+
+          <div className="account-actions">
+            {isCustomer && (
+              <button type="button" className="home-cart-button" onClick={() => onNavigate('/cart')}>
+                ตะกร้า
+                <span>{itemCount}</span>
+              </button>
+            )}
+
+            {user ? (
+              <div className="profile-menu" ref={profileRef}>
+                <button
+                  type="button"
+                  className="profile-trigger"
+                  aria-haspopup="menu"
+                  aria-expanded={profileOpen}
+                  onClick={() => setProfileOpen((open) => !open)}
+                >
+                  <span className="profile-avatar" aria-hidden="true">
+                    {profileInitial}
+                  </span>
+                  <span className="profile-name">{user.full_name}</span>
+                  <svg className="profile-chevron" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="m7 10 5 5 5-5" />
+                  </svg>
+                </button>
+
+                {profileOpen && (
+                  <div className="profile-dropdown" role="menu">
+                    <div className="profile-dropdown-head">
+                      <span className="profile-avatar profile-avatar-large" aria-hidden="true">
+                        {profileInitial}
+                      </span>
+                      <div>
+                        <p>สวัสดี</p>
+                        <strong>{user.full_name}</strong>
+                      </div>
+                    </div>
+
+                    <div className="profile-dropdown-list">
+                      {profileMenuItems.map((item) => (
+                        <button
+                          type="button"
+                          role="menuitem"
+                          key={item.path}
+                          onClick={() => goToProfilePage(item.path)}
+                        >
+                          <span>{item.label}</span>
+                        </button>
+                      ))}
+                    </div>
+
+                    <button
+                      type="button"
+                      className="profile-logout"
+                      role="menuitem"
+                      onClick={() => {
+                        setProfileOpen(false);
+                        onLogout();
+                      }}
+                    >
+                      <span>ออกจากระบบ</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <>
+                <button type="button" className="login-button" onClick={() => onNavigate('/login')}>
+                  เข้าสู่ระบบ
+                </button>
+                <button type="button" className="signup-button" onClick={() => onNavigate('/register')}>
+                  สมัครสมาชิก
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      </header>
+
+      <main className="catalog-main">
+        <section className="catalog-shell catalog-hero">
+          <h1>สินค้าทั้งหมด</h1>
+          <p>เลือกซื้อสินค้าเกษตรจากชุมชนห้วยหยวกปากโซ</p>
+
+          <div className="catalog-filters" aria-label="ค้นหาและกรองสินค้า">
+            <label>
+              <span>ค้นหา</span>
+              <input
+                type="search"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="ค้นหาสินค้า..."
+              />
+            </label>
+
+            <label>
+              <span>ประเภทสินค้า</span>
+              <select value={categoryId} onChange={(event) => setCategoryId(event.target.value)}>
+                <option value="all">ทั้งหมด</option>
+                {categories.map((category) => (
+                  <option key={category.category_id} value={category.category_id}>
+                    {category.category_name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              <span>เรียงตาม</span>
+              <select value={sortBy} onChange={(event) => setSortBy(event.target.value)}>
+                <option value="newest">ใหม่ล่าสุด</option>
+                <option value="price-low">ราคาต่ำสุด</option>
+                <option value="price-high">ราคาสูงสุด</option>
+                <option value="name">ชื่อสินค้า</option>
+              </select>
+            </label>
+          </div>
+
+          {loading && <div className="catalog-state">กำลังโหลดสินค้า...</div>}
+
+          {!loading && error && (
+            <div className="catalog-state catalog-error">
+              <p>{error}</p>
+              <button type="button" onClick={() => window.location.reload()}>
+                โหลดใหม่
+              </button>
+            </div>
+          )}
+
+          {!loading && !error && visibleProducts.length === 0 && (
+            <div className="catalog-state">ไม่พบสินค้าที่ตรงกับเงื่อนไข</div>
+          )}
+
+          {!loading && !error && visibleProducts.length > 0 && (
+            <div className="catalog-grid">
+              {visibleProducts.map((product, index) => {
+                const categoryName = getProductCategoryName(product);
+                const stock = Number(product.stock_quantity || 0);
+
+                return (
+                  <article className="catalog-card" key={product.product_id}>
+                    <img src={getImageUrl(product, index)} alt={product.product_name} />
+                    <div className="catalog-card-body">
+                      <div className="catalog-card-meta">
+                        <span>{categoryName}</span>
+                        <span>{stock > 0 ? 'พร้อมส่ง' : 'หมด'}</span>
+                      </div>
+                      <h2>{product.product_name}</h2>
+                      <p className="catalog-card-description">
+                        {product.description || 'ผลิตภัณฑ์คุณภาพจากชุมชนห้วยหยวกปากโซ'}
+                      </p>
+                      <button
+                        type="button"
+                        className="catalog-detail-button"
+                        onClick={() => setSelectedProduct({ ...product, imageUrl: getImageUrl(product, index) })}
+                      >
+                        ดูเพิ่มเติม
+                      </button>
+                      <div className="catalog-card-footer">
+                        <strong>
+                          {formatPrice(product.price)}
+                          <small> /{product.unit || 'หน่วย'}</small>
+                        </strong>
+                        <button
+                          type="button"
+                          disabled={stock <= 0}
+                          onClick={() => handleAddToCart(product)}
+                        >
+                          {addedProductId === product.product_id ? 'เพิ่มแล้ว' : 'ใส่ตะกร้า'}
+                        </button>
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      </main>
+
+      {selectedProduct && (
+        <div className="catalog-modal-backdrop" role="presentation" onMouseDown={() => setSelectedProduct(null)}>
+          <section
+            className="catalog-detail-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="catalog-detail-title"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="catalog-modal-close"
+              aria-label="ปิดรายละเอียดสินค้า"
+              onClick={() => setSelectedProduct(null)}
+            >
+              ×
+            </button>
+
+            <img src={selectedProduct.imageUrl} alt={selectedProduct.product_name} />
+
+            <div className="catalog-detail-content">
+              <div className="catalog-card-meta">
+                <span>{getProductCategoryName(selectedProduct)}</span>
+                <span>{Number(selectedProduct.stock_quantity || 0) > 0 ? 'พร้อมส่ง' : 'หมด'}</span>
+              </div>
+
+              <h2 id="catalog-detail-title">{selectedProduct.product_name}</h2>
+              <p>{selectedProduct.description || 'ผลิตภัณฑ์คุณภาพจากชุมชนห้วยหยวกปากโซ'}</p>
+
+              {selectedProduct.production_source && (
+                <div className="catalog-detail-block">
+                  <strong>แหล่งผลิต</strong>
+                  <span>{selectedProduct.production_source}</span>
+                </div>
+              )}
+
+              <div className="catalog-detail-stats">
+                <span>
+                  <strong>{formatPrice(selectedProduct.price)}</strong>
+                  <small>/{selectedProduct.unit || 'หน่วย'}</small>
+                </span>
+                <span>
+                  <strong>{Number(selectedProduct.stock_quantity || 0)}</strong>
+                  <small>คงเหลือ</small>
+                </span>
+              </div>
+
+              <button
+                type="button"
+                className="catalog-detail-cart"
+                disabled={Number(selectedProduct.stock_quantity || 0) <= 0}
+                onClick={() => handleAddToCart(selectedProduct)}
+              >
+                {addedProductId === selectedProduct.product_id ? 'เพิ่มแล้ว' : 'ใส่ตะกร้า'}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+    </div>
+  );
+}
+

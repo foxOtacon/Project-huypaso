@@ -25,12 +25,13 @@ export function getStatusLabel(status) {
 
 export function computeDashboardStats(orders, users) {
   const customers = users.filter((u) => u.role === 'customer');
-  const totalRevenue = orders.reduce((sum, o) => sum + Number(o.total_amount || 0), 0);
+  const revenueOrders = orders.filter((o) => o.order_status !== 'cancelled');
+  const totalRevenue = revenueOrders.reduce((sum, o) => sum + Number(o.total_amount || 0), 0);
   const pendingOrders = orders.filter((o) => o.order_status === 'pending');
 
   const currentYear = new Date().getFullYear();
   const monthlyRevenue = THAI_MONTHS.map((label, index) => {
-    const total = orders
+    const total = revenueOrders
       .filter((o) => {
         const d = new Date(o.order_date);
         return d.getFullYear() === currentYear && d.getMonth() === index;

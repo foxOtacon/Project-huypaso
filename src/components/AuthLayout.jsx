@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import BrandLogo from './BrandLogo';
 import '../styles/auth.css';
 
 export default function AuthLayout({
@@ -49,6 +50,7 @@ export default function AuthLayout({
         )}
 
         <div className="auth-brand">
+          <BrandLogo className="brand-logo-lg" />
           <div>
             <p className="auth-brand-name">สินค้าชุมชน</p>
             <p className="auth-brand-tagline">Village Products</p>

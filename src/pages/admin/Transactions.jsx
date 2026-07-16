@@ -1,11 +1,13 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import {
   fetchOrderItems,
   fetchOrders,
+  approveAdminPayment,
+  fetchAdminPayments,
   fetchPayments,
   fetchProducts,
   fetchUsers,
-  updatePayment,
+  rejectAdminPayment,
 } from '../../api/admin';
 import { formatCurrency } from '../../utils/dashboardStats';
 
@@ -47,36 +49,37 @@ function formatDate(dateValue) {
 }
 
 function buildTransactionRows(payments, orders, users, orderItems, products) {
-  const orderMap = new Map(orders.map((order) => [order.order_id, order]));
-  const userMap = new Map(users.map((user) => [user.user_id, user]));
-  const productMap = new Map(products.map((product) => [product.product_id, product]));
+  const orderMap = new Map(orders.map((order) => [Number(order.order_id), order]));
+  const userMap = new Map(users.map((user) => [Number(user.user_id), user]));
+  const productMap = new Map(products.map((product) => [Number(product.product_id), product]));
 
   const itemsByOrder = orderItems.reduce((grouped, item) => {
-    const list = grouped.get(item.order_id) || [];
+    const orderId = Number(item.order_id);
+    const list = grouped.get(orderId) || [];
     list.push({
       ...item,
-      product: productMap.get(item.product_id),
+      product: productMap.get(Number(item.product_id)),
     });
-    grouped.set(item.order_id, list);
+    grouped.set(orderId, list);
     return grouped;
   }, new Map());
 
   return [...payments]
     .sort((a, b) => new Date(b.payment_date || 0) - new Date(a.payment_date || 0))
     .map((payment) => {
-      const order = orderMap.get(payment.order_id);
-      const customer = order ? userMap.get(order.user_id) : null;
-      const items = order ? itemsByOrder.get(order.order_id) || [] : [];
+      const order = orderMap.get(Number(payment.order_id)) || payment;
+      const customer = order ? userMap.get(Number(order.user_id)) : null;
+      const items = order ? itemsByOrder.get(Number(order.order_id)) || [] : [];
 
       return {
         ...payment,
         order,
         items,
         code: payment.transaction_ref || `TXN${String(payment.payment_id).padStart(4, '0')}`,
-        customerName: order?.shipping_name || customer?.full_name || 'ไม่พบข้อมูลลูกค้า',
-        customerPhone: order?.shipping_phone || customer?.phone || '-',
-        customerEmail: customer?.email || '-',
-        shippingAddress: order?.shipping_address || customer?.address || '-',
+        customerName: order?.shipping_name || payment.full_name || customer?.full_name || 'ไม่พบข้อมูลลูกค้า',
+        customerPhone: order?.shipping_phone || payment.phone || customer?.phone || '-',
+        customerEmail: payment.email || customer?.email || '-',
+        shippingAddress: order?.shipping_address || payment.shipping_address || customer?.address || '-',
         methodLabel: PAYMENT_METHOD_LABELS[payment.payment_method] || payment.payment_method,
         statusLabel: PAYMENT_STATUS_LABELS[payment.payment_status] || payment.payment_status,
       };
@@ -99,7 +102,7 @@ export default function Transactions() {
     async function loadTransactions() {
       try {
         const [paymentsData, ordersData, usersData, orderItemsData, productsData] = await Promise.all([
-          fetchPayments(),
+          fetchAdminPayments().catch(() => fetchPayments()),
           fetchOrders(),
           fetchUsers(),
           fetchOrderItems(),
@@ -151,9 +154,10 @@ export default function Transactions() {
     setError('');
 
     try {
-      const updated = await updatePayment(selectedTransaction.payment_id, {
-        payment_status: status,
-      });
+      const updated =
+        status === 'approved'
+          ? await approveAdminPayment(selectedTransaction.payment_id)
+          : await rejectAdminPayment(selectedTransaction.payment_id);
 
       setPayments((current) =>
         current.map((payment) =>
@@ -234,6 +238,7 @@ export default function Transactions() {
                 <th>เบอร์โทร</th>
                 <th>ยอดเงิน</th>
                 <th>ช่องทาง</th>
+                <th>สลิป</th>
                 <th>สถานะ</th>
                 <th>วันที่</th>
                 <th>การจัดการ</th>
@@ -242,7 +247,7 @@ export default function Transactions() {
             <tbody>
               {filteredRows.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="admin-table-empty">
+                  <td colSpan={9} className="admin-table-empty">
                     ไม่พบธุรกรรมที่ตรงกับเงื่อนไข
                   </td>
                 </tr>
@@ -257,6 +262,15 @@ export default function Transactions() {
                       <span className={`payment-method-badge payment-method-${transaction.payment_method}`}>
                         {transaction.methodLabel}
                       </span>
+                    </td>
+                    <td>
+                      {transaction.slip_image ? (
+                        <a className="transactions-slip-link" href={transaction.slip_image} target="_blank" rel="noreferrer">
+                          เปิดสลิป
+                        </a>
+                      ) : (
+                        '-'
+                      )}
                     </td>
                     <td>
                       <span className={`payment-status-badge payment-status-${transaction.payment_status}`}>
