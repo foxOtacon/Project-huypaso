@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Pagination from '../../components/Pagination';
 import usePagination from '../../hooks/usePagination';
 import {
@@ -53,7 +53,7 @@ function fileToDataUrl(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result);
-    reader.onerror = () => reject(new Error('à¹„à¸¡à¹ˆà¸ªà¸²à¸¡à¸²à¸£à¸–à¸­à¹ˆà¸²à¸™à¹„à¸Ÿà¸¥à¹Œà¸£à¸¹à¸›à¸ à¸²à¸žà¹„à¸”à¹‰'));
+    reader.onerror = () => reject(new Error('ไม่สามารถอ่านไฟล์รูปภาพได้'));
     reader.readAsDataURL(file);
   });
 }
@@ -203,7 +203,7 @@ export default function Products({ user }) {
   };
 
   const handleDelete = async (product) => {
-    const confirmed = window.confirm(`à¸¥à¸šà¸ªà¸´à¸™à¸„à¹‰à¸² "${product.product_name}" à¸«à¸£à¸·à¸­à¹„à¸¡à¹ˆ?`);
+    const confirmed = window.confirm(`ลบสินค้า "${product.product_name}" หรือไม่?`);
     if (!confirmed) return;
 
     setError('');
@@ -220,7 +220,7 @@ export default function Products({ user }) {
   const pagination = usePagination(filteredProducts, 10, [filters]);
 
   if (loading) {
-    return <div className="admin-loading">à¸à¸³à¸¥à¸±à¸‡à¹‚à¸«à¸¥à¸”à¸ªà¸´à¸™à¸„à¹‰à¸²...</div>;
+    return <div className="admin-loading">กำลังโหลดสินค้า...</div>;
   }
 
   if (error && products.length === 0) {
@@ -235,14 +235,14 @@ export default function Products({ user }) {
         <input
           type="search"
           value={filters.search}
-          placeholder="à¸„à¹‰à¸™à¸«à¸² (à¸Šà¸·à¹ˆà¸­à¸ªà¸´à¸™à¸„à¹‰à¸², à¹à¸«à¸¥à¹ˆà¸‡à¸œà¸¥à¸´à¸•)..."
+          placeholder="ค้นหา (ชื่อสินค้า, แหล่งผลิต)..."
           onChange={(event) => setFilters((current) => ({ ...current, search: event.target.value }))}
         />
         <select
           value={filters.category}
           onChange={(event) => setFilters((current) => ({ ...current, category: event.target.value }))}
         >
-          <option value="all">à¸—à¸¸à¸à¸«à¸¡à¸§à¸”à¸«à¸¡à¸¹à¹ˆ</option>
+          <option value="all">ทุกหมวดหมู่</option>
           {categories.map((category) => (
             <option key={category.category_id} value={category.category_id}>
               {category.category_name}
@@ -253,12 +253,12 @@ export default function Products({ user }) {
           value={filters.stock}
           onChange={(event) => setFilters((current) => ({ ...current, stock: event.target.value }))}
         >
-          <option value="all">à¸—à¸¸à¸à¸ªà¸–à¸²à¸™à¸°</option>
-          <option value="available">à¸¡à¸µà¸ªà¸´à¸™à¸„à¹‰à¸²</option>
-          <option value="empty">à¸«à¸¡à¸”</option>
+          <option value="all">ทุกสถานะ</option>
+          <option value="available">มีสินค้า</option>
+          <option value="empty">หมด</option>
         </select>
         <button type="button" onClick={openCreateForm}>
-          à¹€à¸žà¸´à¹ˆà¸¡à¸ªà¸´à¸™à¸„à¹‰à¸²
+          เพิ่มสินค้า
         </button>
       </section>
 
@@ -267,21 +267,21 @@ export default function Products({ user }) {
           <table className="admin-table products-table">
             <thead>
               <tr>
-                <th>à¸¥à¸³à¸”à¸±à¸š</th>
-                <th>à¸ªà¸´à¸™à¸„à¹‰à¸²</th>
-                <th>à¸«à¸¡à¸§à¸”à¸«à¸¡à¸¹à¹ˆ</th>
-                <th>à¸£à¸²à¸„à¸²</th>
-                <th>à¸«à¸™à¹ˆà¸§à¸¢</th>
-                <th>à¸„à¸‡à¹€à¸«à¸¥à¸·à¸­</th>
-                <th>à¸ªà¸–à¸²à¸™à¸°</th>
-                <th>à¸à¸²à¸£à¸ˆà¸±à¸”à¸à¸²à¸£</th>
+                <th>ลำดับ</th>
+                <th>สินค้า</th>
+                <th>หมวดหมู่</th>
+                <th>ราคา</th>
+                <th>หน่วย</th>
+                <th>คงเหลือ</th>
+                <th>สถานะ</th>
+                <th>การจัดการ</th>
               </tr>
             </thead>
             <tbody>
               {filteredProducts.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="admin-table-empty">
-                    à¹„à¸¡à¹ˆà¸žà¸šà¸ªà¸´à¸™à¸„à¹‰à¸²
+                    ไม่พบสินค้า
                   </td>
                 </tr>
               ) : (
@@ -309,16 +309,16 @@ export default function Products({ user }) {
                       <td>{stock.toLocaleString('th-TH')}</td>
                       <td>
                         <span className={`product-stock-badge ${stock > 0 ? 'available' : 'empty'}`}>
-                          {stock > 0 ? 'à¸¡à¸µà¸ªà¸´à¸™à¸„à¹‰à¸²' : 'à¸«à¸¡à¸”'}
+                          {stock > 0 ? 'มีสินค้า' : 'หมด'}
                         </span>
                       </td>
                       <td>
                         <div className="products-actions">
                           <button type="button" className="products-edit-button" onClick={() => openEditForm(product)}>
-                            à¹à¸à¹‰à¹„à¸‚
+                            แก้ไข
                           </button>
                           <button type="button" className="products-delete-button" onClick={() => handleDelete(product)}>
-                            à¸¥à¸š
+                            ลบ
                           </button>
                         </div>
                       </td>
@@ -336,21 +336,21 @@ export default function Products({ user }) {
         <div className="products-modal-backdrop" role="presentation" onMouseDown={closeForm}>
           <form className="products-modal" onSubmit={handleSubmit} onMouseDown={(event) => event.stopPropagation()}>
             <header className="products-modal-header">
-              <h2>{editingProduct ? 'à¹à¸à¹‰à¹„à¸‚à¸ªà¸´à¸™à¸„à¹‰à¸²' : 'à¹€à¸žà¸´à¹ˆà¸¡à¸ªà¸´à¸™à¸„à¹‰à¸²'}</h2>
-              <button type="button" aria-label="à¸›à¸´à¸”" onClick={closeForm}>
-                Ã—
+              <h2>{editingProduct ? 'แก้ไขสินค้า' : 'เพิ่มสินค้า'}</h2>
+              <button type="button" aria-label="ปิด" onClick={closeForm}>
+                ×
               </button>
             </header>
 
             <div className="products-form-grid">
               <label>
-                à¸Šà¸·à¹ˆà¸­à¸ªà¸´à¸™à¸„à¹‰à¸²
+                ชื่อสินค้า
                 <input value={form.product_name} onChange={(event) => handleChange('product_name', event.target.value)} required />
               </label>
               <label>
-                à¸«à¸¡à¸§à¸”à¸«à¸¡à¸¹à¹ˆ
+                หมวดหมู่
                 <select value={form.category_id} onChange={(event) => handleChange('category_id', event.target.value)} required>
-                  <option value="">à¹€à¸¥à¸·à¸­à¸à¸«à¸¡à¸§à¸”à¸«à¸¡à¸¹à¹ˆ</option>
+                  <option value="">เลือกหมวดหมู่</option>
                   {categories.map((category) => (
                     <option key={category.category_id} value={category.category_id}>
                       {category.category_name}
@@ -359,35 +359,35 @@ export default function Products({ user }) {
                 </select>
               </label>
               <label>
-                à¸£à¸²à¸„à¸²
+                ราคา
                 <input type="number" min="0" step="0.01" value={form.price} onChange={(event) => handleChange('price', event.target.value)} required />
               </label>
               <label>
-                à¸«à¸™à¹ˆà¸§à¸¢
+                หน่วย
                 <input value={form.unit} onChange={(event) => handleChange('unit', event.target.value)} required />
               </label>
               <label>
-                à¸ˆà¸³à¸™à¸§à¸™à¸„à¸‡à¹€à¸«à¸¥à¸·à¸­
+                จำนวนคงเหลือ
                 <input type="number" min="0" value={form.stock_quantity} onChange={(event) => handleChange('stock_quantity', event.target.value)} />
               </label>
               <label>
-                à¹à¸«à¸¥à¹ˆà¸‡à¸œà¸¥à¸´à¸•
+                แหล่งผลิต
                 <input value={form.production_source} onChange={(event) => handleChange('production_source', event.target.value)} />
               </label>
               <label>
-                à¸§à¸±à¸™à¸—à¸µà¹ˆà¸›à¸¥à¸¹à¸
+                วันที่ปลูก
                 <input type="date" value={form.planting_date} onChange={(event) => handleChange('planting_date', event.target.value)} />
               </label>
               <label>
-                à¸§à¸±à¸™à¸—à¸µà¹ˆà¹€à¸à¹‡à¸šà¹€à¸à¸µà¹ˆà¸¢à¸§
+                วันที่เก็บเกี่ยว
                 <input type="date" value={form.harvest_date} onChange={(event) => handleChange('harvest_date', event.target.value)} />
               </label>
               <label className="products-form-wide">
-                à¸£à¸¹à¸›à¸ à¸²à¸ž URL
+                รูปภาพ URL
                 <input value={form.image_url} onChange={(event) => handleChange('image_url', event.target.value)} />
               </label>
               <label className="products-form-wide">
-                à¸­à¸±à¸›à¹‚à¸«à¸¥à¸”à¸£à¸¹à¸›à¸ à¸²à¸ž
+                อัปโหลดรูปภาพ
                 <input
                   type="file"
                   accept="image/png,image/jpeg,image/webp,image/gif"
@@ -396,22 +396,22 @@ export default function Products({ user }) {
               </label>
               {imagePreview ? (
                 <div className="products-image-preview products-form-wide">
-                  <img src={imagePreview} alt="à¸•à¸±à¸§à¸­à¸¢à¹ˆà¸²à¸‡à¸£à¸¹à¸›à¸ªà¸´à¸™à¸„à¹‰à¸²" />
-                  <span>{imageFile ? imageFile.name : 'à¸£à¸¹à¸›à¸ à¸²à¸žà¸›à¸±à¸ˆà¸ˆà¸¸à¸šà¸±à¸™'}</span>
+                  <img src={imagePreview} alt="ตัวอย่างรูปสินค้า" />
+                  <span>{imageFile ? imageFile.name : 'รูปภาพปัจจุบัน'}</span>
                 </div>
               ) : null}
               <label className="products-form-wide">
-                à¸£à¸²à¸¢à¸¥à¸°à¹€à¸­à¸µà¸¢à¸”
+                รายละเอียด
                 <textarea rows="3" value={form.description} onChange={(event) => handleChange('description', event.target.value)} />
               </label>
             </div>
 
             <footer className="products-modal-actions">
               <button type="submit" className="products-save-button" disabled={saving}>
-                {saving ? 'à¸à¸³à¸¥à¸±à¸‡à¸šà¸±à¸™à¸—à¸¶à¸...' : 'à¸šà¸±à¸™à¸—à¸¶à¸'}
+                {saving ? 'กำลังบันทึก...' : 'บันทึก'}
               </button>
               <button type="button" className="products-cancel-button" onClick={closeForm} disabled={saving}>
-                à¸¢à¸à¹€à¸¥à¸´à¸
+                ยกเลิก
               </button>
             </footer>
           </form>

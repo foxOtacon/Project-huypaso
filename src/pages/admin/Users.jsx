@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Pagination from '../../components/Pagination';
 import usePagination from '../../hooks/usePagination';
 import { deleteUser, fetchUsers, updateUser } from '../../api/admin';
@@ -9,8 +9,8 @@ const ROLE_LABELS = {
 };
 
 const STATUS_LABELS = {
-  active: 'à¹ƒà¸Šà¹‰à¸‡à¸²à¸™',
-  suspended: 'à¸£à¸°à¸‡à¸±à¸š',
+  active: 'ใช้งาน',
+  suspended: 'ระงับ',
 };
 
 function normalizeText(value) {
@@ -57,7 +57,7 @@ export default function Users({ currentUser }) {
 
   const handleStatusToggle = async (user) => {
     if (user.user_id === currentUser?.user_id) {
-      setError('à¹„à¸¡à¹ˆà¸ªà¸²à¸¡à¸²à¸£à¸–à¸£à¸°à¸‡à¸±à¸šà¸šà¸±à¸à¸Šà¸µà¸‚à¸­à¸‡à¸•à¸±à¸§à¹€à¸­à¸‡à¹„à¸”à¹‰');
+      setError('ไม่สามารถระงับบัญชีของตัวเองได้');
       return;
     }
 
@@ -79,7 +79,7 @@ export default function Users({ currentUser }) {
 
   const handleRoleToggle = async (user) => {
     if (user.user_id === currentUser?.user_id) {
-      setError('à¹„à¸¡à¹ˆà¸ªà¸²à¸¡à¸²à¸£à¸–à¹€à¸›à¸¥à¸µà¹ˆà¸¢à¸™à¸šà¸—à¸šà¸²à¸—à¸šà¸±à¸à¸Šà¸µà¸‚à¸­à¸‡à¸•à¸±à¸§à¹€à¸­à¸‡à¹„à¸”à¹‰');
+      setError('ไม่สามารถเปลี่ยนบทบาทบัญชีของตัวเองได้');
       return;
     }
 
@@ -101,11 +101,11 @@ export default function Users({ currentUser }) {
 
   const handleDelete = async (user) => {
     if (user.user_id === currentUser?.user_id) {
-      setError('à¹„à¸¡à¹ˆà¸ªà¸²à¸¡à¸²à¸£à¸–à¸¥à¸šà¸šà¸±à¸à¸Šà¸µà¸‚à¸­à¸‡à¸•à¸±à¸§à¹€à¸­à¸‡à¹„à¸”à¹‰');
+      setError('ไม่สามารถลบบัญชีของตัวเองได้');
       return;
     }
 
-    const confirmed = window.confirm(`à¸¥à¸šà¸œà¸¹à¹‰à¹ƒà¸Šà¹‰ "${user.full_name}" à¸«à¸£à¸·à¸­à¹„à¸¡à¹ˆ?`);
+    const confirmed = window.confirm(`ลบผู้ใช้ "${user.full_name}" หรือไม่?`);
     if (!confirmed) return;
 
     setSavingId(user.user_id);
@@ -124,7 +124,7 @@ export default function Users({ currentUser }) {
   const pagination = usePagination(filteredUsers, 10, [filters]);
 
   if (loading) {
-    return <div className="admin-loading">à¸à¸³à¸¥à¸±à¸‡à¹‚à¸«à¸¥à¸”à¸œà¸¹à¹‰à¹ƒà¸Šà¹‰à¸‡à¸²à¸™...</div>;
+    return <div className="admin-loading">กำลังโหลดผู้ใช้งาน...</div>;
   }
 
   if (error && users.length === 0) {
@@ -139,7 +139,7 @@ export default function Users({ currentUser }) {
         <input
           type="search"
           value={filters.search}
-          placeholder="à¸„à¹‰à¸™à¸«à¸² (à¸Šà¸·à¹ˆà¸­, à¸­à¸µà¹€à¸¡à¸¥, à¸£à¸«à¸±à¸ªà¸œà¸¹à¹‰à¹ƒà¸Šà¹‰)..."
+          placeholder="ค้นหา (ชื่อ, อีเมล, รหัสผู้ใช้)..."
           onChange={(event) =>
             setFilters((current) => ({ ...current, search: event.target.value }))
           }
@@ -150,7 +150,7 @@ export default function Users({ currentUser }) {
             setFilters((current) => ({ ...current, role: event.target.value }))
           }
         >
-          <option value="all">à¸—à¸¸à¸à¸šà¸—à¸šà¸²à¸—</option>
+          <option value="all">ทุกบทบาท</option>
           <option value="customer">User</option>
           <option value="admin">Admin</option>
         </select>
@@ -160,12 +160,12 @@ export default function Users({ currentUser }) {
             setFilters((current) => ({ ...current, status: event.target.value }))
           }
         >
-          <option value="all">à¸—à¸¸à¸à¸ªà¸–à¸²à¸™à¸°</option>
-          <option value="active">à¹ƒà¸Šà¹‰à¸‡à¸²à¸™</option>
-          <option value="suspended">à¸£à¸°à¸‡à¸±à¸š</option>
+          <option value="all">ทุกสถานะ</option>
+          <option value="active">ใช้งาน</option>
+          <option value="suspended">ระงับ</option>
         </select>
         <button type="button" onClick={() => setFilters({ search: '', role: 'all', status: 'all' })}>
-          à¸¥à¹‰à¸²à¸‡
+          ล้าง
         </button>
       </section>
 
@@ -174,20 +174,20 @@ export default function Users({ currentUser }) {
           <table className="admin-table users-table">
             <thead>
               <tr>
-                <th>à¸¥à¸³à¸”à¸±à¸š</th>
-                <th>à¸Šà¸·à¹ˆà¸­</th>
-                <th>à¸­à¸µà¹€à¸¡à¸¥</th>
-                <th>à¹€à¸šà¸­à¸£à¹Œà¹‚à¸—à¸£</th>
-                <th>à¸šà¸—à¸šà¸²à¸—</th>
-                <th>à¸ªà¸–à¸²à¸™à¸°</th>
-                <th>à¸à¸²à¸£à¸ˆà¸±à¸”à¸à¸²à¸£</th>
+                <th>ลำดับ</th>
+                <th>ชื่อ</th>
+                <th>อีเมล</th>
+                <th>เบอร์โทร</th>
+                <th>บทบาท</th>
+                <th>สถานะ</th>
+                <th>การจัดการ</th>
               </tr>
             </thead>
             <tbody>
               {filteredUsers.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="admin-table-empty">
-                    à¹„à¸¡à¹ˆà¸žà¸šà¸œà¸¹à¹‰à¹ƒà¸Šà¹‰à¸‡à¸²à¸™
+                    ไม่พบผู้ใช้งาน
                   </td>
                 </tr>
               ) : (
@@ -219,7 +219,7 @@ export default function Users({ currentUser }) {
                             disabled={isSaving || isCurrentUser}
                             onClick={() => handleRoleToggle(user)}
                           >
-                            {user.role === 'admin' ? 'à¹€à¸›à¹‡à¸™ User' : 'à¹€à¸›à¹‡à¸™ Admin'}
+                            {user.role === 'admin' ? 'เป็น User' : 'เป็น Admin'}
                           </button>
                           <button
                             type="button"
@@ -227,7 +227,7 @@ export default function Users({ currentUser }) {
                             disabled={isSaving || isCurrentUser}
                             onClick={() => handleStatusToggle(user)}
                           >
-                            {user.status === 'active' ? 'à¸£à¸°à¸‡à¸±à¸š' : 'à¹€à¸›à¸´à¸”à¹ƒà¸Šà¹‰'}
+                            {user.status === 'active' ? 'ระงับ' : 'เปิดใช้'}
                           </button>
                           <button
                             type="button"
@@ -235,7 +235,7 @@ export default function Users({ currentUser }) {
                             disabled={isSaving || isCurrentUser}
                             onClick={() => handleDelete(user)}
                           >
-                            à¸¥à¸š
+                            ลบ
                           </button>
                         </div>
                       </td>

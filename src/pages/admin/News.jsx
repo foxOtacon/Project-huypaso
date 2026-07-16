@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Pagination from '../../components/Pagination';
 import usePagination from '../../hooks/usePagination';
 import {
@@ -14,7 +14,7 @@ const EMPTY_FORM = {
   summary: '',
   content: '',
   image_url: '',
-  category: 'à¸‚à¹ˆà¸²à¸§à¸Šà¸¸à¸¡à¸Šà¸™',
+  category: 'ข่าวชุมชน',
   status: 'draft',
 };
 
@@ -36,7 +36,7 @@ function fileToDataUrl(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result);
-    reader.onerror = () => reject(new Error('à¹„à¸¡à¹ˆà¸ªà¸²à¸¡à¸²à¸£à¸–à¸­à¹ˆà¸²à¸™à¹„à¸Ÿà¸¥à¹Œà¸£à¸¹à¸›à¸ à¸²à¸žà¹„à¸”à¹‰'));
+    reader.onerror = () => reject(new Error('ไม่สามารถอ่านไฟล์รูปภาพได้'));
     reader.readAsDataURL(file);
   });
 }
@@ -47,7 +47,7 @@ function buildPayload(form, user) {
     summary: form.summary.trim() || null,
     content: form.content.trim(),
     image_url: form.image_url.trim() || null,
-    category: form.category.trim() || 'à¸‚à¹ˆà¸²à¸§à¸Šà¸¸à¸¡à¸Šà¸™',
+    category: form.category.trim() || 'ข่าวชุมชน',
     status: form.status,
     created_by: user?.user_id,
   };
@@ -108,7 +108,7 @@ export default function News({ user }) {
       summary: item.summary || '',
       content: item.content || '',
       image_url: item.image_url || '',
-      category: item.category || 'à¸‚à¹ˆà¸²à¸§à¸Šà¸¸à¸¡à¸Šà¸™',
+      category: item.category || 'ข่าวชุมชน',
       status: item.status || 'draft',
     });
     setImageFile(null);
@@ -174,7 +174,7 @@ export default function News({ user }) {
   }
 
   async function handleDelete(item) {
-    const confirmed = window.confirm(`à¸¥à¸šà¸‚à¹ˆà¸²à¸§ "${item.title}" à¸«à¸£à¸·à¸­à¹„à¸¡à¹ˆ?`);
+    const confirmed = window.confirm(`ลบข่าว "${item.title}" หรือไม่?`);
     if (!confirmed) return;
 
     setError('');
@@ -190,7 +190,7 @@ export default function News({ user }) {
   const pagination = usePagination(filteredItems, 10, [filters]);
 
   if (loading) {
-    return <div className="admin-loading">à¸à¸³à¸¥à¸±à¸‡à¹‚à¸«à¸¥à¸”à¸‚à¹ˆà¸²à¸§...</div>;
+    return <div className="admin-loading">กำลังโหลดข่าว...</div>;
   }
 
   if (error && items.length === 0) {
@@ -205,19 +205,19 @@ export default function News({ user }) {
         <input
           type="search"
           value={filters.search}
-          placeholder="à¸„à¹‰à¸™à¸«à¸²à¸‚à¹ˆà¸²à¸§..."
+          placeholder="ค้นหาข่าว..."
           onChange={(event) => setFilters((current) => ({ ...current, search: event.target.value }))}
         />
         <select
           value={filters.status}
           onChange={(event) => setFilters((current) => ({ ...current, status: event.target.value }))}
         >
-          <option value="all">à¸—à¸¸à¸à¸ªà¸–à¸²à¸™à¸°</option>
-          <option value="published">à¹€à¸œà¸¢à¹à¸žà¸£à¹ˆ</option>
-          <option value="draft">à¸‰à¸šà¸±à¸šà¸£à¹ˆà¸²à¸‡</option>
+          <option value="all">ทุกสถานะ</option>
+          <option value="published">เผยแพร่</option>
+          <option value="draft">ฉบับร่าง</option>
         </select>
         <button type="button" onClick={openCreateForm}>
-          à¹€à¸žà¸´à¹ˆà¸¡à¸‚à¹ˆà¸²à¸§
+          เพิ่มข่าว
         </button>
       </section>
 
@@ -226,19 +226,19 @@ export default function News({ user }) {
           <table className="admin-table products-table">
             <thead>
               <tr>
-                <th>à¸¥à¸³à¸”à¸±à¸š</th>
-                <th>à¸‚à¹ˆà¸²à¸§</th>
-                <th>à¸«à¸¡à¸§à¸”à¸«à¸¡à¸¹à¹ˆ</th>
-                <th>à¸ªà¸–à¸²à¸™à¸°</th>
-                <th>à¸§à¸±à¸™à¸—à¸µà¹ˆ</th>
-                <th>à¸à¸²à¸£à¸ˆà¸±à¸”à¸à¸²à¸£</th>
+                <th>ลำดับ</th>
+                <th>ข่าว</th>
+                <th>หมวดหมู่</th>
+                <th>สถานะ</th>
+                <th>วันที่</th>
+                <th>การจัดการ</th>
               </tr>
             </thead>
             <tbody>
               {filteredItems.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="admin-table-empty">
-                    à¹„à¸¡à¹ˆà¸žà¸šà¸‚à¹ˆà¸²à¸§
+                    ไม่พบข่าว
                   </td>
                 </tr>
               ) : (
@@ -261,17 +261,17 @@ export default function News({ user }) {
                     <td>{item.category || '-'}</td>
                     <td>
                       <span className={`news-status-badge news-status-${item.status || 'draft'}`}>
-                        {item.status === 'published' ? 'à¹€à¸œà¸¢à¹à¸žà¸£à¹ˆ' : 'à¸‰à¸šà¸±à¸šà¸£à¹ˆà¸²à¸‡'}
+                        {item.status === 'published' ? 'เผยแพร่' : 'ฉบับร่าง'}
                       </span>
                     </td>
                     <td>{formatDate(item.created_at)}</td>
                     <td>
                       <div className="products-actions">
                         <button type="button" className="products-edit-button" onClick={() => openEditForm(item)}>
-                          à¹à¸à¹‰à¹„à¸‚
+                          แก้ไข
                         </button>
                         <button type="button" className="products-delete-button" onClick={() => handleDelete(item)}>
-                          à¸¥à¸š
+                          ลบ
                         </button>
                       </div>
                     </td>
@@ -288,38 +288,38 @@ export default function News({ user }) {
         <div className="products-modal-backdrop" role="presentation" onMouseDown={closeForm}>
           <form className="products-modal" onSubmit={handleSubmit} onMouseDown={(event) => event.stopPropagation()}>
             <header className="products-modal-header">
-              <h2>{editingItem ? 'à¹à¸à¹‰à¹„à¸‚à¸‚à¹ˆà¸²à¸§' : 'à¹€à¸žà¸´à¹ˆà¸¡à¸‚à¹ˆà¸²à¸§'}</h2>
-              <button type="button" aria-label="à¸›à¸´à¸”" onClick={closeForm}>
+              <h2>{editingItem ? 'แก้ไขข่าว' : 'เพิ่มข่าว'}</h2>
+              <button type="button" aria-label="ปิด" onClick={closeForm}>
                 x
               </button>
             </header>
 
             <div className="products-form-grid">
               <label className="products-form-wide">
-                à¸«à¸±à¸§à¸‚à¹‰à¸­à¸‚à¹ˆà¸²à¸§
+                หัวข้อข่าว
                 <input value={form.title} onChange={(event) => handleChange('title', event.target.value)} required />
               </label>
               <label>
-                à¸«à¸¡à¸§à¸”à¸«à¸¡à¸¹à¹ˆ
+                หมวดหมู่
                 <input value={form.category} onChange={(event) => handleChange('category', event.target.value)} />
               </label>
               <label>
-                à¸ªà¸–à¸²à¸™à¸°
+                สถานะ
                 <select value={form.status} onChange={(event) => handleChange('status', event.target.value)}>
-                  <option value="draft">à¸‰à¸šà¸±à¸šà¸£à¹ˆà¸²à¸‡</option>
-                  <option value="published">à¹€à¸œà¸¢à¹à¸žà¸£à¹ˆ</option>
+                  <option value="draft">ฉบับร่าง</option>
+                  <option value="published">เผยแพร่</option>
                 </select>
               </label>
               <label className="products-form-wide">
-                à¸ªà¸£à¸¸à¸›à¸‚à¹ˆà¸²à¸§
+                สรุปข่าว
                 <textarea rows="2" value={form.summary} onChange={(event) => handleChange('summary', event.target.value)} />
               </label>
               <label className="products-form-wide">
-                à¸£à¸¹à¸›à¸ à¸²à¸ž URL
+                รูปภาพ URL
                 <input value={form.image_url} onChange={(event) => handleChange('image_url', event.target.value)} />
               </label>
               <label className="products-form-wide">
-                à¸­à¸±à¸›à¹‚à¸«à¸¥à¸”à¸£à¸¹à¸›à¸‚à¹ˆà¸²à¸§
+                อัปโหลดรูปข่าว
                 <input
                   type="file"
                   accept="image/png,image/jpeg,image/webp,image/gif"
@@ -328,22 +328,22 @@ export default function News({ user }) {
               </label>
               {imagePreview ? (
                 <div className="products-image-preview products-form-wide">
-                  <img src={imagePreview} alt="à¸•à¸±à¸§à¸­à¸¢à¹ˆà¸²à¸‡à¸£à¸¹à¸›à¸‚à¹ˆà¸²à¸§" />
-                  <span>{imageFile ? imageFile.name : 'à¸£à¸¹à¸›à¸ à¸²à¸žà¸›à¸±à¸ˆà¸ˆà¸¸à¸šà¸±à¸™'}</span>
+                  <img src={imagePreview} alt="ตัวอย่างรูปข่าว" />
+                  <span>{imageFile ? imageFile.name : 'รูปภาพปัจจุบัน'}</span>
                 </div>
               ) : null}
               <label className="products-form-wide">
-                à¹€à¸™à¸·à¹‰à¸­à¸«à¸²à¸‚à¹ˆà¸²à¸§
+                เนื้อหาข่าว
                 <textarea rows="7" value={form.content} onChange={(event) => handleChange('content', event.target.value)} required />
               </label>
             </div>
 
             <footer className="products-modal-actions">
               <button type="submit" className="products-save-button" disabled={saving}>
-                {saving ? 'à¸à¸³à¸¥à¸±à¸‡à¸šà¸±à¸™à¸—à¸¶à¸...' : 'à¸šà¸±à¸™à¸—à¸¶à¸'}
+                {saving ? 'กำลังบันทึก...' : 'บันทึก'}
               </button>
               <button type="button" className="products-cancel-button" onClick={closeForm} disabled={saving}>
-                à¸¢à¸à¹€à¸¥à¸´à¸
+                ยกเลิก
               </button>
             </footer>
           </form>
