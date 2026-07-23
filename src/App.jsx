@@ -9,7 +9,6 @@ import { isAdminRoute } from "./pages/admin/adminRoutes";
 import CustomerAccountPage from "./pages/CustomerAccountPage";
 import GoogleCallback from "./pages/GoogleCallback";
 import Home from "./pages/Home";
-import KnowledgePage from "./pages/KnowledgePage";
 import Login from "./pages/Login";
 import NewsPage from "./pages/NewsPage";
 import PaymentPage from "./pages/PaymentPage";
@@ -30,7 +29,6 @@ const CUSTOMER_ROUTES = [
   "/products",
   "/contact",
   "/news",
-  "/knowledge",
   "/cart",
   "/payment-success",
   "/login",
@@ -149,15 +147,6 @@ function AppRoutes() {
     return <PaymentSuccessPage onNavigate={navigate} />;
   }
 
-  if (route.startsWith("/knowledge")) {
-    return (
-      <KnowledgePage
-        user={user}
-        onNavigate={navigate}
-        onLogout={handleLogout}
-      />
-    );
-  }
   if (route.startsWith("/news")) {
     return (
       <NewsPage

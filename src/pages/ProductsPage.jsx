@@ -242,7 +242,6 @@ export default function ProductsPage({ user, onNavigate, onLogout }) {
           <nav className="main-nav" aria-label="เมนูหลัก">
             <button type="button" onClick={() => onNavigate('/')}>หน้าหลัก</button>
             <button type="button" className="active">สินค้า</button>
-            <button type="button" onClick={() => onNavigate('/knowledge')}>ความรู้</button>
             <button type="button" onClick={() => onNavigate('/')}>ข่าว</button>
             <button type="button" onClick={() => onNavigate('/contact')}>ติดต่อ</button>
           </nav>

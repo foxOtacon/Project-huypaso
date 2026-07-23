@@ -1,9 +1,10 @@
-﻿import { useEffect, useState } from 'react';
+﻿import { useEffect, useRef, useState } from 'react';
 import { fetchMyOrderDetail, fetchMyOrders } from '../api/customer';
 import CustomerNavbar from '../components/CustomerNavbar';
 import Pagination from '../components/Pagination';
+import TrackingGuideModal from '../components/TrackingGuideModal';
 import usePagination from '../hooks/usePagination';
-import { buildTrackingLink, copyTrackingNumber } from '../utils/tracking';
+import { copyTrackingNumber, resolveTrackingProvider } from '../utils/tracking';
 import { useAuth } from '../context/AuthContext';
 import './CustomerAccountPage.css';
 
@@ -52,15 +53,21 @@ function getPaymentStatusLabel(status) {
   return PAYMENT_STATUS_LABELS[status] || (status ? status : 'ยังไม่ส่งสลิป');
 }
 
+function getShippingProvider(order) {
+  return String(order?.shipping_provider || order?.shipping_carrier || '').trim();
+}
+
 export default function CustomerAccountPage({ user, onNavigate, onLogout }) {
   const { token } = useAuth();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedOrder, setSelectedOrder] = useState(null);
-  const [detailLoading, setDetailLoading] = useState(false);
+  const [loadingOrderId, setLoadingOrderId] = useState(null);
   const [detailError, setDetailError] = useState('');
-  const [trackingNotice, setTrackingNotice] = useState('');
+  const [trackingGuide, setTrackingGuide] = useState(null);
+  const detailRequestRef = useRef(0);
+  const copyAttemptRef = useRef(0);
   const latestOrder = orders[0];
   const orderPagination = usePagination(orders, 5);
 
@@ -82,22 +89,93 @@ export default function CustomerAccountPage({ user, onNavigate, onLogout }) {
   async function openOrderDetail(orderId) {
     if (!token) return;
 
+    const requestId = detailRequestRef.current + 1;
+    detailRequestRef.current = requestId;
+
     try {
-      setDetailLoading(true);
+      setLoadingOrderId(orderId);
       setDetailError('');
-      setTrackingNotice('');
+      setTrackingGuide(null);
       const detail = await fetchMyOrderDetail(token, orderId);
+      if (detailRequestRef.current !== requestId) return;
+
       setSelectedOrder(detail);
     } catch (err) {
+      if (detailRequestRef.current !== requestId) return;
+
       setDetailError(err.message || 'ไม่สามารถโหลดรายละเอียดคำสั่งซื้อได้');
     } finally {
-      setDetailLoading(false);
+      if (detailRequestRef.current === requestId) {
+        setLoadingOrderId(null);
+      }
     }
   }
 
   useEffect(() => {
     loadOrders();
   }, [token]);
+
+  function closeOrderDetail() {
+    copyAttemptRef.current += 1;
+    setTrackingGuide(null);
+    setSelectedOrder(null);
+  }
+
+  function closeTrackingGuide() {
+    copyAttemptRef.current += 1;
+    setTrackingGuide(null);
+  }
+
+  async function openTrackingGuide(order) {
+    const trackingNumber = String(order?.tracking_number || '').trim();
+    if (!trackingNumber) return;
+
+    const providerName = getShippingProvider(order);
+    const provider = resolveTrackingProvider(providerName);
+    const attemptId = copyAttemptRef.current + 1;
+    copyAttemptRef.current = attemptId;
+
+    const copyPromise = copyTrackingNumber(trackingNumber);
+    setTrackingGuide({
+      trackingNumber,
+      providerName: providerName || provider.name,
+      provider,
+      copyStatus: 'pending',
+    });
+
+    const copied = await copyPromise;
+    if (copyAttemptRef.current !== attemptId) return;
+
+    setTrackingGuide((current) => (
+      current?.trackingNumber === trackingNumber
+        ? { ...current, copyStatus: copied ? 'success' : 'error' }
+        : current
+    ));
+  }
+
+  async function retryTrackingCopy() {
+    if (!trackingGuide?.trackingNumber) return;
+
+    const attemptId = copyAttemptRef.current + 1;
+    copyAttemptRef.current = attemptId;
+    setTrackingGuide((current) => (current ? { ...current, copyStatus: 'pending' } : current));
+
+    const copied = await copyTrackingNumber(trackingGuide.trackingNumber);
+    if (copyAttemptRef.current !== attemptId) return;
+
+    setTrackingGuide((current) => (
+      current ? { ...current, copyStatus: copied ? 'success' : 'error' } : current
+    ));
+  }
+
+  function openTrackingWebsite() {
+    if (!trackingGuide) return;
+
+    const provider = resolveTrackingProvider(trackingGuide.providerName);
+    if (!provider.known || !provider.url) return;
+
+    window.open(provider.url, '_blank', 'noopener,noreferrer');
+  }
 
   return (
     <div className="customer-page">
@@ -177,9 +255,9 @@ export default function CustomerAccountPage({ user, onNavigate, onLogout }) {
                   type="button"
                   className="customer-detail-button"
                   onClick={() => openOrderDetail(order.order_id)}
-                  disabled={detailLoading}
+                  disabled={loadingOrderId === order.order_id}
                 >
-                  {detailLoading ? 'กำลังโหลด...' : 'ดูรายละเอียด'}
+                  {loadingOrderId === order.order_id ? 'กำลังโหลด...' : 'ดูรายละเอียด'}
                 </button>
               </article>
             ))
@@ -191,7 +269,12 @@ export default function CustomerAccountPage({ user, onNavigate, onLogout }) {
       </main>
 
       {selectedOrder && (
-        <div className="customer-modal-backdrop" role="presentation" onMouseDown={() => setSelectedOrder(null)}>
+        <div
+          className="customer-modal-backdrop"
+          role="presentation"
+          aria-hidden={trackingGuide ? 'true' : undefined}
+          onMouseDown={closeOrderDetail}
+        >
           <section
             className="customer-detail-modal"
             role="dialog"
@@ -204,7 +287,7 @@ export default function CustomerAccountPage({ user, onNavigate, onLogout }) {
                 <p>รายละเอียดคำสั่งซื้อ</p>
                 <h2 id="customer-detail-title">Order #{selectedOrder.order_id}</h2>
               </div>
-              <button type="button" onClick={() => setSelectedOrder(null)} aria-label="ปิดรายละเอียด">
+              <button type="button" onClick={closeOrderDetail} aria-label="ปิดรายละเอียด">
                 ×
               </button>
             </header>
@@ -238,46 +321,22 @@ export default function CustomerAccountPage({ user, onNavigate, onLogout }) {
               </div>
               <div>
                 <dt>บริษัทขนส่ง</dt>
-                <dd>{selectedOrder.shipping_carrier || '-'}</dd>
+                <dd>{getShippingProvider(selectedOrder) || '-'}</dd>
               </div>
               <div>
                 <dt>เลขพัสดุ</dt>
                 <dd>
-                  {(() => {
-                    const link = buildTrackingLink({
-                      trackingUrl: selectedOrder.tracking_url,
-                      trackingNumber: selectedOrder.tracking_number,
-                      carrierName: selectedOrder.shipping_carrier,
-                    });
-
-                    return selectedOrder.tracking_number && link.url ? (
-                      <>
-                        <a
-                          href={link.url}
-                          target="_blank"
-                          rel="noreferrer"
-                          onClick={async () => {
-                            if (link.prefilled) {
-                              setTrackingNotice('ส่งเลขพัสดุไปยังเว็บไซต์ติดตามแล้ว');
-                              return;
-                            }
-
-                            const copied = await copyTrackingNumber(selectedOrder.tracking_number);
-                            setTrackingNotice(
-                              copied
-                                ? 'คัดลอกเลขพัสดุแล้ว กรุณาวางในช่องค้นหาของเว็บไซต์ปลายทาง'
-                                : 'เว็บไซต์นี้ไม่รองรับการกรอกเลขอัตโนมัติ กรุณาคัดลอกเลขพัสดุไปวาง',
-                            );
-                          }}
-                        >
-                          {selectedOrder.tracking_number} ↗
-                        </a>
-                        {trackingNotice ? <small className="tracking-link-notice">{trackingNotice}</small> : null}
-                      </>
-                    ) : (
-                      selectedOrder.tracking_number || '-'
-                    );
-                  })()}
+                  {selectedOrder.tracking_number ? (
+                    <button
+                      type="button"
+                      className="customer-tracking-trigger"
+                      aria-haspopup="dialog"
+                      aria-controls="tracking-guide-dialog"
+                      onClick={() => openTrackingGuide(selectedOrder)}
+                    >
+                      <span>{selectedOrder.tracking_number}</span>
+                    </button>
+                  ) : '-'}
                 </dd>
               </div>
             </dl>
@@ -301,6 +360,19 @@ export default function CustomerAccountPage({ user, onNavigate, onLogout }) {
           </section>
         </div>
       )}
+
+
+      {trackingGuide ? (
+        <TrackingGuideModal
+          trackingNumber={trackingGuide.trackingNumber}
+          providerName={trackingGuide.providerName}
+          provider={trackingGuide.provider}
+          copyStatus={trackingGuide.copyStatus}
+          onCopy={retryTrackingCopy}
+          onOpenWebsite={openTrackingWebsite}
+          onClose={closeTrackingGuide}
+        />
+      ) : null}
     </div>
   );
 }

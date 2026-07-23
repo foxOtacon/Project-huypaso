@@ -14,8 +14,6 @@ const controller = createCrudController({
     "price",
     "unit",
     "image_url",
-    "planting_date",
-    "harvest_date",
     "production_source",
     "stock_quantity",
     "created_by",

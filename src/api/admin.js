@@ -29,7 +29,10 @@ async function performRequest(path, options = {}) {
 
   if (!response.ok) {
     handleInvalidSession(response, data);
-    throw new Error(data.message || 'ไม่สามารถโหลดข้อมูลได้');
+    const error = new Error(data.message || 'ไม่สามารถโหลดข้อมูลได้');
+    error.status = response.status;
+    error.data = data;
+    throw error;
   }
 
   return data;
@@ -107,6 +110,29 @@ export async function fetchShippingCarriers() {
 export async function fetchCategories() {
   const res = await request('/categories');
   return res.data || [];
+}
+
+export async function fetchSalesPredictions() {
+  const res = await request('/sales-prediction');
+  return res.data || [];
+}
+
+export async function fetchLatestAnalysis() {
+  const res = await request('/admin/analytics/latest');
+  return res.data || { run: null, predictions: [] };
+}
+
+export async function fetchAnalysisRunStatus(runId) {
+  const res = await request(`/admin/analytics/status/${encodeURIComponent(runId)}`);
+  return res.data || null;
+}
+
+export async function startAnalysis(payload = {}) {
+  const res = await request('/admin/analytics/run', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+  return res.data;
 }
 
 export async function createProduct(payload) {

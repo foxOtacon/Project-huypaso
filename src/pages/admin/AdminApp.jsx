@@ -1,5 +1,6 @@
 import AdminLayout from '../../components/admin/AdminLayout';
 import AdminPlaceholder from './AdminPlaceholder';
+import Analytics from './Analytics';
 import Dashboard from './Dashboard';
 import News from './News';
 import Orders from './Orders';
@@ -30,6 +31,10 @@ function AdminPageContent({ route, user }) {
 
   if (route === '/admin/users') {
     return <Users currentUser={user} />;
+  }
+
+  if (route === '/admin/analytics') {
+    return <Analytics />;
   }
 
   return <AdminPlaceholder route={route} />;

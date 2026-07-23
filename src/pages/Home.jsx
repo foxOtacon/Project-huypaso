@@ -233,7 +233,6 @@ export default function Home({ user, onNavigate, onLogout }) {
           <nav className="main-nav" aria-label="เมนูหลัก">
             <button type="button" onClick={() => scrollTo('top')}>หน้าหลัก</button>
             <button type="button" onClick={() => onNavigate('/products')}>สินค้า</button>
-            <button type="button" onClick={() => onNavigate('/knowledge')}>ความรู้</button>
             <button type="button" onClick={() => scrollTo('news')}>ข่าว</button>
             <button type="button" onClick={() => onNavigate('/contact')}>ติดต่อ</button>
           </nav>
@@ -332,9 +331,6 @@ export default function Home({ user, onNavigate, onLogout }) {
             <div className="hero-actions">
               <button type="button" className="hero-primary" onClick={() => onNavigate('/products')}>
                 เลือกซื้อสินค้า
-              </button>
-              <button type="button" className="hero-secondary" onClick={() => onNavigate('/knowledge')}>
-                เรียนรู้การปลูก
               </button>
             </div>
           </div>
@@ -442,7 +438,6 @@ export default function Home({ user, onNavigate, onLogout }) {
                   </div>
                   <h3>{service.title}</h3>
                   <p>{service.description}</p>
-                  <button type="button" onClick={() => onNavigate('/knowledge')}>{service.link} →</button>
                 </article>
               ))}
             </div>

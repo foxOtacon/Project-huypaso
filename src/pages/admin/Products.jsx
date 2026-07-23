@@ -18,19 +18,12 @@ const EMPTY_FORM = {
   price: '',
   unit: '',
   image_url: '',
-  planting_date: '',
-  harvest_date: '',
   production_source: '',
   stock_quantity: '',
 };
 
 function normalizeText(value) {
   return String(value || '').trim().toLowerCase();
-}
-
-function toInputDate(value) {
-  if (!value) return '';
-  return new Date(value).toISOString().slice(0, 10);
 }
 
 function buildPayload(form, user) {
@@ -41,8 +34,6 @@ function buildPayload(form, user) {
     price: Number(form.price || 0),
     unit: form.unit.trim(),
     image_url: form.image_url.trim() || null,
-    planting_date: form.planting_date || null,
-    harvest_date: form.harvest_date || null,
     production_source: form.production_source.trim() || null,
     stock_quantity: Number(form.stock_quantity || 0),
     created_by: user?.user_id,
@@ -131,8 +122,6 @@ export default function Products({ user }) {
       price: product.price || '',
       unit: product.unit || '',
       image_url: product.image_url || '',
-      planting_date: toInputDate(product.planting_date),
-      harvest_date: toInputDate(product.harvest_date),
       production_source: product.production_source || '',
       stock_quantity: product.stock_quantity ?? '',
     });
@@ -373,14 +362,6 @@ export default function Products({ user }) {
               <label>
                 แหล่งผลิต
                 <input value={form.production_source} onChange={(event) => handleChange('production_source', event.target.value)} />
-              </label>
-              <label>
-                วันที่ปลูก
-                <input type="date" value={form.planting_date} onChange={(event) => handleChange('planting_date', event.target.value)} />
-              </label>
-              <label>
-                วันที่เก็บเกี่ยว
-                <input type="date" value={form.harvest_date} onChange={(event) => handleChange('harvest_date', event.target.value)} />
               </label>
               <label className="products-form-wide">
                 รูปภาพ URL

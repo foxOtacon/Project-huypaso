@@ -1,4 +1,4 @@
-﻿-- Supabase/Postgres-compatible schema for Village Products
+-- Supabase/Postgres-compatible schema for Village Products
 -- This file is intended for use with the Supabase SQL editor.
 
 CREATE TABLE IF NOT EXISTS users (
@@ -27,8 +27,6 @@ CREATE TABLE IF NOT EXISTS products (
     price NUMERIC(10,2) NOT NULL DEFAULT 0.00,
     unit VARCHAR(50) NOT NULL,
     image_url VARCHAR(255),
-    planting_date DATE,
-    harvest_date DATE,
     production_source VARCHAR(200),
     stock_quantity INT NOT NULL DEFAULT 0,
     created_by BIGINT NOT NULL REFERENCES users(user_id),
@@ -103,6 +101,19 @@ CREATE TABLE IF NOT EXISTS sales_prediction (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS analysis_runs (
+    run_id BIGSERIAL PRIMARY KEY,
+    status VARCHAR(20) NOT NULL DEFAULT 'queued'
+        CHECK (status IN ('queued', 'running', 'completed', 'failed')),
+    requested_by BIGINT REFERENCES users(user_id) ON DELETE SET NULL,
+    n8n_execution_id VARCHAR(100),
+    result_count INT NOT NULL DEFAULT 0,
+    error_message TEXT,
+    started_at TIMESTAMPTZ,
+    completed_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS user_product_views (
     view_id BIGSERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL REFERENCES users(user_id),
@@ -110,6 +121,74 @@ CREATE TABLE IF NOT EXISTS user_product_views (
     view_count INT NOT NULL DEFAULT 1,
     viewed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS sales_prediction_product_month_unique
+    ON sales_prediction (product_id, predicted_month);
+
+CREATE INDEX IF NOT EXISTS analysis_runs_created_at_idx
+    ON analysis_runs (created_at DESC);
+
+CREATE UNIQUE INDEX IF NOT EXISTS analysis_runs_single_active_idx
+    ON analysis_runs ((1))
+    WHERE status IN ('queued', 'running');
+
+CREATE OR REPLACE FUNCTION public.get_sales_analysis_data()
+RETURNS JSONB
+LANGUAGE SQL
+SET search_path TO public
+AS $function$
+  WITH sales_history AS (
+    SELECT
+      oi.product_id,
+      DATE_TRUNC('month', o.order_date)::date AS sales_month,
+      SUM(oi.quantity)::int AS quantity_sold,
+      SUM(oi.quantity * oi.price)::numeric(12,2) AS revenue,
+      COUNT(DISTINCT o.order_id)::int AS order_count,
+      COUNT(DISTINCT o.user_id)::int AS customer_count
+    FROM order_items oi
+    JOIN orders o ON o.order_id = oi.order_id
+    WHERE o.order_status <> 'cancelled'
+      AND o.order_date >=
+        DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '12 months'
+    GROUP BY oi.product_id, DATE_TRUNC('month', o.order_date)
+  ),
+  product_behavior AS (
+    SELECT
+      product_id,
+      SUM(view_count)::int AS total_views,
+      COUNT(DISTINCT user_id)::int AS unique_viewers
+    FROM user_product_views
+    WHERE viewed_at >= CURRENT_DATE - INTERVAL '12 months'
+    GROUP BY product_id
+  )
+  SELECT jsonb_build_object(
+    'products',
+    COALESCE((
+      SELECT jsonb_agg(jsonb_build_object(
+        'product_id', p.product_id,
+        'product_name', p.product_name,
+        'price', p.price,
+        'stock_quantity', p.stock_quantity,
+        'unit', p.unit
+      ) ORDER BY p.product_id)
+      FROM products p
+    ), '[]'::jsonb),
+    'sales_history',
+    COALESCE((
+      SELECT jsonb_agg(to_jsonb(s) ORDER BY s.sales_month, s.product_id)
+      FROM sales_history s
+    ), '[]'::jsonb),
+    'product_behavior',
+    COALESCE((
+      SELECT jsonb_agg(to_jsonb(b) ORDER BY b.product_id)
+      FROM product_behavior b
+    ), '[]'::jsonb)
+  );
+$function$;
+
+REVOKE ALL ON FUNCTION public.get_sales_analysis_data() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.get_sales_analysis_data() TO service_role;
+
 CREATE TABLE IF NOT EXISTS shipping_carriers (
     carrier_id BIGSERIAL PRIMARY KEY,
     carrier_name VARCHAR(120) NOT NULL UNIQUE,

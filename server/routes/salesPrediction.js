@@ -1,8 +1,10 @@
 const express = require("express");
 const createCrudController = require("../utils/crudController");
 const asyncHandler = require("../utils/asyncHandler");
+const { authenticate, authorize } = require("../middleware/auth");
 
 const router = express.Router();
+router.use(authenticate, authorize("admin"));
 
 const controller = createCrudController({
   table: "sales_prediction",

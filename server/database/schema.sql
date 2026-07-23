@@ -27,8 +27,6 @@ CREATE TABLE products (
     price DECIMAL(10,2) NOT NULL DEFAULT 0.00,
     unit VARCHAR(50) NOT NULL,
     image_url VARCHAR(255),
-    planting_date DATE,
-    harvest_date DATE,
     production_source VARCHAR(200),
     stock_quantity INT NOT NULL DEFAULT 0,
     created_by INT NOT NULL,
