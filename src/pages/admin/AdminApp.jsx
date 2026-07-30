@@ -5,6 +5,7 @@ import Dashboard from './Dashboard';
 import News from './News';
 import Orders from './Orders';
 import Products from './Products';
+import ShippingCarriers from './ShippingCarriers';
 import Transactions from './Transactions';
 import Users from './Users';
 
@@ -23,6 +24,10 @@ function AdminPageContent({ route, user }) {
 
   if (route === '/admin/products') {
     return <Products user={user} />;
+  }
+
+  if (route === '/admin/shipping-carriers') {
+    return <ShippingCarriers />;
   }
 
   if (route === '/admin/news') {

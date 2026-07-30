@@ -15,7 +15,7 @@ N8N_API_KEY=สร้างค่าสุ่มยาวอย่างน้�
 ANALYTICS_HASH_SALT=สร้างค่าสุ่มอีกค่าหนึ่งและห้ามซ้ำกับ_API_key
 N8N_SALES_ANALYSIS_WEBHOOK_URL=https://tumphirawit.app.n8n.cloud/webhook/huypaso-sales-analysis
 N8N_WEBHOOK_KEY=สร้างค่าสุ่มสำหรับ_Header_Auth_ของ_Webhook
-N8N_WEBHOOK_TIMEOUT_MS=5000
+N8N_WEBHOOK_TIMEOUT_MS=45000
 ANALYTICS_RUN_STALE_MINUTES=30
 ```
 
@@ -35,6 +35,10 @@ Respond: Immediately
 ```
 
 การตอบทันทีสำคัญสำหรับ Vercel เพราะ Backend รอเฉพาะการยืนยันรับงาน ไม่รอ AI วิเคราะห์จนเสร็จ
+
+The backend also supports the currently deployed synchronous workflow. When
+n8n returns `saved_count`, the API closes the matching analysis run as
+`completed`; an immediate acknowledgement continues through status polling.
 
 Payload ที่ได้รับจาก Backend อยู่ใน `$json.body`:
 

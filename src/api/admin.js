@@ -107,6 +107,29 @@ export async function fetchShippingCarriers() {
   const res = await request('/shipping-carriers');
   return res.data || [];
 }
+
+export async function createShippingCarrier(payload) {
+  const res = await request('/shipping-carriers', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+  return res.data;
+}
+
+export async function updateShippingCarrier(carrierId, payload) {
+  const res = await request(`/shipping-carriers/${carrierId}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+  return res.data;
+}
+
+export async function deleteShippingCarrier(carrierId) {
+  return request(`/shipping-carriers/${carrierId}`, {
+    method: 'DELETE',
+  });
+}
+
 export async function fetchCategories() {
   const res = await request('/categories');
   return res.data || [];

@@ -39,6 +39,24 @@ const RUN_STATUS_LABELS = {
   failed: 'วิเคราะห์ไม่สำเร็จ',
 };
 
+function formatRunFailureMessage(message) {
+  const value = String(message || '').trim();
+  if (!value) return '';
+
+  if (/did not start the analysis workflow|waiting for n8n confirmation/i.test(value)) {
+    return '\u0e23\u0e30\u0e1a\u0e1a\u0e27\u0e34\u0e40\u0e04\u0e23\u0e32\u0e30\u0e2b\u0e4c\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e40\u0e23\u0e34\u0e48\u0e21\u0e17\u0e33\u0e07\u0e32\u0e19 \u0e01\u0e23\u0e38\u0e13\u0e32\u0e15\u0e23\u0e27\u0e08\u0e2a\u0e2d\u0e1a workflow \u0e43\u0e19 n8n \u0e41\u0e25\u0e49\u0e27\u0e25\u0e2d\u0e07\u0e43\u0e2b\u0e21\u0e48';
+  }
+
+  if (
+    /Analysis run timed out|stale-run limit|workflow did not respond|webhook did not acknowledge/i
+      .test(value)
+  ) {
+    return '\u0e23\u0e30\u0e1a\u0e1a\u0e27\u0e34\u0e40\u0e04\u0e23\u0e32\u0e30\u0e2b\u0e4c\u0e44\u0e21\u0e48\u0e15\u0e2d\u0e1a\u0e2a\u0e19\u0e2d\u0e07\u0e20\u0e32\u0e22\u0e43\u0e19\u0e40\u0e27\u0e25\u0e32\u0e17\u0e35\u0e48\u0e01\u0e33\u0e2b\u0e19\u0e14 \u0e01\u0e23\u0e38\u0e13\u0e32\u0e25\u0e2d\u0e07\u0e43\u0e2b\u0e21\u0e48\u0e2d\u0e35\u0e01\u0e04\u0e23\u0e31\u0e49\u0e07';
+  }
+
+  return value;
+}
+
 function formatRunTime(run) {
   const value = run?.completed_at || run?.started_at || run?.created_at;
   if (!value) return '';
@@ -54,7 +72,7 @@ export default function Analytics() {
   const [error, setError] = useState('');
   const [latestRun, setLatestRun] = useState(null);
   const [runSubmitting, setRunSubmitting] = useState(false);
-  const [runError, setRunError] = useState('');
+  const [rawRunError, setRunError] = useState('');
   const refreshedRunIdRef = useRef(null);
 
   const loadDashboard = useCallback(async () => {
@@ -78,6 +96,30 @@ export default function Analytics() {
     setLatestRun(latestAnalysis.run || null);
     return latestAnalysis;
   }, []);
+
+  const refreshCompletedRun = useCallback(async (run) => {
+    const runId = run?.run_id;
+    if (
+      !runId ||
+      run.status !== 'completed' ||
+      String(refreshedRunIdRef.current) === String(runId)
+    ) {
+      return false;
+    }
+
+    // Claim this refresh before awaiting so repeated completed responses cannot
+    // reload the same run concurrently. Release it if loading fails.
+    refreshedRunIdRef.current = runId;
+    try {
+      await loadDashboard();
+      return true;
+    } catch (refreshError) {
+      if (String(refreshedRunIdRef.current) === String(runId)) {
+        refreshedRunIdRef.current = null;
+      }
+      throw refreshError;
+    }
+  }, [loadDashboard]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -133,6 +175,10 @@ export default function Analytics() {
     try {
       const run = await startAnalysis({ months: 12 });
       setLatestRun(run);
+
+      if (run?.status === 'completed') {
+        await refreshCompletedRun(run);
+      }
     } catch (startError) {
       const activeRun = startError.status === 409 ? startError.data?.data : null;
       if (activeRun?.run_id) {
@@ -181,10 +227,13 @@ export default function Analytics() {
 
   if (error) return <div className="admin-error">{error}</div>;
   if (!report) return <div className="admin-loading">กำลังโหลดข้อมูลวิเคราะห์...</div>;
+  const runError = formatRunFailureMessage(rawRunError);
   const colors = ['#2f5d4a', '#7c9b8e', '#efb45b', '#6d8fc7', '#b88bc8'];
   const runIsActive = ACTIVE_RUN_STATUSES.has(latestRun?.status);
   const runStatusLabel = RUN_STATUS_LABELS[latestRun?.status] || 'ยังไม่เคยวิเคราะห์ด้วย AI';
-  const runFailureMessage = latestRun?.status === 'failed' ? latestRun.error_message : '';
+  const runFailureMessage = !runSubmitting && latestRun?.status === 'failed'
+    ? formatRunFailureMessage(latestRun.error_message)
+    : '';
   const runButtonLabel = runSubmitting
     ? 'กำลังส่งคำขอ…'
     : latestRun?.status === 'queued'
@@ -220,7 +269,7 @@ export default function Analytics() {
         </div>
       </div>
     </div>
-    {(runError || latestRun?.status === 'failed') && (
+    {(runError || runFailureMessage) && (
       <div className="analytics-run-error" role="alert">
         {runError || runFailureMessage || 'การวิเคราะห์ไม่สำเร็จ กรุณาลองใหม่'}
       </div>

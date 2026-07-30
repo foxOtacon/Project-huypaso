@@ -348,7 +348,8 @@
 }
 
 .admin-table th {
-  text-align: left;
+  text-align: center;
+  vertical-align: middle;
   padding: 10px 12px;
   color: #6b7280;
   font-weight: 500;
@@ -356,6 +357,8 @@
 }
 
 .admin-table td {
+  text-align: center;
+  vertical-align: middle;
   padding: 14px 12px;
   color: #374151;
   border-bottom: 1px solid #f3f4f6;
@@ -1957,4 +1960,32 @@
   .orders-stat-card {
     padding: 24px;
   }
+}
+.carrier-name-cell {
+  display: flex;
+  min-width: 240px;
+  max-width: 430px;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.carrier-name-cell span {
+  color: #6b7280;
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.carrier-tracking-link {
+  color: #2563eb;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.carrier-tracking-link:hover {
+  text-decoration: underline;
+}
+
+.carrier-modal {
+  max-width: 680px;
 }

@@ -6,9 +6,9 @@ export default function Pagination({ page, totalPages, onPageChange, className =
   const pages = Array.from({ length: totalPages }, (_, index) => index + 1);
 
   return (
-    <nav className={`pagination ${className}`.trim()} aria-label="à¸à¸²à¸£à¹à¸šà¹ˆà¸‡à¸«à¸™à¹‰à¸²">
+    <nav className={`pagination ${className}`.trim()} aria-label="การแบ่งหน้า">
       <button type="button" onClick={() => onPageChange(page - 1)} disabled={page === 1}>
-        à¸à¹ˆà¸­à¸™à¸«à¸™à¹‰à¸²
+        ก่อนหน้า
       </button>
       <div className="pagination-pages">
         {pages.map((number) => (
@@ -17,7 +17,7 @@ export default function Pagination({ page, totalPages, onPageChange, className =
             key={number}
             className={number === page ? 'active' : ''}
             aria-current={number === page ? 'page' : undefined}
-            aria-label={`à¸«à¸™à¹‰à¸²à¸—à¸µà¹ˆ ${number}`}
+            aria-label={`หน้าที่ ${number}`}
             onClick={() => onPageChange(number)}
           >
             {number}
@@ -25,7 +25,7 @@ export default function Pagination({ page, totalPages, onPageChange, className =
         ))}
       </div>
       <button type="button" onClick={() => onPageChange(page + 1)} disabled={page === totalPages}>
-        à¸–à¸±à¸”à¹„à¸›
+        ถัดไป
       </button>
     </nav>
   );

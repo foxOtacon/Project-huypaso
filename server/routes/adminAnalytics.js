@@ -7,7 +7,11 @@ const router = express.Router();
 
 const DEFAULT_MONTHS = 12;
 const MAX_MONTHS = 36;
-const DEFAULT_WEBHOOK_TIMEOUT_MS = 5000;
+// The production n8n workflow currently responds after it has saved the
+// predictions (normally around 10-20 seconds), while the newer workflow
+// template acknowledges immediately. Support both contracts.
+const DEFAULT_WEBHOOK_TIMEOUT_MS = 45000;
+const MIN_WEBHOOK_TIMEOUT_MS = 45000;
 const DEFAULT_STALE_RUN_MINUTES = 30;
 
 router.use(authenticate, authorize("admin"));
@@ -26,8 +30,11 @@ function normalizeMonths(value) {
 function getWebhookConfig() {
   const url = String(process.env.N8N_SALES_ANALYSIS_WEBHOOK_URL || "").trim();
   const key = String(process.env.N8N_WEBHOOK_KEY || "").trim();
-  const timeoutMs =
-    parsePositiveInteger(process.env.N8N_WEBHOOK_TIMEOUT_MS) || DEFAULT_WEBHOOK_TIMEOUT_MS;
+  const configuredTimeoutMs = parsePositiveInteger(process.env.N8N_WEBHOOK_TIMEOUT_MS);
+  const timeoutMs = Math.max(
+    configuredTimeoutMs || DEFAULT_WEBHOOK_TIMEOUT_MS,
+    MIN_WEBHOOK_TIMEOUT_MS,
+  );
 
   if (!url) {
     const error = new Error("Sales analysis webhook is not configured");
@@ -47,6 +54,36 @@ function getWebhookConfig() {
   }
 
   return { url, key, timeoutMs };
+}
+
+function parseSavedCount(value) {
+  if (value === undefined || value === null || value === "") return null;
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed >= 0 ? parsed : null;
+}
+
+function getWebhookOutcome(responseBody) {
+  if (responseBody?.success === false) {
+    const error = new Error(responseBody.message || "n8n workflow reported a failure");
+    error.status = 502;
+    throw error;
+  }
+
+  const predictions =
+    responseBody?.predictions ||
+    responseBody?.data?.predictions;
+  const resultCount =
+    parseSavedCount(
+      responseBody?.saved_count ??
+      responseBody?.savedCount ??
+      responseBody?.data?.saved_count ??
+      responseBody?.data?.savedCount,
+    ) ??
+    (Array.isArray(predictions) ? predictions.length : null);
+
+  return resultCount === null
+    ? { mode: "accepted", resultCount: null }
+    : { mode: "completed", resultCount };
 }
 
 async function getRunById(runId) {
@@ -70,7 +107,14 @@ async function markStaleRunsFailed() {
   await query(
     `UPDATE analysis_runs
      SET status = 'failed',
-         error_message = COALESCE(error_message, 'Analysis run timed out'),
+         error_message = COALESCE(
+           error_message,
+           CASE
+             WHEN status = 'queued'
+               THEN 'n8n did not start the analysis workflow before the stale-run limit'
+             ELSE 'Analysis workflow did not finish before the stale-run limit'
+           END
+         ),
          completed_at = NOW()
      WHERE status IN ('queued', 'running')
        AND created_at < NOW() - (? * INTERVAL '1 minute')`,
@@ -123,10 +167,12 @@ async function callAnalysisWebhook({ runId, requestedBy, months }) {
     return responseBody;
   } catch (error) {
     if (error.name === "AbortError") {
-      // A slow acknowledgement does not mean n8n rejected the job. This commonly
-      // happens when the Webhook node responds only after the workflow finishes.
-      // Stale-run recovery will handle a request that was never actually accepted.
-      return { acknowledgementTimedOut: true };
+      const timeoutError = new Error(
+        `n8n workflow did not respond within ${timeoutMs} ms`,
+      );
+      timeoutError.status = 504;
+      timeoutError.code = "N8N_WEBHOOK_TIMEOUT";
+      throw timeoutError;
     }
 
     if (!error.status) error.status = 502;
@@ -243,7 +289,7 @@ router.post(
       return;
     }
 
-    let webhookAcknowledged;
+    let webhookOutcome;
 
     try {
       const webhookResponse = await callAnalysisWebhook({
@@ -251,14 +297,26 @@ router.post(
         requestedBy: req.user.user_id,
         months,
       });
-      webhookAcknowledged = webhookResponse?.acknowledgementTimedOut !== true;
+      webhookOutcome = getWebhookOutcome(webhookResponse);
       const executionId =
         webhookResponse?.executionId ||
         webhookResponse?.execution_id ||
         webhookResponse?.data?.executionId ||
         null;
 
-      if (webhookAcknowledged) {
+      if (webhookOutcome.mode === "completed") {
+        await query(
+          `UPDATE analysis_runs
+           SET status = 'completed',
+               started_at = COALESCE(started_at, NOW()),
+               completed_at = NOW(),
+               result_count = ?,
+               error_message = NULL,
+               n8n_execution_id = COALESCE(?, n8n_execution_id)
+           WHERE run_id = ? AND status IN ('queued', 'running')`,
+          [webhookOutcome.resultCount, executionId, runId],
+        );
+      } else {
         await query(
           `UPDATE analysis_runs
            SET status = 'running',
@@ -269,27 +327,56 @@ router.post(
         );
       }
     } catch (error) {
-      await query(
+      const failedUpdate = await query(
         `UPDATE analysis_runs
          SET status = 'failed',
              error_message = ?,
              completed_at = NOW()
-         WHERE run_id = ?`,
+         WHERE run_id = ?
+           AND status = 'queued'
+           AND started_at IS NULL
+           AND n8n_execution_id IS NULL`,
         [String(error.message || "Unable to start n8n workflow").slice(0, 1000), runId],
       );
+
+      // n8n may have claimed or even completed the run just before a slow HTTP
+      // response timed out. Never overwrite that progress with a dispatch error.
+      if (failedUpdate.affectedRows === 0) {
+        const claimedRun = await getRunById(runId);
+        if (claimedRun && claimedRun.status !== "failed") {
+          res.status(claimedRun.status === "completed" ? 200 : 202).json({
+            success: true,
+            message: claimedRun.status === "completed"
+              ? "Sales analysis completed"
+              : "Sales analysis started",
+            data: claimedRun,
+            meta: { webhookAcknowledged: false, completionMode: "async" },
+          });
+          return;
+        }
+      }
+
       throw error;
     }
 
     const run = await getRunById(runId);
-    res.status(202).json({
+    const completed = run?.status === "completed";
+    res.status(completed ? 200 : 202).json({
       success: true,
-      message: webhookAcknowledged
-        ? "Sales analysis started"
-        : "Sales analysis request dispatched; waiting for n8n confirmation",
+      message: completed ? "Sales analysis completed" : "Sales analysis started",
       data: run,
-      meta: { webhookAcknowledged },
+      meta: {
+        webhookAcknowledged: true,
+        completionMode: webhookOutcome.mode,
+      },
     });
   }),
 );
 
 module.exports = router;
+module.exports.__test = {
+  callAnalysisWebhook,
+  getWebhookConfig,
+  getWebhookOutcome,
+  parseSavedCount,
+};
