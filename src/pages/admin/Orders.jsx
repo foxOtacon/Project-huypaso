@@ -11,6 +11,7 @@ import {
 } from '../../api/admin';
 import { formatCurrency, getStatusLabel } from '../../utils/dashboardStats';
 import { getSafeTrackingUrl } from '../../utils/tracking';
+import { formatAddressForDisplay } from '../../utils/profileAddress';
 
 const STATUS_OPTIONS = [
   { value: 'all', label: 'ทั้งหมด' },
@@ -66,7 +67,7 @@ function buildOrderRows(orders, users, orderItems, products) {
         customerName: order.shipping_name || customer?.full_name || `ลูกค้า ${order.user_id}`,
         customerPhone: order.shipping_phone || customer?.phone || '-',
         customerEmail: customer?.email || '-',
-        shippingAddress: order.shipping_address || customer?.address || '-',
+        shippingAddress: formatAddressForDisplay(order.shipping_address || customer?.address) || '-',
         items,
         itemCount: items.reduce((sum, item) => sum + Number(item.quantity || 0), 0),
       };

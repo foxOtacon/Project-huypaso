@@ -12,6 +12,7 @@ import {
   rejectAdminPayment,
 } from '../../api/admin';
 import { formatCurrency } from '../../utils/dashboardStats';
+import { formatAddressForDisplay } from '../../utils/profileAddress';
 
 const PAYMENT_STATUS_OPTIONS = [
   { value: 'all', label: 'ทั้งหมด' },
@@ -81,7 +82,7 @@ function buildTransactionRows(payments, orders, users, orderItems, products) {
         customerName: order?.shipping_name || payment.full_name || customer?.full_name || 'ไม่พบข้อมูลลูกค้า',
         customerPhone: order?.shipping_phone || payment.phone || customer?.phone || '-',
         customerEmail: payment.email || customer?.email || '-',
-        shippingAddress: order?.shipping_address || payment.shipping_address || customer?.address || '-',
+        shippingAddress: formatAddressForDisplay(order?.shipping_address || payment.shipping_address || customer?.address) || '-',
         methodLabel: PAYMENT_METHOD_LABELS[payment.payment_method] || payment.payment_method,
         statusLabel: PAYMENT_STATUS_LABELS[payment.payment_status] || payment.payment_status,
       };

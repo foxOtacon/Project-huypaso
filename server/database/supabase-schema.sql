@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS users (
     password_hash VARCHAR(255) NOT NULL,
     role VARCHAR(20) NOT NULL DEFAULT 'customer' CHECK (role IN ('customer', 'admin')),
     phone VARCHAR(20),
-    address VARCHAR(200),
+    address TEXT,
     status VARCHAR(20) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'suspended')),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -21,13 +21,13 @@ CREATE TABLE IF NOT EXISTS categories (
 
 CREATE TABLE IF NOT EXISTS products (
     product_id BIGSERIAL PRIMARY KEY,
-    product_name VARCHAR(200) NOT NULL,
+    product_name TEXT NOT NULL,
     category_id BIGINT NOT NULL REFERENCES categories(category_id),
     description TEXT,
     price NUMERIC(10,2) NOT NULL DEFAULT 0.00,
     unit VARCHAR(50) NOT NULL,
     image_url VARCHAR(255),
-    production_source VARCHAR(200),
+    production_source TEXT,
     stock_quantity INT NOT NULL DEFAULT 0,
     created_by BIGINT NOT NULL REFERENCES users(user_id),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -76,13 +76,13 @@ CREATE TABLE IF NOT EXISTS payments (
     amount NUMERIC(10,2) NOT NULL DEFAULT 0.00,
     payment_method VARCHAR(20) NOT NULL CHECK (payment_method IN ('promptpay','bank_transfer')),
     payment_status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (payment_status IN ('pending','approved','rejected')),
-    transaction_ref VARCHAR(200),
+    transaction_ref TEXT,
     payment_date TIMESTAMPTZ NULL
 );
 
 CREATE TABLE IF NOT EXISTS news (
     news_id BIGSERIAL PRIMARY KEY,
-    title VARCHAR(200) NOT NULL,
+    title TEXT NOT NULL,
     summary TEXT,
     content TEXT NOT NULL,
     image_url VARCHAR(255),

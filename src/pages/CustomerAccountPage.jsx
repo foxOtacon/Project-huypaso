@@ -6,6 +6,7 @@ import TrackingGuideModal from '../components/TrackingGuideModal';
 import usePagination from '../hooks/usePagination';
 import { copyTrackingNumber, resolveTrackingProvider } from '../utils/tracking';
 import { useAuth } from '../context/AuthContext';
+import { formatAddressForDisplay } from '../utils/profileAddress';
 import './CustomerAccountPage.css';
 
 const pageContent = {
@@ -313,7 +314,7 @@ export default function CustomerAccountPage({ user, onNavigate, onLogout }) {
               </div>
               <div>
                 <dt>ที่อยู่จัดส่ง</dt>
-                <dd>{selectedOrder.shipping_address || '-'}</dd>
+                <dd>{formatAddressForDisplay(selectedOrder.shipping_address) || '-'}</dd>
               </div>
               <div>
                 <dt>เลขอ้างอิงชำระเงิน</dt>

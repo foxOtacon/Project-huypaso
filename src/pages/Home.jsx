@@ -131,7 +131,7 @@ export default function Home({ user, onNavigate, onLogout }) {
         });
 
         setFeaturedCategories(categoryMap);
-        setFeaturedProducts(featured);
+        setFeaturedProducts(featured.slice(0, 3));
       } catch (error) {
         if (active) setFeaturedError(error.message || 'ไม่สามารถโหลดสินค้าแนะนำได้');
       } finally {

@@ -9,6 +9,7 @@ import { useRef } from 'react';
 import CustomerNavbar from '../components/CustomerNavbar';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
+import { formatAddressForDisplay } from '../utils/profileAddress';
 import './PaymentPage.css';
 
 function formatPrice(value) {
@@ -31,7 +32,7 @@ export default function PaymentPage({ user, onNavigate, onLogout }) {
   const [form, setForm] = useState({
     shipping_name: user?.full_name || '',
     shipping_phone: user?.phone || '',
-    shipping_address: user?.address || '',
+    shipping_address: formatAddressForDisplay(user?.address),
   });
   const [createdOrder, setCreatedOrder] = useState(null);
   const [promptPayQr, setPromptPayQr] = useState(null);

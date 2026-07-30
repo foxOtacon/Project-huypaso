@@ -2,7 +2,7 @@
 import { updateMe } from '../api/auth';
 import CustomerNavbar from '../components/CustomerNavbar';
 import { useAuth } from '../context/AuthContext';
-import { formatProfileAddress, parseProfileAddress } from '../utils/profileAddress';
+import { formatAddressForDisplay, formatProfileAddress, parseProfileAddress } from '../utils/profileAddress';
 import './ProfilePage.css';
 
 const PROFILE_ERROR_MESSAGES = {
@@ -270,7 +270,7 @@ export default function ProfilePage({ user, onNavigate, onLogout }) {
               <p><span>อีเมล:</span> {form.email || '-'}</p>
               <p><span>เบอร์โทรศัพท์:</span> {form.phone || '-'}</p>
               {formatProfileAddress(addressFields) ? (
-                <p><span>ที่อยู่:</span> {formatProfileAddress(addressFields)}</p>
+                <p><span>ที่อยู่:</span> {formatAddressForDisplay(formatProfileAddress(addressFields))}</p>
               ) : null}
             </div>
           )}

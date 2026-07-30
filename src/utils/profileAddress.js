@@ -70,3 +70,18 @@ export function formatProfileAddress(addressFields) {
     .filter(Boolean)
     .join(' | ');
 }
+
+export function formatAddressForDisplay(address) {
+  return String(address || '')
+    .split(/\s*\|\s*/)
+    .map((part) => part.trim())
+    .filter((part) => {
+      if (!part) return false;
+      const definition = ADDRESS_PARTS.find(([, label]) => part.startsWith(`${label} `));
+      if (!definition) return part !== '-';
+      const [, label] = definition;
+      const value = part.slice(label.length).trim();
+      return value && value !== '-';
+    })
+    .join(' ');
+}

@@ -8,7 +8,7 @@ CREATE TABLE users (
     password_hash VARCHAR(255) NOT NULL,
     role ENUM('customer','admin') NOT NULL DEFAULT 'customer',
     phone VARCHAR(20),
-    address VARCHAR(200),
+    address TEXT,
     status ENUM('active','suspended') NOT NULL DEFAULT 'active',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -21,13 +21,13 @@ CREATE TABLE categories (
 
 CREATE TABLE products (
     product_id INT AUTO_INCREMENT PRIMARY KEY,
-    product_name VARCHAR(200) NOT NULL,
+    product_name TEXT NOT NULL,
     category_id INT NOT NULL,
     description TEXT,
     price DECIMAL(10,2) NOT NULL DEFAULT 0.00,
     unit VARCHAR(50) NOT NULL,
     image_url VARCHAR(255),
-    production_source VARCHAR(200),
+    production_source TEXT,
     stock_quantity INT NOT NULL DEFAULT 0,
     created_by INT NOT NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -114,7 +114,7 @@ CREATE TABLE payments (
         'approved',
         'rejected'
     ) NOT NULL DEFAULT 'pending',
-    transaction_ref VARCHAR(200),
+    transaction_ref TEXT,
     payment_date DATETIME NULL,
     CONSTRAINT fk_payments_order
     FOREIGN KEY (order_id)
@@ -123,7 +123,7 @@ CREATE TABLE payments (
 
 CREATE TABLE news (
     news_id INT AUTO_INCREMENT PRIMARY KEY,
-    title VARCHAR(200) NOT NULL,
+    title TEXT NOT NULL,
     summary TEXT,
     content TEXT NOT NULL,
     image_url VARCHAR(255),
