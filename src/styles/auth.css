@@ -146,6 +146,32 @@
   gap: 0 12px;
 }
 
+.auth-address-fields {
+  min-width: 0;
+  margin: 4px 0 20px;
+  padding: 18px;
+  border: 1px solid #dfe7e2;
+  border-radius: 14px;
+  background: #f8fbf9;
+}
+
+.auth-address-fields legend {
+  float: none;
+  width: auto;
+  margin: 0 0 4px;
+  padding: 0 6px;
+  color: #1b4332;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.auth-address-hint {
+  margin: 0 0 16px;
+  color: #66736c;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
 .auth-field-wide {
   grid-column: 1 / -1;
 }
@@ -327,6 +353,10 @@
 
   .auth-address-grid {
     grid-template-columns: 1fr;
+  }
+
+  .auth-address-fields {
+    padding: 16px 14px;
   }
 }
 

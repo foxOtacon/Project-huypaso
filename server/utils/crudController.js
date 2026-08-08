@@ -24,7 +24,7 @@ function buildUpdatePayload(body, fields) {
   return payload;
 }
 
-function createCrudController({ table, idField, fields, requiredFields = [] }) {
+function createCrudController({ table, idField, fields, requiredFields = [], afterUpdate }) {
   return {
     getAll: async (_req, res) => {
       const rows = await query(`SELECT * FROM ${table} ORDER BY ${idField} DESC`);
@@ -91,6 +91,9 @@ function createCrudController({ table, idField, fields, requiredFields = [] }) {
         return;
       }
 
+      const previousRows = afterUpdate
+        ? await query(`SELECT * FROM ${table} WHERE ${idField} = ?`, [req.params.id])
+        : [];
       const columns = Object.keys(payload);
       const assignments = columns.map((column) => `${column} = ?`).join(", ");
       const values = [...columns.map((column) => payload[column]), req.params.id];
@@ -108,6 +111,14 @@ function createCrudController({ table, idField, fields, requiredFields = [] }) {
       const rows = await query(`SELECT * FROM ${table} WHERE ${idField} = ?`, [
         req.params.id,
       ]);
+
+      if (afterUpdate) {
+        try {
+          await afterUpdate(previousRows[0], rows[0]);
+        } catch (error) {
+          console.error(`Post-update cleanup failed for ${table}:`, error);
+        }
+      }
 
       res.json({ success: true, data: rows[0] });
     },

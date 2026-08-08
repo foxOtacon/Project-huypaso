@@ -55,6 +55,21 @@ select {
   box-shadow: 0 2px 8px rgba(28, 47, 38, 0.16);
 }
 
+/* Remove decorative heading dashes across all customer and admin pages */
+.hero-kicker::before,
+.section-kicker::before,
+.catalog-eyebrow::before,
+.news-heading p::before,
+.contact-hero p::before,
+.contact-eyebrow::before,
+.contact-form-heading > p::before,
+.customer-hero-panel > p::before,
+.account-hero-copy p::before,
+.dashboard-welcome p::before {
+  display: none !important;
+  content: none !important;
+}
+
 .brand-logo-lg {
   width: 54px;
   height: 54px;

@@ -5,6 +5,7 @@ import Pagination from '../components/Pagination';
 import { useCart } from '../context/CartContext';
 import usePagination from '../hooks/usePagination';
 import { isCustomerUser } from '../utils/roles';
+import { getSearchScore, normalizeSearchText } from '../utils/search';
 import './Home.css';
 import './ProductsPage.css';
 
@@ -38,69 +39,61 @@ function formatPrice(value) {
   }).format(number);
 }
 
-function sortProducts(products, sortBy) {
-  const sorted = [...products];
+function getProductSearchScore(query, product, categoryById) {
+  const normalizedQuery = normalizeSearchText(query);
+  if (!normalizedQuery) return 0;
 
+  const haystackValues = [
+    product.product_name,
+    product.description,
+    product.production_source,
+    categoryById[String(product.category_id)],
+  ].filter(Boolean);
+
+  let bestScore = 0;
+  let bestValue = '';
+
+  haystackValues.forEach((value) => {
+    const score = getSearchScore(normalizedQuery, value);
+    if (score > bestScore) {
+      bestScore = score;
+      bestValue = value;
+    }
+  });
+
+  if (!bestScore) return 0;
+
+  const normalizedBestValue = normalizeSearchText(bestValue);
+  const startsWithQuery = normalizedBestValue.startsWith(normalizedQuery);
+  const containsQuery = normalizedBestValue.includes(normalizedQuery);
+
+  if (startsWithQuery) {
+    bestScore += 12;
+  } else if (containsQuery) {
+    bestScore += 6;
+  }
+
+  return bestScore;
+}
+
+function compareProducts(left, right, sortBy) {
   if (sortBy === 'price-low') {
-    return sorted.sort((a, b) => Number(a.price || 0) - Number(b.price || 0));
+    return Number(left.price || 0) - Number(right.price || 0);
   }
 
   if (sortBy === 'price-high') {
-    return sorted.sort((a, b) => Number(b.price || 0) - Number(a.price || 0));
+    return Number(right.price || 0) - Number(left.price || 0);
   }
 
   if (sortBy === 'name') {
-    return sorted.sort((a, b) =>
-      String(a.product_name || '').localeCompare(String(b.product_name || ''), 'th'),
-    );
+    return String(left.product_name || '').localeCompare(String(right.product_name || ''), 'th');
   }
 
-  return sorted.sort((a, b) => Number(b.product_id || 0) - Number(a.product_id || 0));
+  return Number(right.product_id || 0) - Number(left.product_id || 0);
 }
 
-function ProfileMenuIcon({ name }) {
-  if (name === 'profile') {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" />
-        <path d="M4.5 20a7.5 7.5 0 0 1 15 0" />
-      </svg>
-    );
-  }
-
-  if (name === 'card') {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M4 7.5A2.5 2.5 0 0 1 6.5 5h11A2.5 2.5 0 0 1 20 7.5v9a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 16.5v-9Z" />
-        <path d="M4 9h16M7 15h4" />
-      </svg>
-    );
-  }
-
-  if (name === 'box') {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z" />
-        <path d="m4.5 8 7.5 4 7.5-4M12 12v8.5" />
-      </svg>
-    );
-  }
-
-  if (name === 'receipt') {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M7 3h10v18l-2-1.3-2 1.3-2-1.3-2 1.3-2-1.3V3Z" />
-        <path d="M9.5 8h5M9.5 12h5M9.5 16h3" />
-      </svg>
-    );
-  }
-
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M15.5 8.5 19 12l-3.5 3.5M19 12H9" />
-      <path d="M12 5H6.5A2.5 2.5 0 0 0 4 7.5v9A2.5 2.5 0 0 0 6.5 19H12" />
-    </svg>
-  );
+function sortProducts(products, sortBy) {
+  return [...products].sort((left, right) => compareProducts(left, right, sortBy));
 }
 
 export default function ProductsPage({ user, onNavigate, onLogout }) {
@@ -180,25 +173,37 @@ export default function ProductsPage({ user, onNavigate, onLogout }) {
   }, [categories]);
 
   const visibleProducts = useMemo(() => {
-    const keyword = search.trim().toLowerCase();
+    const keyword = search.trim();
 
     const filtered = products.filter((product) => {
+      if (product.status === 'suspended') return false;
+
       const matchesCategory =
         categoryId === 'all' || String(product.category_id) === String(categoryId);
-      const haystack = [
-        product.product_name,
-        product.description,
-        product.production_source,
-        categoryById[String(product.category_id)],
-      ]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase();
 
-      return matchesCategory && (!keyword || haystack.includes(keyword));
+      return matchesCategory;
     });
 
-    return sortProducts(filtered, sortBy);
+    if (!keyword) {
+      return sortProducts(filtered, sortBy);
+    }
+
+    const scoredProducts = filtered
+      .map((product) => ({
+        product,
+        score: getProductSearchScore(keyword, product, categoryById),
+      }))
+      .filter(({ score }) => score > 0);
+
+    scoredProducts.sort((left, right) => {
+      if (right.score !== left.score) {
+        return right.score - left.score;
+      }
+
+      return compareProducts(left.product, right.product, sortBy);
+    });
+
+    return scoredProducts.map(({ product }) => product);
   }, [products, categoryId, search, sortBy, categoryById]);
 
   const productPagination = usePagination(visibleProducts, 12, [search, categoryId, sortBy]);
@@ -216,6 +221,8 @@ export default function ProductsPage({ user, onNavigate, onLogout }) {
   }
 
   function handleAddToCart(product) {
+    if (product.status === 'suspended' || Number(product.stock_quantity || 0) <= 0) return;
+
     if (!isCustomerUser(user)) {
       onNavigate('/login');
       return;
@@ -242,7 +249,7 @@ export default function ProductsPage({ user, onNavigate, onLogout }) {
           <nav className="main-nav" aria-label="เมนูหลัก">
             <button type="button" onClick={() => onNavigate('/')}>หน้าหลัก</button>
             <button type="button" className="active">สินค้า</button>
-            <button type="button" onClick={() => onNavigate('/')}>ข่าว</button>
+            <button type="button" onClick={() => onNavigate('/news')}>ข่าว</button>
             <button type="button" onClick={() => onNavigate('/contact')}>ติดต่อ</button>
           </nav>
 
@@ -327,10 +334,22 @@ export default function ProductsPage({ user, onNavigate, onLogout }) {
 
       <main className="catalog-main">
         <section className="catalog-shell catalog-hero">
-          <h1>สินค้าทั้งหมด</h1>
-          <p>เลือกซื้อสินค้าเกษตรจากชุมชนห้วยหยวกปากโซ</p>
+          <div className="catalog-hero-copy">
+            <span className="catalog-eyebrow">ตลาดชุมชนพื้นที่สูง</span>
+            <h1>สินค้าจากใจ<br />ส่งตรงจากชุมชน</h1>
+            <p>คัดสรรชา กาแฟ และผลผลิตคุณภาพจากเกษตรกรห้วยหยวกปากโซ ทุกการสั่งซื้อช่วยสร้างรายได้และดูแลผืนป่าไปพร้อมกัน</p>
+            <div className="catalog-benefits" aria-label="จุดเด่นของสินค้า">
+              <span>ผลผลิตจากชุมชน</span>
+              <span>คัดสรรคุณภาพ</span>
+              <span>จัดส่งทั่วประเทศ</span>
+            </div>
+          </div>
 
           <div className="catalog-filters" aria-label="ค้นหาและกรองสินค้า">
+            <div className="catalog-filter-heading">
+              <strong>ค้นหาสินค้าที่ใช่</strong>
+              <span>เลือกประเภทและเรียงสินค้าได้ตามต้องการ</span>
+            </div>
             <label>
               <span>ค้นหา</span>
               <input
@@ -380,6 +399,16 @@ export default function ProductsPage({ user, onNavigate, onLogout }) {
           )}
 
           {!loading && !error && visibleProducts.length > 0 && (
+            <>
+            <div className="catalog-results-heading">
+              <div>
+                <span>รายการสินค้า</span>
+                <strong>{visibleProducts.length} รายการ</strong>
+              </div>
+              {(search || categoryId !== 'all') ? (
+                <button type="button" onClick={() => { setSearch(''); setCategoryId('all'); }}>ล้างตัวกรอง</button>
+              ) : null}
+            </div>
             <div className="catalog-grid">
               {productPagination.pageItems.map((product, index) => {
                 const categoryName = getProductCategoryName(product);
@@ -387,11 +416,15 @@ export default function ProductsPage({ user, onNavigate, onLogout }) {
 
                 return (
                   <article className="catalog-card" key={product.product_id}>
-                    <img src={getImageUrl(product, index)} alt={product.product_name} />
+                    <div className="catalog-card-media">
+                      <img src={getImageUrl(product, index)} alt={product.product_name} />
+                      <span className="catalog-category-pill">{categoryName}</span>
+                      <span className={`catalog-stock-pill${stock <= 0 ? ' is-out' : ''}`}>{stock > 0 ? 'พร้อมส่ง' : 'หมดสต็อก'}</span>
+                    </div>
                     <div className="catalog-card-body">
                       <div className="catalog-card-meta">
-                        <span>{categoryName}</span>
-                        <span>{stock > 0 ? 'พร้อมส่ง' : 'หมด'}</span>
+                        <span>ผลิตภัณฑ์ชุมชน</span>
+                        <span>คงเหลือ {stock}</span>
                       </div>
                       <h2>{product.product_name}</h2>
                       <p className="catalog-card-description">
@@ -414,7 +447,11 @@ export default function ProductsPage({ user, onNavigate, onLogout }) {
                           disabled={stock <= 0}
                           onClick={() => handleAddToCart(product)}
                         >
-                          {addedProductId === product.product_id ? 'เพิ่มแล้ว' : 'ใส่ตะกร้า'}
+                          {stock <= 0
+                            ? 'หมดสต็อก'
+                            : addedProductId === product.product_id
+                              ? 'เพิ่มแล้ว'
+                              : 'ใส่ตะกร้า'}
                         </button>
                       </div>
                     </div>
@@ -422,6 +459,7 @@ export default function ProductsPage({ user, onNavigate, onLogout }) {
                 );
               })}
             </div>
+            </>
           )}
           {!loading && !error && (
             <Pagination page={productPagination.page} totalPages={productPagination.totalPages} onPageChange={productPagination.setPage} className="catalog-pagination" />
@@ -452,7 +490,7 @@ export default function ProductsPage({ user, onNavigate, onLogout }) {
             <div className="catalog-detail-content">
               <div className="catalog-card-meta">
                 <span>{getProductCategoryName(selectedProduct)}</span>
-                <span>{Number(selectedProduct.stock_quantity || 0) > 0 ? 'พร้อมส่ง' : 'หมด'}</span>
+                <span>{Number(selectedProduct.stock_quantity || 0) > 0 ? 'พร้อมส่ง' : 'หมดสต็อก'}</span>
               </div>
 
               <h2 id="catalog-detail-title">{selectedProduct.product_name}</h2>
@@ -482,7 +520,11 @@ export default function ProductsPage({ user, onNavigate, onLogout }) {
                 disabled={Number(selectedProduct.stock_quantity || 0) <= 0}
                 onClick={() => handleAddToCart(selectedProduct)}
               >
-                {addedProductId === selectedProduct.product_id ? 'เพิ่มแล้ว' : 'ใส่ตะกร้า'}
+                {Number(selectedProduct.stock_quantity || 0) <= 0
+                  ? 'หมดสต็อก'
+                  : addedProductId === selectedProduct.product_id
+                    ? 'เพิ่มแล้ว'
+                    : 'ใส่ตะกร้า'}
               </button>
             </div>
           </section>

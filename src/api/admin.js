@@ -98,7 +98,7 @@ export async function fetchOrderItems() {
 }
 
 export async function fetchProducts() {
-  const res = await request('/products');
+  const res = await request('/products/admin/all');
   return res.data || [];
 }
 
@@ -133,6 +133,28 @@ export async function deleteShippingCarrier(carrierId) {
 export async function fetchCategories() {
   const res = await request('/categories');
   return res.data || [];
+}
+
+export async function createCategory(payload) {
+  const res = await request('/categories', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+  return res.data;
+}
+
+export async function updateCategory(categoryId, payload) {
+  const res = await request(`/categories/${categoryId}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+  return res.data;
+}
+
+export async function deleteCategory(categoryId) {
+  return request(`/categories/${categoryId}`, {
+    method: 'DELETE',
+  });
 }
 
 export async function fetchSalesPredictions() {

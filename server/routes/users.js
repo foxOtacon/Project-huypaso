@@ -6,6 +6,9 @@ const { sanitizeUser } = require("../utils/userHelper");
 
 const router = express.Router();
 
+const USER_HAS_REFERENCES_MESSAGE =
+  'ไม่สามารถลบผู้ใช้นี้ได้ เนื่องจากมีสินค้า คำสั่งซื้อ หรือประวัติการใช้งานเชื่อมโยงอยู่ กรุณาระงับบัญชีแทนการลบ';
+
 const USER_FIELDS = [
   "full_name",
   "email",
@@ -116,7 +119,26 @@ router.put(
 router.delete(
   "/:id",
   asyncHandler(async (req, res) => {
-    const result = await query("DELETE FROM users WHERE user_id = ?", [req.params.id]);
+    let result;
+
+    try {
+      result = await query("DELETE FROM users WHERE user_id = ?", [req.params.id]);
+    } catch (error) {
+      if (
+        error.code === "23503" ||
+        error.code === "ER_ROW_IS_REFERENCED_2" ||
+        error.code === "ER_NO_REFERENCED_ROW_2"
+      ) {
+        res.status(409).json({
+          success: false,
+          code: "USER_HAS_REFERENCES",
+          message: USER_HAS_REFERENCES_MESSAGE,
+        });
+        return;
+      }
+
+      throw error;
+    }
 
     if (result.affectedRows === 0) {
       res.status(404).json({ success: false, message: "User not found" });

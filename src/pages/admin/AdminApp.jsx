@@ -1,6 +1,7 @@
 import AdminLayout from '../../components/admin/AdminLayout';
 import AdminPlaceholder from './AdminPlaceholder';
 import Analytics from './Analytics';
+import Categories from './Categories';
 import Dashboard from './Dashboard';
 import News from './News';
 import Orders from './Orders';
@@ -24,6 +25,10 @@ function AdminPageContent({ route, user }) {
 
   if (route === '/admin/products') {
     return <Products user={user} />;
+  }
+
+  if (route === '/admin/categories') {
+    return <Categories />;
   }
 
   if (route === '/admin/shipping-carriers') {

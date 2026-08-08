@@ -1,9 +1,12 @@
 ﻿import { useEffect, useRef, useState } from 'react';
 import BrandLogo from '../components/BrandLogo';
+import GoogleProfileAlert from '../components/GoogleProfileAlert';
 import { fetchCatalogCategories, fetchCatalogProducts } from '../api/catalog';
+import { fetchPublishedNews } from '../api/news';
 import { useCart } from '../context/CartContext';
 import { isCustomerUser } from '../utils/roles';
 import './Home.css';
+import './ProductsPage.css';
 
 const FEATURED_KEYWORDS = ['ชา', 'กาแฟ', 'tea', 'coffee'];
 const FALLBACK_PRODUCT_IMAGE =
@@ -21,6 +24,10 @@ function getProductImage(product) {
   const imageUrl = product.image_url?.trim();
   if (!imageUrl) return FALLBACK_PRODUCT_IMAGE;
   return imageUrl.startsWith('http') || imageUrl.startsWith('/') ? imageUrl : `/${imageUrl}`;
+}
+
+function getImageUrl(product) {
+  return getProductImage(product);
 }
 
 const services = [
@@ -44,7 +51,7 @@ const services = [
   },
 ];
 
-const news = [
+const fallbackNews = [
   {
     date: '15 มกราคม 2026',
     title: 'เก็บเกี่ยวผลผลิตฤดูใหม่',
@@ -64,6 +71,31 @@ const news = [
     image: 'https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?auto=format&fit=crop&w=900&q=80',
   },
 ];
+
+function getNewsImage(item, index) {
+  const imageUrl = item?.image_url?.trim();
+
+  if (!imageUrl) return fallbackNews[index % fallbackNews.length].image;
+  return imageUrl.startsWith('http') || imageUrl.startsWith('/') ? imageUrl : `/${imageUrl}`;
+}
+
+function formatNewsDate(value) {
+  if (!value) return '';
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+
+  return date.toLocaleDateString('th-TH', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+}
+
+function getNewsExcerpt(item) {
+  const text = String(item?.summary || item?.content || '').trim();
+  return text.length > 140 ? `${text.slice(0, 137).trimEnd()}...` : text;
+}
 
 function Icon({ name }) {
   if (name === 'people') {
@@ -102,6 +134,10 @@ export default function Home({ user, onNavigate, onLogout }) {
   const [featuredLoading, setFeaturedLoading] = useState(true);
   const [featuredError, setFeaturedError] = useState('');
   const [addedProductId, setAddedProductId] = useState(null);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [latestNews, setLatestNews] = useState([]);
+  const [newsLoading, setNewsLoading] = useState(true);
+  const [newsError, setNewsError] = useState('');
   const profileRef = useRef(null);
 
   useEffect(() => {
@@ -119,6 +155,8 @@ export default function Home({ user, onNavigate, onLogout }) {
           categories.map((category) => [String(category.category_id), category.category_name]),
         );
         const featured = products.filter((product) => {
+          if (product.status === 'suspended') return false;
+
           const searchableText = [
             product.product_name,
             product.description,
@@ -140,6 +178,27 @@ export default function Home({ user, onNavigate, onLogout }) {
     }
 
     loadFeaturedProducts();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadLatestNews() {
+      try {
+        const rows = await fetchPublishedNews();
+        if (!active) return;
+        setLatestNews(rows.slice(0, 3));
+      } catch (error) {
+        if (active) setNewsError(error.message || 'ไม่สามารถโหลดข่าวล่าสุดได้');
+      } finally {
+        if (active) setNewsLoading(false);
+      }
+    }
+
+    loadLatestNews();
     return () => {
       active = false;
     };
@@ -223,6 +282,7 @@ export default function Home({ user, onNavigate, onLogout }) {
 
   return (
     <div className="home-page">
+      <GoogleProfileAlert user={user} onNavigate={onNavigate} />
       <header className="site-header">
         <div className="site-shell nav-shell">
           <button type="button" className="brand-link" onClick={() => scrollTo('top')}>
@@ -322,6 +382,7 @@ export default function Home({ user, onNavigate, onLogout }) {
         <section className="hero-section" aria-label="หน้าหลัก">
           <div className="hero-overlay" />
           <div className="site-shell hero-content">
+            <span className="hero-kicker">ผลิตภัณฑ์จากพื้นที่สูงเชียงราย</span>
             <h1>ห้วยหยวกปากโซ</h1>
             <p className="hero-tagline">ทำด้วยกัน ทำด้วยใจ</p>
             <p className="hero-copy">
@@ -332,11 +393,28 @@ export default function Home({ user, onNavigate, onLogout }) {
               <button type="button" className="hero-primary" onClick={() => onNavigate('/products')}>
                 เลือกซื้อสินค้า
               </button>
+              <button type="button" className="hero-secondary" onClick={() => scrollTo('history')}>
+                รู้จักชุมชนของเรา
+              </button>
+            </div>
+            <div className="hero-proof" aria-label="จุดเด่นของผลิตภัณฑ์">
+              <span>ปลูกบนพื้นที่สูง</span>
+              <span>สดใหม่จากชุมชน</span>
+              <span>สนับสนุนเกษตรกร</span>
             </div>
           </div>
           <button type="button" className="scroll-cue" onClick={() => scrollTo('products')} aria-label="เลื่อนไปยังสินค้า">
             ↓
           </button>
+        </section>
+
+        <section className="impact-strip" aria-label="ภาพรวมชุมชน">
+          <div className="site-shell impact-grid">
+            <div><strong>1,200–1,500</strong><span>เมตรเหนือระดับน้ำทะเล</span></div>
+            <div><strong>พ.ศ. 2512</strong><span>จุดเริ่มต้นของชุมชน</span></div>
+            <div><strong>3 กลุ่มชาติพันธุ์</strong><span>อยู่ร่วมกันอย่างกลมกลืน</span></div>
+            <div><strong>ชาและกาแฟ</strong><span>ผลผลิตเด่นจากพื้นที่สูง</span></div>
+          </div>
         </section>
 
         <section id="history" className="section history-section" aria-labelledby="history-title">
@@ -348,13 +426,61 @@ export default function Home({ user, onNavigate, onLogout }) {
             <article className="history-content reveal-on-scroll">
               <p className="history-eyebrow">เรื่องราวของชุมชน</p>
               <h2 id="history-title">ความเป็นมา</h2>
+              <p className="history-lead">จากชุมชนบนสันเขา สู่แหล่งเกษตรคุณภาพที่เติบโตควบคู่กับผืนป่าและวัฒนธรรมอันหลากหลาย</p>
+
+              <div className="history-highlights" role="list" aria-label="คุณค่าหลักของชุมชน">
+                <div className="history-highlight-card" role="listitem">
+                  <strong>
+                    <span className="history-highlight-icon" aria-hidden="true">
+                      <svg viewBox="0 0 24 24">
+                        <path d="M20 4c-7.5.2-12.1 2.3-14.3 6.2C3.8 13.5 5 17.4 8.4 19c3.6 1.6 7.1-.3 8.7-3.4C18.8 12.4 19.6 8.1 20 4Z" />
+                        <path d="M4 20c2.9-4.3 6.5-7.5 11-9.6" />
+                      </svg>
+                    </span>
+                    เกษตรอินทรีย์
+                  </strong>
+                  <span>ส่งเสริมการปลูกพืชอย่างยั่งยืนและคำนึงถึงสิ่งแวดล้อม</span>
+                </div>
+                <div className="history-highlight-card" role="listitem">
+                  <strong>
+                    <span className="history-highlight-icon" aria-hidden="true">
+                      <svg viewBox="0 0 24 24">
+                        <circle cx="8" cy="8" r="3" />
+                        <circle cx="17" cy="9" r="2.5" />
+                        <path d="M2.5 20v-1.5A5.5 5.5 0 0 1 8 13a5.5 5.5 0 0 1 5.5 5.5V20" />
+                        <path d="M14 14.3a4.5 4.5 0 0 1 7.5 3.4V20" />
+                      </svg>
+                    </span>
+                    ชุมชนหลากหลายวัฒนธรรม
+                  </strong>
+                  <span>มีอัตลักษณ์จากกลุ่มชาติพันธุ์และภูมิปัญญาท้องถิ่นที่หลอมรวมเป็นหนึ่งเดียว</span>
+                </div>
+                <div className="history-highlight-card" role="listitem">
+                  <strong>
+                    <span className="history-highlight-icon" aria-hidden="true">
+                      <svg viewBox="0 0 24 24">
+                        <path d="m2 19 6.5-9 3.4 4.4L15 10l7 9H2Z" />
+                        <path d="m6.8 12.4 1.7-2.4 1.8 2.4" />
+                        <path d="M12 19c.1-2.6 1.4-4.3 4-5.2" />
+                      </svg>
+                    </span>
+                    พัฒนาผลิตภัณฑ์จากพื้นที่สูง
+                  </strong>
+                  <span>ชาและกาแฟอาราบิกาเป็นสินค้าสำคัญที่สร้างรายได้ให้กับครัวเรือน</span>
+                </div>
+              </div>
+
               <div className="history-copy">
                 <p>บ้านห้วยหยวกป่าโซ ตั้งอยู่หมู่ที่ 9 ตำบลแม่สลองใน อำเภอแม่ฟ้าหลวง จังหวัดเชียงราย ก่อตั้งขึ้นเมื่อปี พ.ศ. 2512 โดยนายป่าโซ มาเยอะ ได้นำประชาชนจากหลายพื้นที่เข้ามาตั้งถิ่นฐานร่วมกัน ได้แก่ บ้านพญาไพร บ้านโป่งไฮ บ้านนาโต่ และบ้านเล่าลิ่ว</p>
-                <p>ในระยะแรก ชุมชนตั้งอยู่บนสันเขาใกล้ชายแดนไทย–เมียนมา แต่เนื่องจากพื้นที่อยู่ห่างไกลจากแหล่งน้ำ เมื่อจำนวนประชากรเพิ่มขึ้นจึงประสบปัญหาน้ำไม่เพียงพอต่อการอุปโภคบริโภคและการทำเกษตร ชาวบ้านจึงย้ายชุมชนไปทางทิศตะวันออกจากพื้นที่เดิมประมาณ 6 กิโลเมตร และก่อตั้งเป็นหมู่บ้านในพื้นที่ปัจจุบันเมื่อปี พ.ศ. 2519</p>
-                <p>หมู่บ้านตั้งอยู่บนพื้นที่ภูเขาสูงประมาณ 1,200–1,500 เมตรจากระดับน้ำทะเล มีสภาพภูมิประเทศเป็นภูเขาสลับซับซ้อนและพื้นที่ลาดชัน ประชากรประกอบด้วยกลุ่มชาติพันธุ์อาข่า ลาหู่ และจีนฮ่อ ซึ่งมีภาษา ศาสนา ประเพณี และวัฒนธรรมที่แตกต่างกัน แต่สามารถอยู่ร่วมกันได้อย่างกลมกลืน จึงเป็นชุมชนที่มีความหลากหลายทางวัฒนธรรมและมีเอกลักษณ์เฉพาะตัว</p>
-                <p>อาชีพดั้งเดิมของชาวบ้านส่วนใหญ่คือการทำเกษตรกรรม เช่น การทำนาขั้นบันได การปลูกพืชเพื่อบริโภค และการเลี้ยงสัตว์ ต่อมาชุมชนได้เริ่มปลูกชาและกาแฟอาราบิกาเป็นพืชเศรษฐกิจ เนื่องจากสภาพอากาศเย็นและพื้นที่สูงเหมาะสมต่อการเพาะปลูก ทำให้ชาและกาแฟกลายเป็นผลิตภัณฑ์สำคัญที่ช่วยสร้างรายได้ให้แก่ประชาชนในชุมชน</p>
-                <p>เมื่อวันที่ 14 มกราคม พ.ศ. 2546 สมเด็จพระนางเจ้าสิริกิติ์ พระบรมราชินีนาถ พระบรมราชชนนีพันปีหลวง เสด็จทอดพระเนตรพื้นที่ป่าและลุ่มน้ำแม่คำ ซึ่งในขณะนั้นประสบปัญหาป่าเสื่อมโทรม จึงทรงมีพระราชดำริให้จัดตั้งสถานีพัฒนาการเกษตรที่สูงตามพระราชดำริ บ้านห้วยหยวกป่าโซ เพื่อส่งเสริมให้ประชาชนใช้ประโยชน์จากที่ดินอย่างเหมาะสม พัฒนาการเกษตรแบบครบวงจร ลดการใช้สารเคมี แปรรูปผลผลิตทางการเกษตร และฟื้นฟูทรัพยากรป่าไม้และแหล่งต้นน้ำ</p>
-                <p>ปัจจุบันบ้านห้วยหยวกป่าโซเป็นชุมชนบนพื้นที่สูงที่มีความโดดเด่นด้านความหลากหลายทางชาติพันธุ์ วิถีชีวิต วัฒนธรรม และภูมิปัญญาท้องถิ่น ชาวบ้านยังคงประกอบอาชีพเกษตรกรรมควบคู่กับการอนุรักษ์ทรัพยากรธรรมชาติ โดยเฉพาะการปลูกชาและกาแฟอาราบิกา ซึ่งได้รับการพัฒนาเป็นผลิตภัณฑ์ของชุมชนและเป็นแหล่งรายได้สำคัญที่ช่วยยกระดับคุณภาพชีวิตของประชาชนในหมู่บ้าน</p>
+                <ul>
+                  <li>ในช่วงแรก ชุมชนตั้งอยู่บนสันเขาใกล้ชายแดนไทย–เมียนมา แต่ด้วยพื้นที่ห่างไกลจากแหล่งน้ำและจำนวนประชากรเพิ่มขึ้น ทำให้การอุปโภคบริโภคและการทำเกษตรประสบปัญหากับความไม่เพียงพอ จึงมีการย้ายถิ่นฐานไปทางทิศตะวันออกประมาณ 6 กิโลเมตร และก่อตั้งหมู่บ้านในพื้นที่ปัจจุบันเมื่อปี พ.ศ. 2519</li>
+                  <li>หมู่บ้านตั้งอยู่บนพื้นที่ภูเขาสูงประมาณ 1,200–1,500 เมตรจากระดับน้ำทะเล มีภูมิประเทศที่ซับซ้อนและลาดชัน ประชากรประกอบด้วยกลุ่มชาติพันธุ์อาข่า ลาหู่ และจีนฮ่อ ซึ่งมีภาษา ศาสนา ประเพณี และวัฒนธรรมที่แตกต่างกัน แต่สามารถอยู่ร่วมกันได้อย่างกลมกลืน จึงเป็นชุมชนที่มีความหลากหลายทางวัฒนธรรมและเอกลักษณ์เฉพาะตัว</li>
+                  <li>อาชีพดั้งเดิมของชาวบ้านคือการทำนาขั้นบันได เลี้ยงสัตว์ และปลูกพืชเพื่อบริโภค ต่อมาได้เริ่มปลูกชาและกาแฟอาราบิกาเป็นพืชเศรษฐกิจ เนื่องจากสภาพอากาศเย็นและพื้นที่สูงเหมาะสมต่อการเพาะปลูก จนกลายเป็นผลิตภัณฑ์สำคัญที่ช่วยเสริมรายได้ให้กับครัวเรือนในชุมชน</li>
+                  <li>เมื่อวันที่ 14 มกราคม พ.ศ. 2546 สมเด็จพระนางเจ้าสิริกิติ์ พระบรมราชินีนาถพระบรมราชชนนีพันปีหลวง เสด็จทอดพระเนตรพื้นที่ป่าและลุ่มน้ำแม่คำ ซึ่งขณะนั้นประสบปัญหาป่าเสื่อมโทรม จึงทรงมีพระราชดำริให้จัดตั้งสถานีพัฒนาการเกษตรที่สูงตามพระราชดำริ บ้านห้วยหยวกป่าโซ 
+                    เพื่อส่งเสริมการใช้ที่ดินอย่างเหมาะสม พัฒนาการเกษตรแบบครบวงจร ลดการใช้สารเคมี และฟื้นฟูทรัพยากรป่าไม้และแหล่งต้นน้ำ</li>
+                    </ul>
+                  <p>ปัจจุบันบ้านห้วยหยวกป่าโซเป็นชุมชนบนพื้นที่สูงที่โดดเด่นด้วยความหลากหลายทางชาติพันธุ์ วิถีชีวิต วัฒนธรรม และภูมิปัญญาท้องถิ่น ชาวบ้านยังคงประกอบอาชีพเกษตรกรรมควบคู่กับการอนุรักษ์ธรรมชาติ โดยเฉพาะการปลูกชาและกาแฟอาราบิกา ซึ่งได้รับการพัฒนาเป็นผลิตภัณฑ์ของชุมชนและเป็นแหล่งรายได้สำคัญที่ช่วยยกระดับคุณภาพชีวิตของประชาชนในหมู่บ้าน</p>
+                
               </div>
             </article>
           </div>
@@ -363,6 +489,7 @@ export default function Home({ user, onNavigate, onLogout }) {
         <section id="products" className="section products-section">
           <div className="site-shell">
             <div className="section-heading reveal-on-scroll">
+              <span className="section-kicker">คัดสรรจากชุมชน</span>
               <h2>สินค้าแนะนำ</h2>
               <p>
                 สินค้าคุณภาพสูงจากทีมเกษตรกรห้วยหยวกปากโซ อันหลากหลายทั้งสด
@@ -386,20 +513,14 @@ export default function Home({ user, onNavigate, onLogout }) {
                     <span className="product-category-badge">
                       {featuredCategories[String(product.category_id)] || 'สินค้าเกษตร'}
                     </span>
-                    <span className="product-availability-badge">{stock > 0 ? 'พร้อมส่ง' : 'สินค้าหมด'}</span>
+                    <span className="product-availability-badge">{stock > 0 ? 'พร้อมส่ง' : 'หมดสต็อก'}</span>
                   </div>
                   <div className="product-body">
                     <h3>{product.product_name}</h3>
                     <p className="product-description">
                       {product.description || 'ผลิตภัณฑ์คุณภาพจากชุมชนห้วยหยวกปากโซ'}
                     </p>
-                    <button
-                      type="button"
-                      className="product-more-button"
-                      onClick={() => onNavigate('/products')}
-                    >
-                      ดูเพิ่มเติม
-                    </button>
+                    
                     <div className="product-footer">
                       <div>
                         <strong>{formatProductPrice(product.price)}</strong>
@@ -410,19 +531,33 @@ export default function Home({ user, onNavigate, onLogout }) {
                         disabled={stock <= 0}
                         onClick={() => handleFeaturedAddToCart(product)}
                       >
-                        {addedProductId === product.product_id ? 'เพิ่มแล้ว' : stock > 0 ? 'ใส่ตะกร้า' : 'สินค้าหมด'}
+                        {addedProductId === product.product_id ? 'เพิ่มแล้ว' : stock > 0 ? 'ใส่ตะกร้า' : 'หมดสต็อก'}
                       </button>
                     </div>
+                    <button
+                        type="button"
+                        className="catalog-detail-button"
+                        onClick={() => setSelectedProduct({ ...product, imageUrl: getImageUrl(product) })}
+                      >
+                        ดูเพิ่มเติม
+                      </button>
                   </div>
+                  
                 </article>
               );})}
             </div> : null}
+            {featuredProducts.length > 0 ? (
+              <div className="section-cta reveal-on-scroll is-visible">
+                <button type="button" onClick={() => onNavigate('/products')}>เลือกชมสินค้าทั้งหมด</button>
+              </div>
+            ) : null}
           </div>
         </section>
 
         <section id="work" className="section work-section">
           <div className="site-shell">
             <div className="section-heading reveal-on-scroll">
+              <span className="section-kicker">เติบโตไปด้วยกัน</span>
               <h2>สิ่งที่เราทำ</h2>
               <p>
                 เรามุ่งมั่นส่งเสริมการเกษตรชุมชน สร้างรายได้
@@ -447,26 +582,115 @@ export default function Home({ user, onNavigate, onLogout }) {
         <section id="news" className="section news-section">
           <div className="site-shell">
             <div className="section-heading reveal-on-scroll">
+              <span className="section-kicker">เรื่องราวล่าสุด</span>
               <h2>ข่าวและกิจกรรม</h2>
               <p>อัปเดตข่าวสารและกิจกรรมล่าสุดจากชุมชนห้วยหยวกปากโซ</p>
             </div>
 
             <div className="news-grid">
-              {news.map((item) => (
-                <article className="news-card reveal-on-scroll" key={item.title}>
-                  <img src={item.image} alt={item.title} />
-                  <div className="news-body">
-                    <time>{item.date}</time>
-                    <h3>{item.title}</h3>
-                    <p>{item.description}</p>
-                    <button type="button" onClick={() => onNavigate('/news')}>อ่านต่อ →</button>
-                  </div>
-                </article>
-              ))}
+              {newsLoading ? (
+                <div className="home-news-state">กำลังโหลดข่าวล่าสุด...</div>
+              ) : null}
+
+              {!newsLoading && newsError ? (
+                <div className="home-news-state home-news-state-error">
+                  <span>{newsError}</span>
+                  <button type="button" onClick={() => onNavigate('/news')}>ไปหน้าข่าว</button>
+                </div>
+              ) : null}
+
+              {!newsLoading && !newsError && latestNews.length === 0 ? (
+                <div className="home-news-state">ยังไม่มีข่าวที่เผยแพร่</div>
+              ) : null}
+
+              {!newsLoading && !newsError
+                ? latestNews.map((item, index) => (
+                    <article className="news-card" key={item.news_id}>
+                      <img src={getNewsImage(item, index)} alt={item.title} />
+                      <div className="news-body">
+                        <time dateTime={item.created_at}>{formatNewsDate(item.created_at)}</time>
+                        <h3>{item.title}</h3>
+                        <p>{getNewsExcerpt(item)}</p>
+                        <button
+                          type="button"
+                          onClick={() => onNavigate(`/news?id=${item.news_id}`)}
+                        >
+                          อ่านต่อ →
+                        </button>
+                      </div>
+                    </article>
+                  ))
+                : null}
             </div>
           </div>
         </section>
       </main>
+
+      {selectedProduct && (
+        <div className="catalog-modal-backdrop" role="presentation" onMouseDown={() => setSelectedProduct(null)}>
+          <section
+            className="catalog-detail-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="catalog-detail-title"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="catalog-modal-close"
+              aria-label="ปิดรายละเอียดสินค้า"
+              onClick={() => setSelectedProduct(null)}
+            >
+              ×
+            </button>
+
+            <img
+              src={selectedProduct.imageUrl || getProductImage(selectedProduct)}
+              alt={selectedProduct.product_name}
+            />
+
+            <div className="catalog-detail-content">
+              <div className="catalog-card-meta">
+                <span>{featuredCategories[String(selectedProduct.category_id)] || 'สินค้าเกษตร'}</span>
+                <span>{Number(selectedProduct.stock_quantity || 0) > 0 ? 'พร้อมส่ง' : 'หมดสต็อก'}</span>
+              </div>
+
+              <h2 id="catalog-detail-title">{selectedProduct.product_name}</h2>
+              <p>{selectedProduct.description || 'ผลิตภัณฑ์คุณภาพจากชุมชนห้วยหยวกปากโซ'}</p>
+
+              {selectedProduct.production_source && (
+                <div className="catalog-detail-block">
+                  <strong>แหล่งผลิต</strong>
+                  <span>{selectedProduct.production_source}</span>
+                </div>
+              )}
+
+              <div className="catalog-detail-stats">
+                <span>
+                  <strong>{formatProductPrice(selectedProduct.price)}</strong>
+                  <small>/{selectedProduct.unit || 'หน่วย'}</small>
+                </span>
+                <span>
+                  <strong>{Number(selectedProduct.stock_quantity || 0)}</strong>
+                  <small>คงเหลือ</small>
+                </span>
+              </div>
+
+              <button
+                type="button"
+                className="catalog-detail-cart"
+                disabled={Number(selectedProduct.stock_quantity || 0) <= 0}
+                onClick={() => {
+                  setSelectedProduct(null);
+                  handleFeaturedAddToCart(selectedProduct);
+                }}
+              >
+                {Number(selectedProduct.stock_quantity || 0) <= 0 ? 'หมดสต็อก' : 'ใส่ตะกร้า'}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
 
       <footer id="contact" className="site-footer">
         <p>© 2026 ห้วยหยวกปากโซ. All rights reserved.</p>

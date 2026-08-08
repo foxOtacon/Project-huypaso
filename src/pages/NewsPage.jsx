@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { fetchPublishedNews, fetchPublishedNewsById } from '../api/news';
 import CustomerNavbar from '../components/CustomerNavbar';
+import Pagination from '../components/Pagination';
+import usePagination from '../hooks/usePagination';
 import './Home.css';
 import './NewsPage.css';
 
@@ -83,6 +85,14 @@ export default function NewsPage({ route, user, onNavigate, onLogout }) {
 
   const featuredNews = useMemo(() => news[0] || null, [news]);
   const otherNews = useMemo(() => news.slice(1), [news]);
+  const newsPagination = usePagination(otherNews, 6, [newsId, news.length]);
+
+  function handleNewsPageChange(page) {
+    newsPagination.setPage(page);
+    window.requestAnimationFrame(() => {
+      document.getElementById('news-list')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }
 
   return (
     <div className="news-page">
@@ -90,9 +100,16 @@ export default function NewsPage({ route, user, onNavigate, onLogout }) {
 
       <main className="news-main">
         <section className="news-shell news-heading">
-          <p>Community News</p>
+          <p>เรื่องราวจากพื้นที่สูง</p>
           <h1>{newsId ? 'รายละเอียดข่าว' : 'ข่าวและประชาสัมพันธ์'}</h1>
           <span>ติดตามข่าวชุมชน โปรโมชั่น และกิจกรรมจากห้วยหยวกปากโซ</span>
+          {!newsId ? (
+            <div className="news-heading-highlights" aria-label="ประเภทข่าวสาร">
+              <span>ข่าวชุมชน</span>
+              <span>กิจกรรม</span>
+              <span>โปรโมชั่น</span>
+            </div>
+          ) : null}
         </section>
 
         {loading && <div className="news-state">กำลังโหลดข่าว...</div>}
@@ -108,7 +125,9 @@ export default function NewsPage({ route, user, onNavigate, onLogout }) {
 
         {!loading && !error && newsId && selectedNews && (
           <article className="news-detail news-shell">
-            <img src={getImageUrl(selectedNews)} alt={selectedNews.title} />
+            <div className="news-detail-media">
+              <img src={getImageUrl(selectedNews)} alt={selectedNews.title} />
+            </div>
             <div className="news-detail-body">
               <div className="news-meta">
                 <span>{selectedNews.category || 'ข่าวชุมชน'}</span>
@@ -137,8 +156,15 @@ export default function NewsPage({ route, user, onNavigate, onLogout }) {
 
         {!loading && !error && !newsId && featuredNews && (
           <section className="news-shell">
+            <div className="news-section-label">
+              <span>เรื่องเด่นล่าสุด</span>
+              <strong>{news.length} ข่าวสาร</strong>
+            </div>
             <article className="news-featured">
-              <img src={getImageUrl(featuredNews)} alt={featuredNews.title} />
+              <div className="news-featured-media">
+                <img src={getImageUrl(featuredNews)} alt={featuredNews.title} />
+                <span>ข่าวเด่น</span>
+              </div>
               <div>
                 <div className="news-meta">
                   <span>{featuredNews.category || 'ข่าวชุมชน'}</span>
@@ -152,10 +178,17 @@ export default function NewsPage({ route, user, onNavigate, onLogout }) {
               </div>
             </article>
 
+            {otherNews.length > 0 ? <div id="news-list" className="news-list-heading">
+              <h2>ข่าวสารทั้งหมด</h2>
+              <span>เรื่องราวและกิจกรรมจากชุมชนของเรา</span>
+            </div> : null}
             <div className="news-grid">
-              {otherNews.map((item, index) => (
+              {newsPagination.pageItems.map((item, index) => (
                 <article className="news-card" key={item.news_id}>
-                  <img src={getImageUrl(item, index + 1)} alt={item.title} />
+                  <img
+                    src={getImageUrl(item, (newsPagination.page - 1) * newsPagination.pageSize + index + 1)}
+                    alt={item.title}
+                  />
                   <div className="news-card-body">
                     <div className="news-meta">
                       <span>{item.category || 'ข่าวชุมชน'}</span>
@@ -170,6 +203,12 @@ export default function NewsPage({ route, user, onNavigate, onLogout }) {
                 </article>
               ))}
             </div>
+            <Pagination
+              page={newsPagination.page}
+              totalPages={newsPagination.totalPages}
+              onPageChange={handleNewsPageChange}
+              className="news-pagination"
+            />
           </section>
         )}
       </main>

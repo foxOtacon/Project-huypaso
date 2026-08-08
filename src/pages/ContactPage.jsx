@@ -42,9 +42,14 @@ export default function ContactPage({ user, onNavigate, onLogout }) {
 
       <header className="contact-hero">
         <div>
-          <p>HUAY YUAK COMMUNITY</p>
-          <h1>ติดต่อเรา</h1>
-          <span>เรายินดีรับฟังทุกข้อเสนอแนะจากคุณ</span>
+          <p>พูดคุยกับชุมชนของเรา</p>
+          <h1>ยินดีช่วยเหลือ<br />ทุกเรื่องที่คุณอยากรู้</h1>
+          <span>สอบถามสินค้า การสั่งซื้อ หรือแบ่งปันข้อเสนอแนะกับเราได้ทุกเมื่อ</span>
+          <div className="contact-hero-highlights">
+            <span>สอบถามสินค้า</span>
+            <span>ติดตามคำสั่งซื้อ</span>
+            <span>ร่วมงานกับชุมชน</span>
+          </div>
         </div>
       </header>
 
@@ -65,12 +70,18 @@ export default function ContactPage({ user, onNavigate, onLogout }) {
               </article>
             ))}
           </div>
+          <div className="contact-hours">
+            <span>เวลาทำการ</span>
+            <strong>จันทร์–เสาร์ · 08:30–17:00 น.</strong>
+            <p>ข้อความนอกเวลาทำการจะได้รับการตอบกลับในวันถัดไป</p>
+          </div>
         </section>
 
         <form className="contact-form" onSubmit={handleSubmit}>
           <div className="contact-form-heading">
-            <p>LET'S TALK</p>
+            <p>ส่งข้อความหาเรา</p>
             <h2>ส่งข้อความถึงเรา</h2>
+            <span>กรอกข้อมูลด้านล่าง ทีมงานจะติดต่อกลับโดยเร็วที่สุด</span>
           </div>
 
           {sent ? <div className="contact-success" role="status">ส่งข้อความเรียบร้อยแล้ว เราจะติดต่อกลับโดยเร็วที่สุด</div> : null}
@@ -80,6 +91,7 @@ export default function ContactPage({ user, onNavigate, onLogout }) {
           <label>หัวข้อ<input name="subject" value={form.subject} onChange={updateField} placeholder="เรื่องที่ต้องการติดต่อ" required /></label>
           <label>ข้อความ<textarea name="message" rows="5" value={form.message} onChange={updateField} placeholder="พิมพ์ข้อความของคุณ..." required /></label>
           <button type="submit">ส่งข้อความ <span aria-hidden="true">→</span></button>
+          <p className="contact-assurance">เราจะใช้ข้อมูลของคุณเพื่อติดต่อกลับเกี่ยวกับข้อความนี้เท่านั้น</p>
         </form>
       </main>
     </div>

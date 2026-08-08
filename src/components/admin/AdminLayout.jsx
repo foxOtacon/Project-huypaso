@@ -26,6 +26,7 @@ const MENU_ITEMS = [
   { path: '/admin/orders', label: 'คำสั่งซื้อ' },
   { path: '/admin/transactions', label: 'ธุรกรรม' },
   { path: '/admin/products', label: 'สินค้า' },
+  { path: '/admin/categories', label: 'หมวดหมู่สินค้า' },
   { path: '/admin/shipping-carriers', label: 'บริษัทขนส่ง' },
   { path: '/admin/news', label: 'ข่าว' },
   { path: '/admin/users', label: 'ผู้ใช้งาน' },
@@ -52,6 +53,10 @@ const PAGE_HEADERS = {
   '/admin/products': {
     title: 'สินค้า',
     subtitle: 'จัดการรายการสินค้า',
+  },
+  '/admin/categories': {
+    title: 'หมวดหมู่สินค้า',
+    subtitle: 'เพิ่ม แก้ไข และจัดระเบียบหมวดหมู่สินค้า',
   },
   '/admin/shipping-carriers': {
     title: 'บริษัทขนส่ง',

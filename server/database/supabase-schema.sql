@@ -29,9 +29,24 @@ CREATE TABLE IF NOT EXISTS products (
     image_url VARCHAR(255),
     production_source TEXT,
     stock_quantity INT NOT NULL DEFAULT 0,
+    status VARCHAR(20) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'suspended')),
     created_by BIGINT NOT NULL REFERENCES users(user_id),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+ALTER TABLE products
+ADD COLUMN IF NOT EXISTS status VARCHAR(20) NOT NULL DEFAULT 'active'
+CHECK (status IN ('active', 'suspended'));
+
+UPDATE products
+SET status = 'active'
+WHERE status IS NULL OR status NOT IN ('active', 'suspended');
+
+ALTER TABLE products ALTER COLUMN status SET DEFAULT 'active';
+ALTER TABLE products ALTER COLUMN status SET NOT NULL;
+ALTER TABLE products DROP CONSTRAINT IF EXISTS products_status_check;
+ALTER TABLE products
+ADD CONSTRAINT products_status_check CHECK (status IN ('active', 'suspended'));
 
 CREATE TABLE IF NOT EXISTS cart (
     cart_id BIGSERIAL PRIMARY KEY,

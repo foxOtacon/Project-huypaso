@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Pagination from '../../components/Pagination';
 import usePagination from '../../hooks/usePagination';
 import { deleteUser, fetchUsers, updateUser } from '../../api/admin';
+import { matchesSearch } from '../../utils/search';
 
 const ROLE_LABELS = {
   admin: 'Admin',
@@ -13,8 +14,24 @@ const STATUS_LABELS = {
   suspended: 'ระงับ',
 };
 
-function normalizeText(value) {
-  return String(value || '').trim().toLowerCase();
+const USER_HAS_REFERENCES_MESSAGE =
+  'ไม่สามารถลบผู้ใช้นี้ได้ เนื่องจากมีสินค้า คำสั่งซื้อ หรือประวัติการใช้งานเชื่อมโยงอยู่ กรุณาระงับบัญชีแทนการลบ';
+
+function isUserReferenceError(error) {
+  const message = String(error?.message || '').trim();
+
+  return (
+    error?.data?.code === 'USER_HAS_REFERENCES' ||
+    /foreign\s+key|reference constraint|referenced row/i.test(message)
+  );
+}
+
+function getUserActionError(error) {
+  const message = String(error?.message || '').trim();
+
+  if (isUserReferenceError(error)) return USER_HAS_REFERENCES_MESSAGE;
+
+  return message || 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่อีกครั้ง';
 }
 
 export default function Users({ currentUser }) {
@@ -23,13 +40,14 @@ export default function Users({ currentUser }) {
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState(null);
   const [error, setError] = useState('');
+  const [blockedDeleteUser, setBlockedDeleteUser] = useState(null);
 
   useEffect(() => {
     async function loadUsers() {
       try {
         setUsers(await fetchUsers());
       } catch (err) {
-        setError(err.message);
+        setError(getUserActionError(err));
       } finally {
         setLoading(false);
       }
@@ -39,19 +57,17 @@ export default function Users({ currentUser }) {
   }, []);
 
   const filteredUsers = useMemo(() => {
-    const query = normalizeText(filters.search);
-
     return users.filter((user) => {
-      const matchesSearch =
-        !query ||
-        normalizeText(user.full_name).includes(query) ||
-        normalizeText(user.email).includes(query) ||
-        normalizeText(user.phone).includes(query) ||
-        String(user.user_id).includes(query);
+      const matchesKeyword = matchesSearch(filters.search, [
+        user.full_name,
+        user.email,
+        user.phone,
+        user.user_id,
+      ]);
       const matchesRole = filters.role === 'all' || user.role === filters.role;
       const matchesStatus = filters.status === 'all' || user.status === filters.status;
 
-      return matchesSearch && matchesRole && matchesStatus;
+      return matchesKeyword && matchesRole && matchesStatus;
     });
   }, [filters, users]);
 
@@ -71,7 +87,7 @@ export default function Users({ currentUser }) {
         current.map((item) => (item.user_id === updated.user_id ? updated : item)),
       );
     } catch (err) {
-      setError(err.message);
+      setError(getUserActionError(err));
     } finally {
       setSavingId(null);
     }
@@ -93,7 +109,7 @@ export default function Users({ currentUser }) {
         current.map((item) => (item.user_id === updated.user_id ? updated : item)),
       );
     } catch (err) {
-      setError(err.message);
+      setError(getUserActionError(err));
     } finally {
       setSavingId(null);
     }
@@ -115,13 +131,44 @@ export default function Users({ currentUser }) {
       await deleteUser(user.user_id);
       setUsers((current) => current.filter((item) => item.user_id !== user.user_id));
     } catch (err) {
-      setError(err.message);
+      if (isUserReferenceError(err)) {
+        setBlockedDeleteUser(user);
+      } else {
+        setError(getUserActionError(err));
+      }
+    } finally {
+      setSavingId(null);
+    }
+  };
+
+  const handleSuspendFromModal = async () => {
+    if (!blockedDeleteUser || blockedDeleteUser.status !== 'active') return;
+
+    const user = blockedDeleteUser;
+    setSavingId(user.user_id);
+    setError('');
+
+    try {
+      const updated = await updateUser(user.user_id, { status: 'suspended' });
+      setUsers((current) =>
+        current.map((item) => (item.user_id === updated.user_id ? updated : item)),
+      );
+      setBlockedDeleteUser(null);
+    } catch (err) {
+      setBlockedDeleteUser(null);
+      setError(getUserActionError(err));
     } finally {
       setSavingId(null);
     }
   };
 
   const pagination = usePagination(filteredUsers, 10, [filters]);
+  const userStats = {
+    total: users.length,
+    customers: users.filter((user) => user.role === 'customer').length,
+    admins: users.filter((user) => user.role === 'admin').length,
+    active: users.filter((user) => user.status === 'active').length,
+  };
 
   if (loading) {
     return <div className="admin-loading">กำลังโหลดผู้ใช้งาน...</div>;
@@ -132,10 +179,21 @@ export default function Users({ currentUser }) {
   }
 
   return (
-    <>
+    <div className="admin-users-page">
       {error ? <div className="admin-error orders-inline-error">{error}</div> : null}
 
+      <section className="admin-users-stat-grid">
+        <article><span>ผู้ใช้ทั้งหมด</span><strong>{userStats.total}</strong></article>
+        <article><span>ลูกค้า</span><strong>{userStats.customers}</strong></article>
+        <article><span>ผู้ดูแลระบบ</span><strong>{userStats.admins}</strong></article>
+        <article><span>บัญชีที่ใช้งาน</span><strong>{userStats.active}</strong></article>
+      </section>
+
       <section className="users-toolbar">
+        <div className="admin-users-toolbar-heading">
+          <div><span>ค้นหาและกรอง</span><h2>จัดการบัญชีผู้ใช้</h2></div>
+          <strong>{filteredUsers.length} รายการ</strong>
+        </div>
         <input
           type="search"
           value={filters.search}
@@ -170,6 +228,10 @@ export default function Users({ currentUser }) {
       </section>
 
       <section className="admin-panel users-table-panel">
+        <div className="admin-users-table-heading">
+          <div><span>สมาชิกทั้งหมด</span><h2>ผู้ใช้งาน</h2></div>
+          <p>จัดการบทบาท สถานะ และสิทธิ์การเข้าใช้งาน</p>
+        </div>
         <div className="admin-table-wrap">
           <table className="admin-table users-table">
             <thead>
@@ -198,8 +260,8 @@ export default function Users({ currentUser }) {
                   return (
                     <tr key={user.user_id}>
                       <td>{(pagination.page - 1) * pagination.pageSize + index + 1}</td>
-                      <td>{user.full_name}</td>
-                      <td>{user.email}</td>
+                      <td className="admin-table-data-left">{user.full_name}</td>
+                      <td className="admin-table-data-left">{user.email}</td>
                       <td>{user.phone || '-'}</td>
                       <td>
                         <span className={`user-role-badge user-role-${user.role}`}>
@@ -226,6 +288,7 @@ export default function Users({ currentUser }) {
                             className="users-suspend-button"
                             disabled={isSaving || isCurrentUser}
                             onClick={() => handleStatusToggle(user)}
+                            style={{ backgroundColor: user.status === 'active' ? 'red' : 'green' }}
                           >
                             {user.status === 'active' ? 'ระงับ' : 'เปิดใช้'}
                           </button>
@@ -234,6 +297,7 @@ export default function Users({ currentUser }) {
                             className="users-delete-button"
                             disabled={isSaving || isCurrentUser}
                             onClick={() => handleDelete(user)}
+                            style={{ display:'none'}}
                           >
                             ลบ
                           </button>
@@ -248,7 +312,66 @@ export default function Users({ currentUser }) {
         </div>
         <Pagination page={pagination.page} totalPages={pagination.totalPages} onPageChange={pagination.setPage} className="admin-pagination" />
       </section>
-    </>
+
+      {blockedDeleteUser ? (
+        <div
+          className="products-modal-backdrop users-warning-modal-backdrop"
+          role="presentation"
+          onMouseDown={() => setBlockedDeleteUser(null)}
+        >
+          <section
+            className="products-modal users-warning-modal"
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="users-warning-modal-title"
+            aria-describedby="users-warning-modal-description"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <div className="users-warning-modal-accent" />
+            <div className="users-warning-modal-content">
+              <button
+                type="button"
+                className="users-warning-modal-close"
+                aria-label="ปิด"
+                disabled={savingId === blockedDeleteUser.user_id}
+                onClick={() => setBlockedDeleteUser(null)}
+              >
+                ×
+              </button>
+              <div className="users-warning-modal-icon" aria-hidden="true">!</div>
+              <p className="users-warning-modal-eyebrow">ไม่สามารถลบผู้ใช้ได้</p>
+              <h2 id="users-warning-modal-title">บัญชีนี้มีข้อมูลเชื่อมโยง</h2>
+              <p id="users-warning-modal-description">{USER_HAS_REFERENCES_MESSAGE}</p>
+              <div className="users-warning-modal-user">
+                <span>บัญชีผู้ใช้</span>
+                <strong>{blockedDeleteUser.full_name}</strong>
+                <small>{blockedDeleteUser.email}</small>
+              </div>
+            </div>
+            <footer className="users-warning-modal-actions">
+              {blockedDeleteUser.status === 'active' ? (
+                <button
+                  type="button"
+                  className="users-warning-modal-suspend"
+                  disabled={savingId === blockedDeleteUser.user_id}
+                  onClick={handleSuspendFromModal}
+                >
+                  {savingId === blockedDeleteUser.user_id ? 'กำลังระงับ...' : 'ระงับบัญชีแทน'}
+                </button>
+              ) : null}
+              <button
+                type="button"
+                className="users-warning-modal-dismiss"
+                disabled={savingId === blockedDeleteUser.user_id}
+                onClick={() => setBlockedDeleteUser(null)}
+              >
+                รับทราบ
+              </button>
+            </footer>
+          </section>
+        </div>
+      ) : null}
+    </div>
   );
 }
 

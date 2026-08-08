@@ -13,6 +13,7 @@ import {
 } from '../../api/admin';
 import { formatCurrency } from '../../utils/dashboardStats';
 import { formatAddressForDisplay } from '../../utils/profileAddress';
+import { matchesSearch } from '../../utils/search';
 
 const PAYMENT_STATUS_OPTIONS = [
   { value: 'all', label: 'ทั้งหมด' },
@@ -37,10 +38,6 @@ const PAYMENT_METHOD_LABELS = {
   promptpay: 'พร้อมเพย์',
   bank_transfer: 'โอนธนาคาร',
 };
-
-function normalizeText(value) {
-  return String(value || '').trim().toLowerCase();
-}
 
 function formatDate(dateValue) {
   if (!dateValue) return '-';
@@ -131,22 +128,28 @@ export default function Transactions() {
     () => buildTransactionRows(payments, orders, users, orderItems, products),
     [payments, orders, users, orderItems, products],
   );
+  const transactionStats = useMemo(() => ({
+    total: rows.length,
+    pending: rows.filter((item) => item.payment_status === 'pending').length,
+    approved: rows.filter((item) => item.payment_status === 'approved').length,
+    approvedAmount: rows
+      .filter((item) => item.payment_status === 'approved')
+      .reduce((sum, item) => sum + Number(item.amount || 0), 0),
+  }), [rows]);
 
   const filteredRows = useMemo(() => {
-    const query = normalizeText(filters.search);
-
     return rows.filter((transaction) => {
       const matchesStatus =
         filters.status === 'all' || transaction.payment_status === filters.status;
       const matchesMethod =
         filters.method === 'all' || transaction.payment_method === filters.method;
-      const matchesSearch =
-        !query ||
-        normalizeText(transaction.customerName).includes(query) ||
-        normalizeText(transaction.code).includes(query) ||
-        normalizeText(transaction.customerPhone).includes(query);
+      const matchesKeyword = matchesSearch(filters.search, [
+        transaction.customerName,
+        transaction.code,
+        transaction.customerPhone,
+      ]);
 
-      return matchesStatus && matchesMethod && matchesSearch;
+      return matchesStatus && matchesMethod && matchesKeyword;
     });
   }, [filters, rows]);
 
@@ -186,10 +189,21 @@ export default function Transactions() {
   }
 
   return (
-    <>
+    <div className="transactions-page">
       {error ? <div className="admin-error orders-inline-error">{error}</div> : null}
 
+      <section className="transactions-stat-grid">
+        <article><span>ธุรกรรมทั้งหมด</span><strong>{transactionStats.total}</strong></article>
+        <article><span>รอตรวจสอบ</span><strong>{transactionStats.pending}</strong></article>
+        <article><span>อนุมัติแล้ว</span><strong>{transactionStats.approved}</strong></article>
+        <article><span>ยอดเงินอนุมัติ</span><strong>{formatCurrency(transactionStats.approvedAmount)}</strong></article>
+      </section>
+
       <section className="transactions-filter-panel" aria-label="ค้นหาธุรกรรม">
+        <div className="transactions-filter-heading">
+          <div><span>ค้นหาและกรอง</span><h2>ตรวจสอบการชำระเงิน</h2></div>
+          <strong>{filteredRows.length} รายการ</strong>
+        </div>
         <label>
           สถานะ
           <select
@@ -234,6 +248,10 @@ export default function Transactions() {
       </section>
 
       <section className="admin-panel transactions-table-panel">
+        <div className="transactions-table-heading">
+          <div><span>รายการทั้งหมด</span><h2>ธุรกรรม</h2></div>
+          <p>ตรวจสอบสลิปและจัดการสถานะการชำระเงิน</p>
+        </div>
         <div className="admin-table-wrap">
           <table className="admin-table transactions-table">
             <thead>
@@ -388,7 +406,7 @@ export default function Transactions() {
           </aside>
         </div>
       ) : null}
-    </>
+    </div>
   );
 }
 

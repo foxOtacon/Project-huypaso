@@ -28,6 +28,33 @@ const { startOrderExpirationJob } = require("./services/orderExpirationService")
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+function getDuplicateEntryMessage(error) {
+  const duplicateTarget = [
+    error.constraint,
+    error.detail,
+    error.sqlMessage,
+    error.message,
+  ].filter(Boolean).join(" ").toLowerCase();
+
+  if (duplicateTarget.includes("category")) {
+    return "มีชื่อหมวดหมู่นี้อยู่แล้ว";
+  }
+
+  if (duplicateTarget.includes("carrier")) {
+    return "มีชื่อบริษัทขนส่งนี้อยู่แล้ว";
+  }
+
+  if (duplicateTarget.includes("email")) {
+    return "อีเมลนี้ถูกใช้งานแล้ว";
+  }
+
+  if (duplicateTarget.includes("sales_prediction")) {
+    return "มีผลพยากรณ์ของสินค้าและเดือนนี้อยู่แล้ว";
+  }
+
+  return "ข้อมูลนี้มีอยู่แล้ว";
+}
+
 app.use(cors());
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
@@ -92,11 +119,11 @@ app.use((_req, res) => {
   res.status(404).json({ success: false, message: "Route not found" });
 });
 
-app.use((error, _req, res, _next) => {
+app.use((error, req, res, _next) => {
   console.error(error);
 
   if (error.code === "ER_DUP_ENTRY" || error.code === "23505") {
-    res.status(409).json({ success: false, message: "Duplicate entry" });
+    res.status(409).json({ success: false, message: getDuplicateEntryMessage(error) });
     return;
   }
 
@@ -110,8 +137,29 @@ app.use((error, _req, res, _next) => {
     return;
   }
 
-  if (error.code === "ER_NO_REFERENCED_ROW_2" || error.code === "23503") {
-    res.status(400).json({ success: false, message: "Invalid foreign key reference" });
+  if (
+    error.code === "ER_NO_REFERENCED_ROW_2" ||
+    error.code === "ER_ROW_IS_REFERENCED_2" ||
+    error.code === "23503"
+  ) {
+    const isDeletingUser =
+      req.method === "DELETE" && /^\/api\/users\/[^/]+\/?$/.test(req.originalUrl || req.url);
+
+    if (isDeletingUser) {
+      res.status(409).json({
+        success: false,
+        code: "USER_HAS_REFERENCES",
+        message:
+          "ไม่สามารถลบผู้ใช้นี้ได้ เนื่องจากมีสินค้า คำสั่งซื้อ หรือประวัติการใช้งานเชื่อมโยงอยู่ กรุณาระงับบัญชีแทนการลบ",
+      });
+      return;
+    }
+
+    res.status(409).json({
+      success: false,
+      code: "FOREIGN_KEY_CONFLICT",
+      message: "ไม่สามารถดำเนินการได้ เนื่องจากข้อมูลนี้เชื่อมโยงกับข้อมูลอื่นอยู่",
+    });
     return;
   }
 

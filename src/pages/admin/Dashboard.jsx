@@ -4,10 +4,10 @@ import RevenueChart from '../../components/admin/RevenueChart';
 import { computeDashboardStats, formatCurrency } from '../../utils/dashboardStats';
 
 const STAT_CARDS = [
-  { key: 'totalOrders', label: 'คำสั่งซื้อ', iconClass: 'stat-icon-blue', trendType: 'up' },
-  { key: 'totalRevenue', label: 'รายได้', iconClass: 'stat-icon-green', trendType: 'up', format: formatCurrency },
-  { key: 'pendingCount', label: 'รอดำเนินการ', iconClass: 'stat-icon-yellow', trendType: 'warn' },
-  { key: 'customerCount', label: 'ลูกค้า', iconClass: 'stat-icon-purple', trendType: 'up' },
+  { key: 'totalOrders', label: 'คำสั่งซื้อทั้งหมด', description: 'รายการสะสมในระบบ', iconClass: 'stat-icon-blue' },
+  { key: 'totalRevenue', label: 'รายได้รวม', description: 'ยอดขายที่บันทึกแล้ว', iconClass: 'stat-icon-green', format: formatCurrency },
+  { key: 'pendingCount', label: 'รอดำเนินการ', description: 'รายการที่ต้องตรวจสอบ', iconClass: 'stat-icon-yellow' },
+  { key: 'customerCount', label: 'ลูกค้าทั้งหมด', description: 'สมาชิกประเภทลูกค้า', iconClass: 'stat-icon-purple' },
 ];
 
 export default function Dashboard() {
@@ -39,7 +39,20 @@ export default function Dashboard() {
   }
 
   return (
-    <>
+    <div className="dashboard-page">
+      <section className="dashboard-welcome">
+        <div>
+          <p>ภาพรวมธุรกิจวันนี้</p>
+          <h2>ข้อมูลสำคัญในที่เดียว</h2>
+          <span>ติดตามยอดขาย คำสั่งซื้อ และการเติบโตของลูกค้าได้อย่างรวดเร็ว</span>
+        </div>
+        <div className="dashboard-welcome-status">
+          <i />
+          <span>ข้อมูลอัปเดตล่าสุด</span>
+          <strong>{new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} น.</strong>
+        </div>
+      </section>
+
       <section className="stat-grid">
         {STAT_CARDS.map((card) => {
           const raw = stats[card.key];
@@ -52,19 +65,25 @@ export default function Dashboard() {
                 <span className={`stat-icon ${card.iconClass}`} />
               </div>
               <p className="stat-value">{value}</p>
-              <p className={`stat-trend stat-trend-${card.trendType}`}>{card.trend}</p>
+              <p className="stat-trend">{card.description}</p>
             </article>
           );
         })}
       </section>
 
-      <section className="admin-panel">
-        <h2>รายได้ตามเดือนในปีนี้</h2>
+      <section className="admin-panel dashboard-chart-panel">
+        <div className="dashboard-panel-heading">
+          <div><span>แนวโน้มรายได้</span><h2>รายได้ตามเดือนในปีนี้</h2></div>
+          <strong>12 เดือนล่าสุด</strong>
+        </div>
         <RevenueChart data={stats.monthlyRevenue} />
       </section>
 
-      <section className="admin-panel">
-        <h2>คำสั่งซื้อล่าสุด</h2>
+      <section className="admin-panel dashboard-orders-panel">
+        <div className="dashboard-panel-heading">
+          <div><span>รายการล่าสุด</span><h2>คำสั่งซื้อล่าสุด</h2></div>
+          <strong>{stats.latestOrders.length} รายการ</strong>
+        </div>
         <div className="admin-table-wrap">
           <table className="admin-table">
             <thead>
@@ -100,6 +119,6 @@ export default function Dashboard() {
           </table>
         </div>
       </section>
-    </>
+    </div>
   );
 }

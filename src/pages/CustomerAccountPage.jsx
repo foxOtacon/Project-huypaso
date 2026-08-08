@@ -71,6 +71,11 @@ export default function CustomerAccountPage({ user, onNavigate, onLogout }) {
   const copyAttemptRef = useRef(0);
   const latestOrder = orders[0];
   const orderPagination = usePagination(orders, 5);
+  const orderStats = {
+    total: orders.length,
+    inProgress: orders.filter((order) => ['pending', 'shipping'].includes(order.order_status)).length,
+    completed: orders.filter((order) => order.order_status === 'completed').length,
+  };
 
   async function loadOrders() {
     if (!token) return;
@@ -184,14 +189,19 @@ export default function CustomerAccountPage({ user, onNavigate, onLogout }) {
 
       <main className="customer-main">
         <section className="customer-hero-panel">
-          <p>{pageContent.eyebrow}</p>
+          <p>ศูนย์ติดตามคำสั่งซื้อ</p>
           <h1>{pageContent.title}</h1>
           <span>{pageContent.description}</span>
+          <div className="customer-hero-stats">
+            <div><strong>{orderStats.total}</strong><span>คำสั่งซื้อทั้งหมด</span></div>
+            <div><strong>{orderStats.inProgress}</strong><span>กำลังดำเนินการ</span></div>
+            <div><strong>{orderStats.completed}</strong><span>สำเร็จแล้ว</span></div>
+          </div>
         </section>
 
         <section className="customer-status-card">
           <div>
-            <p>สถานะล่าสุด</p>
+            <p><span className="customer-live-dot" />สถานะล่าสุด</p>
             <h2>
               {loading
                 ? 'กำลังโหลด...'
@@ -208,6 +218,16 @@ export default function CustomerAccountPage({ user, onNavigate, onLogout }) {
         {error ? <p className="customer-error">{error}</p> : null}
         {detailError ? <p className="customer-error">{detailError}</p> : null}
 
+        {!loading && orders.length > 0 ? (
+          <div className="customer-orders-heading">
+            <div>
+              <p>ประวัติการสั่งซื้อ</p>
+              <h2>คำสั่งซื้อของฉัน</h2>
+            </div>
+            <span>{orders.length} รายการ</span>
+          </div>
+        ) : null}
+
         <section className="customer-orders" aria-label={pageContent.title}>
           {loading ? (
             <p className="customer-empty">กำลังโหลดข้อมูล...</p>
@@ -221,9 +241,10 @@ export default function CustomerAccountPage({ user, onNavigate, onLogout }) {
           ) : (
             orderPagination.pageItems.map((order) => (
               <article className="customer-order-card" key={`${order.order_id}-${order.payment_id || 'order'}`}>
+                <div className="customer-order-accent" aria-hidden="true" />
                 <div className="customer-order-main">
                   <div>
-                    <p>Order #{order.order_id}</p>
+                    <p>คำสั่งซื้อ #{order.order_id}</p>
                     <h2>{formatCurrency(order.total_amount)}</h2>
                     <span>{formatDate(order.order_date)}</span>
                   </div>

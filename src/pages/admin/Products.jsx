@@ -10,6 +10,7 @@ import {
   uploadProductImage,
 } from '../../api/admin';
 import { formatCurrency } from '../../utils/dashboardStats';
+import { matchesSearch } from '../../utils/search';
 
 const EMPTY_FORM = {
   product_name: '',
@@ -20,13 +21,10 @@ const EMPTY_FORM = {
   image_url: '',
   production_source: '',
   stock_quantity: '',
+  status: 'active',
 };
 
-function normalizeText(value) {
-  return String(value || '').trim().toLowerCase();
-}
-
-function buildPayload(form, user) {
+function buildPayload(form) {
   return {
     product_name: form.product_name.trim(),
     category_id: Number(form.category_id),
@@ -36,7 +34,7 @@ function buildPayload(form, user) {
     image_url: form.image_url.trim() || null,
     production_source: form.production_source.trim() || null,
     stock_quantity: Number(form.stock_quantity || 0),
-    created_by: user?.user_id,
+    status: form.status,
   };
 }
 
@@ -59,6 +57,7 @@ export default function Products({ user }) {
   const [imagePreview, setImagePreview] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [updatingStatusId, setUpdatingStatusId] = useState(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -69,7 +68,13 @@ export default function Products({ user }) {
           fetchCategories(),
         ]);
         setProducts(productsData);
-        setCategories(categoriesData);
+        setCategories(
+          [...categoriesData].sort((a, b) =>
+            String(a.category_name || '').localeCompare(String(b.category_name || ''), undefined, {
+              sensitivity: 'base',
+            }),
+          ),
+        );
       } catch (err) {
         setError(err.message);
       } finally {
@@ -86,14 +91,14 @@ export default function Products({ user }) {
   );
 
   const filteredProducts = useMemo(() => {
-    const query = normalizeText(filters.search);
-
     return products.filter((product) => {
       const stock = Number(product.stock_quantity || 0);
-      const matchesSearch =
-        !query ||
-        normalizeText(product.product_name).includes(query) ||
-        normalizeText(product.production_source).includes(query);
+      const matchesKeyword = matchesSearch(filters.search, [
+        product.product_name,
+        product.description,
+        product.production_source,
+        categoryMap.get(product.category_id),
+      ]);
       const matchesCategory =
         filters.category === 'all' || Number(product.category_id) === Number(filters.category);
       const matchesStock =
@@ -101,13 +106,13 @@ export default function Products({ user }) {
         (filters.stock === 'available' && stock > 0) ||
         (filters.stock === 'empty' && stock <= 0);
 
-      return matchesSearch && matchesCategory && matchesStock;
+      return matchesKeyword && matchesCategory && matchesStock;
     });
-  }, [filters, products]);
+  }, [categoryMap, filters, products]);
 
   const openCreateForm = () => {
     setEditingProduct(null);
-    setForm({ ...EMPTY_FORM, category_id: categories[0]?.category_id || '' });
+    setForm({ ...EMPTY_FORM });
     setImageFile(null);
     setImagePreview('');
     setError('');
@@ -124,6 +129,7 @@ export default function Products({ user }) {
       image_url: product.image_url || '',
       production_source: product.production_source || '',
       stock_quantity: product.stock_quantity ?? '',
+      status: product.status || 'active',
     });
     setImageFile(null);
     setImagePreview(product.image_url || '');
@@ -167,7 +173,10 @@ export default function Products({ user }) {
         imageUrl = uploaded.url;
       }
 
-      const payload = buildPayload({ ...form, image_url: imageUrl }, user);
+      const payload = buildPayload({ ...form, image_url: imageUrl });
+      if (!editingProduct) {
+        payload.created_by = user?.user_id;
+      }
       const saved = editingProduct
         ? await updateProduct(editingProduct.product_id, payload)
         : await createProduct(payload);
@@ -206,7 +215,30 @@ export default function Products({ user }) {
     }
   };
 
+  const handleStatusToggle = async (product) => {
+    const nextStatus = product.status === 'suspended' ? 'active' : 'suspended';
+    setUpdatingStatusId(product.product_id);
+    setError('');
+
+    try {
+      const updated = await updateProduct(product.product_id, { status: nextStatus });
+      setProducts((current) =>
+        current.map((item) => (item.product_id === updated.product_id ? updated : item)),
+      );
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setUpdatingStatusId(null);
+    }
+  };
+
   const pagination = usePagination(filteredProducts, 10, [filters]);
+  const productStats = {
+    total: products.length,
+    available: products.filter((product) => Number(product.stock_quantity || 0) > 0).length,
+    empty: products.filter((product) => Number(product.stock_quantity || 0) <= 0).length,
+    stockUnits: products.reduce((sum, product) => sum + Number(product.stock_quantity || 0), 0),
+  };
 
   if (loading) {
     return <div className="admin-loading">กำลังโหลดสินค้า...</div>;
@@ -217,10 +249,21 @@ export default function Products({ user }) {
   }
 
   return (
-    <>
+    <div className="admin-products-page">
       {error ? <div className="admin-error orders-inline-error">{error}</div> : null}
 
+      <section className="admin-products-stat-grid">
+        <article><span>สินค้าทั้งหมด</span><strong>{productStats.total}</strong></article>
+        <article><span>พร้อมขาย</span><strong>{productStats.available}</strong></article>
+        <article><span>สินค้าหมด</span><strong>{productStats.empty}</strong></article>
+        <article><span>จำนวนคงเหลือรวม</span><strong>{productStats.stockUnits.toLocaleString('th-TH')}</strong></article>
+      </section>
+
       <section className="products-toolbar">
+        <div className="admin-products-toolbar-heading">
+          <div><span>ค้นหาและกรอง</span><h2>จัดการคลังสินค้า</h2></div>
+          <strong>{filteredProducts.length} รายการ</strong>
+        </div>
         <input
           type="search"
           value={filters.search}
@@ -252,6 +295,10 @@ export default function Products({ user }) {
       </section>
 
       <section className="admin-panel products-table-panel">
+        <div className="admin-products-table-heading">
+          <div><span>รายการทั้งหมด</span><h2>สินค้า</h2></div>
+          <p>ตรวจสอบราคา สต็อก และแก้ไขข้อมูลสินค้า</p>
+        </div>
         <div className="admin-table-wrap">
           <table className="admin-table products-table">
             <thead>
@@ -262,14 +309,15 @@ export default function Products({ user }) {
                 <th>ราคา</th>
                 <th>หน่วย</th>
                 <th>คงเหลือ</th>
-                <th>สถานะ</th>
+                <th>สถานะสต็อก</th>
+                <th>สถานะสินค้า</th>
                 <th>การจัดการ</th>
               </tr>
             </thead>
             <tbody>
               {filteredProducts.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="admin-table-empty">
+                  <td colSpan={9} className="admin-table-empty">
                     ไม่พบสินค้า
                   </td>
                 </tr>
@@ -302,7 +350,24 @@ export default function Products({ user }) {
                         </span>
                       </td>
                       <td>
+                        <span className={`product-status-badge ${product.status === 'suspended' ? 'suspended' : 'active'}`}>
+                          {product.status === 'suspended' ? 'ระงับ' : 'ใช้งาน'}
+                        </span>
+                      </td>
+                      <td>
                         <div className="products-actions">
+                          <button
+                            type="button"
+                            className={`products-status-button ${product.status === 'suspended' ? 'activate' : 'suspend'}`}
+                            disabled={updatingStatusId === product.product_id}
+                            onClick={() => handleStatusToggle(product)}
+                          >
+                            {updatingStatusId === product.product_id
+                              ? 'กำลังบันทึก...'
+                              : product.status === 'suspended'
+                                ? 'เปิดใช้งาน'
+                                : 'ระงับ'}
+                          </button>
                           <button type="button" className="products-edit-button" onClick={() => openEditForm(product)}>
                             แก้ไข
                           </button>
@@ -339,7 +404,9 @@ export default function Products({ user }) {
               <label>
                 หมวดหมู่
                 <select value={form.category_id} onChange={(event) => handleChange('category_id', event.target.value)} required>
-                  <option value="">เลือกหมวดหมู่</option>
+                  <option value="" hidden>
+                    เลือกหมวดหมู่สินค้า
+                  </option>
                   {categories.map((category) => (
                     <option key={category.category_id} value={category.category_id}>
                       {category.category_name}
@@ -358,6 +425,13 @@ export default function Products({ user }) {
               <label>
                 จำนวนคงเหลือ
                 <input type="number" min="0" value={form.stock_quantity} onChange={(event) => handleChange('stock_quantity', event.target.value)} />
+              </label>
+              <label>
+                สถานะสินค้า
+                <select value={form.status} onChange={(event) => handleChange('status', event.target.value)}>
+                  <option value="active">ใช้งาน</option>
+                  <option value="suspended">ระงับ</option>
+                </select>
               </label>
               <label>
                 แหล่งผลิต
@@ -398,7 +472,7 @@ export default function Products({ user }) {
           </form>
         </div>
       )}
-    </>
+    </div>
   );
 }
 

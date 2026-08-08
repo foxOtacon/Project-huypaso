@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Pagination from '../../components/Pagination';
 import usePagination from '../../hooks/usePagination';
+import { matchesSearch } from '../../utils/search';
 import {
   createNews,
   deleteNews,
@@ -17,10 +18,6 @@ const EMPTY_FORM = {
   category: 'ข่าวชุมชน',
   status: 'draft',
 };
-
-function normalizeText(value) {
-  return String(value || '').trim().toLowerCase();
-}
 
 function formatDate(value) {
   if (!value) return '-';
@@ -79,17 +76,16 @@ export default function News({ user }) {
   }, []);
 
   const filteredItems = useMemo(() => {
-    const keyword = normalizeText(filters.search);
-
     return items.filter((item) => {
-      const matchesSearch =
-        !keyword ||
-        normalizeText(item.title).includes(keyword) ||
-        normalizeText(item.summary).includes(keyword) ||
-        normalizeText(item.category).includes(keyword);
+      const matchesKeyword = matchesSearch(filters.search, [
+        item.title,
+        item.summary,
+        item.content,
+        item.category,
+      ]);
       const matchesStatus = filters.status === 'all' || item.status === filters.status;
 
-      return matchesSearch && matchesStatus;
+      return matchesKeyword && matchesStatus;
     });
   }, [filters, items]);
 
@@ -188,6 +184,12 @@ export default function News({ user }) {
   }
 
   const pagination = usePagination(filteredItems, 10, [filters]);
+  const newsStats = {
+    total: items.length,
+    published: items.filter((item) => item.status === 'published').length,
+    draft: items.filter((item) => item.status === 'draft').length,
+    withImage: items.filter((item) => item.image_url).length,
+  };
 
   if (loading) {
     return <div className="admin-loading">กำลังโหลดข่าว...</div>;
@@ -198,10 +200,21 @@ export default function News({ user }) {
   }
 
   return (
-    <>
+    <div className="admin-news-page">
       {error ? <div className="admin-error orders-inline-error">{error}</div> : null}
 
+      <section className="admin-news-stat-grid">
+        <article><span>ข่าวทั้งหมด</span><strong>{newsStats.total}</strong></article>
+        <article><span>เผยแพร่แล้ว</span><strong>{newsStats.published}</strong></article>
+        <article><span>ฉบับร่าง</span><strong>{newsStats.draft}</strong></article>
+        <article><span>ข่าวที่มีรูปภาพ</span><strong>{newsStats.withImage}</strong></article>
+      </section>
+
       <section className="products-toolbar">
+        <div className="admin-news-toolbar-heading">
+          <div><span>ค้นหาและกรอง</span><h2>จัดการข่าวประชาสัมพันธ์</h2></div>
+          <strong>{filteredItems.length} รายการ</strong>
+        </div>
         <input
           type="search"
           value={filters.search}
@@ -222,6 +235,10 @@ export default function News({ user }) {
       </section>
 
       <section className="admin-panel products-table-panel">
+        <div className="admin-news-table-heading">
+          <div><span>เนื้อหาทั้งหมด</span><h2>ข่าวและกิจกรรม</h2></div>
+          <p>สร้างฉบับร่างและเผยแพร่ข่าวสารของชุมชน</p>
+        </div>
         <div className="admin-table-wrap">
           <table className="admin-table products-table">
             <thead>
@@ -245,7 +262,7 @@ export default function News({ user }) {
                 pagination.pageItems.map((item, index) => (
                   <tr key={item.news_id}>
                     <td>{(pagination.page - 1) * pagination.pageSize + index + 1}</td>
-                    <td>
+                    <td className="admin-table-data-left">
                       <div className="products-name-cell">
                         {item.image_url ? (
                           <img src={item.image_url} alt={item.title} />
@@ -311,6 +328,10 @@ export default function News({ user }) {
                 </select>
               </label>
               <label className="products-form-wide">
+                เนื้อหาข่าว
+                <textarea rows="7" value={form.content} onChange={(event) => handleChange('content', event.target.value)} required />
+              </label>
+              <label className="products-form-wide">
                 สรุปข่าว
                 <textarea rows="2" value={form.summary} onChange={(event) => handleChange('summary', event.target.value)} />
               </label>
@@ -332,10 +353,6 @@ export default function News({ user }) {
                   <span>{imageFile ? imageFile.name : 'รูปภาพปัจจุบัน'}</span>
                 </div>
               ) : null}
-              <label className="products-form-wide">
-                เนื้อหาข่าว
-                <textarea rows="7" value={form.content} onChange={(event) => handleChange('content', event.target.value)} required />
-              </label>
             </div>
 
             <footer className="products-modal-actions">
@@ -349,7 +366,7 @@ export default function News({ user }) {
           </form>
         </div>
       )}
-    </>
+    </div>
   );
 }
 

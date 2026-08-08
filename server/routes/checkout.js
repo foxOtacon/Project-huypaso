@@ -124,7 +124,7 @@ router.post(
 
       const products = await run(
         connection,
-        `SELECT product_id, product_name, price, stock_quantity
+        `SELECT product_id, product_name, price, stock_quantity, status
          FROM products
          WHERE product_id IN (?)
          FOR UPDATE`,
@@ -140,6 +140,14 @@ router.post(
         if (!product) {
           const error = new Error("Product not found");
           error.status = 400;
+          throw error;
+        }
+
+        if (product.status !== "active") {
+          const error = new Error(
+            `${product.product_name} ถูกระงับการขายชั่วคราว กรุณานำสินค้าออกจากตะกร้า`,
+          );
+          error.status = 409;
           throw error;
         }
 

@@ -1,7 +1,13 @@
 ﻿import { useState } from 'react';
 import { updateMe } from '../api/auth';
+import { fetchThaiAddressData } from '../api/thaiAddress';
+import { useEffect, useMemo } from 'react';
 import CustomerNavbar from '../components/CustomerNavbar';
 import { useAuth } from '../context/AuthContext';
+import {
+  clearGoogleAddressCompletion,
+  hasPendingGoogleAddressCompletion,
+} from '../utils/googleProfileReminder';
 import { formatAddressForDisplay, formatProfileAddress, parseProfileAddress } from '../utils/profileAddress';
 import './ProfilePage.css';
 
@@ -29,6 +35,8 @@ function maskName(name) {
 
 export default function ProfilePage({ user, onNavigate, onLogout }) {
   const { token, updateCurrentUser } = useAuth();
+  const needsAddress = !String(user?.address || '').trim();
+  const completingGoogleAddress = needsAddress && hasPendingGoogleAddressCompletion(user);
   const [form, setForm] = useState({
     full_name: user?.full_name || '',
     email: user?.email || '',
@@ -36,11 +44,144 @@ export default function ProfilePage({ user, onNavigate, onLogout }) {
     password: '',
   });
   const [addressFields, setAddressFields] = useState(() => parseProfileAddress(user?.address));
-  const [editingProfile, setEditingProfile] = useState(false);
+  const [thaiAddressData, setThaiAddressData] = useState({
+    provinces: [],
+    districts: [],
+    subdistricts: [],
+  });
+  const [addressDataLoading, setAddressDataLoading] = useState(true);
+  const [addressDataError, setAddressDataError] = useState('');
+  const [selectedProvinceId, setSelectedProvinceId] = useState('');
+  const [selectedDistrictId, setSelectedDistrictId] = useState('');
+  const [selectedSubdistrictId, setSelectedSubdistrictId] = useState('');
+  const [editingProfile, setEditingProfile] = useState(completingGoogleAddress);
   const [editingPassword, setEditingPassword] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const profileInitial = form.full_name.trim().charAt(0).toUpperCase() || 'U';
+
+  useEffect(() => {
+    let isActive = true;
+    const storedAddress = parseProfileAddress(user?.address);
+
+    fetchThaiAddressData()
+      .then((data) => {
+        if (!isActive) return;
+
+        const province = data.provinces.find(
+          (item) => item.name_th === storedAddress.province,
+        );
+        const district = data.districts.find(
+          (item) =>
+            item.name_th === storedAddress.district &&
+            (!province || item.province_id === province.id),
+        );
+        const subdistrict = data.subdistricts.find(
+          (item) =>
+            item.name_th === storedAddress.subdistrict &&
+            (!district || item.district_id === district.id),
+        );
+
+        setThaiAddressData(data);
+        setSelectedProvinceId(province ? String(province.id) : '');
+        setSelectedDistrictId(district ? String(district.id) : '');
+        setSelectedSubdistrictId(subdistrict ? String(subdistrict.id) : '');
+      })
+      .catch(() => {
+        if (isActive) {
+          setAddressDataError('ไม่สามารถโหลดข้อมูลพื้นที่ได้ กรุณาลองใหม่อีกครั้ง');
+        }
+      })
+      .finally(() => {
+        if (isActive) setAddressDataLoading(false);
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [user?.address]);
+
+  const districtById = useMemo(
+    () => new Map(thaiAddressData.districts.map((district) => [district.id, district])),
+    [thaiAddressData.districts],
+  );
+
+  const postalCodeMatches = useMemo(() => {
+    if (addressFields.postalCode.length !== 5) return [];
+
+    return thaiAddressData.subdistricts.filter(
+      (subdistrict) =>
+        String(subdistrict.zip_code).padStart(5, '0') === addressFields.postalCode,
+    );
+  }, [addressFields.postalCode, thaiAddressData.subdistricts]);
+
+  const postalDistrictIds = useMemo(
+    () => new Set(postalCodeMatches.map((subdistrict) => subdistrict.district_id)),
+    [postalCodeMatches],
+  );
+
+  const postalProvinceIds = useMemo(
+    () =>
+      new Set(
+        [...postalDistrictIds]
+          .map((districtId) => districtById.get(districtId)?.province_id)
+          .filter(Boolean),
+      ),
+    [districtById, postalDistrictIds],
+  );
+
+  const provinceOptions = useMemo(() => {
+    if (addressFields.postalCode.length === 5 && postalCodeMatches.length > 0) {
+      return thaiAddressData.provinces.filter((province) => postalProvinceIds.has(province.id));
+    }
+
+    return thaiAddressData.provinces;
+  }, [
+    addressFields.postalCode,
+    postalCodeMatches.length,
+    postalProvinceIds,
+    thaiAddressData.provinces,
+  ]);
+
+  const districtOptions = useMemo(() => {
+    if (!selectedProvinceId) return [];
+
+    return thaiAddressData.districts.filter((district) => {
+      const belongsToProvince = String(district.province_id) === selectedProvinceId;
+      const belongsToPostalCode =
+        addressFields.postalCode.length !== 5 ||
+        postalCodeMatches.length === 0 ||
+        postalDistrictIds.has(district.id);
+
+      return belongsToProvince && belongsToPostalCode;
+    });
+  }, [
+    addressFields.postalCode,
+    postalCodeMatches.length,
+    postalDistrictIds,
+    selectedProvinceId,
+    thaiAddressData.districts,
+  ]);
+
+  const subdistrictOptions = useMemo(() => {
+    if (!selectedDistrictId) return [];
+
+    return thaiAddressData.subdistricts.filter((subdistrict) => {
+      const belongsToDistrict = String(subdistrict.district_id) === selectedDistrictId;
+      const belongsToPostalCode =
+        addressFields.postalCode.length !== 5 ||
+        postalCodeMatches.length === 0 ||
+        String(subdistrict.zip_code).padStart(5, '0') === addressFields.postalCode;
+
+      return belongsToDistrict && belongsToPostalCode;
+    });
+  }, [
+    addressFields.postalCode,
+    postalCodeMatches.length,
+    selectedDistrictId,
+    thaiAddressData.subdistricts,
+  ]);
 
   const handleChange = (field, value) => {
     setForm((current) => ({ ...current, [field]: value }));
@@ -48,6 +189,97 @@ export default function ProfilePage({ user, onNavigate, onLogout }) {
 
   const handleAddressChange = (field, value) => {
     setAddressFields((current) => ({ ...current, [field]: value }));
+  };
+
+  const handlePostalCodeChange = (value) => {
+    const postalCode = value.replace(/\D/g, '').slice(0, 5);
+    const matches =
+      postalCode.length === 5
+        ? thaiAddressData.subdistricts.filter(
+            (subdistrict) =>
+              String(subdistrict.zip_code).padStart(5, '0') === postalCode,
+          )
+        : [];
+    const matchedDistrictIds = new Set(matches.map((subdistrict) => subdistrict.district_id));
+    const matchedDistricts = [...matchedDistrictIds]
+      .map((districtId) => districtById.get(districtId))
+      .filter(Boolean);
+    const matchedProvinceIds = new Set(matchedDistricts.map((district) => district.province_id));
+    const province =
+      matchedProvinceIds.size === 1
+        ? thaiAddressData.provinces.find(
+            (item) => item.id === matchedProvinceIds.values().next().value,
+          )
+        : undefined;
+    const district = matchedDistricts.length === 1 ? matchedDistricts[0] : undefined;
+    const subdistrict = matches.length === 1 ? matches[0] : undefined;
+
+    setSelectedProvinceId(province ? String(province.id) : '');
+    setSelectedDistrictId(district ? String(district.id) : '');
+    setSelectedSubdistrictId(subdistrict ? String(subdistrict.id) : '');
+    setAddressFields((current) => ({
+      ...current,
+      postalCode,
+      province: province?.name_th || '',
+      district: district?.name_th || '',
+      subdistrict: subdistrict?.name_th || '',
+    }));
+  };
+
+  const selectProvince = (provinceId) => {
+    const province = thaiAddressData.provinces.find(
+      (item) => String(item.id) === provinceId,
+    );
+    const currentPostalCode = addressFields.postalCode;
+    const postalCodeIsCompatible =
+      currentPostalCode.length === 5 &&
+      postalCodeMatches.some(
+        (subdistrict) =>
+          String(districtById.get(subdistrict.district_id)?.province_id) === provinceId,
+      );
+
+    setSelectedProvinceId(provinceId);
+    setSelectedDistrictId('');
+    setSelectedSubdistrictId('');
+    setAddressFields((current) => ({
+      ...current,
+      province: province?.name_th || '',
+      district: '',
+      subdistrict: '',
+      postalCode: postalCodeIsCompatible ? currentPostalCode : '',
+    }));
+  };
+
+  const selectDistrict = (districtId) => {
+    const district = districtById.get(Number(districtId));
+    const currentPostalCode = addressFields.postalCode;
+    const postalCodeIsCompatible =
+      currentPostalCode.length === 5 &&
+      postalCodeMatches.some(
+        (subdistrict) => String(subdistrict.district_id) === districtId,
+      );
+
+    setSelectedDistrictId(districtId);
+    setSelectedSubdistrictId('');
+    setAddressFields((current) => ({
+      ...current,
+      district: district?.name_th || '',
+      subdistrict: '',
+      postalCode: postalCodeIsCompatible ? currentPostalCode : '',
+    }));
+  };
+
+  const selectSubdistrict = (subdistrictId) => {
+    const subdistrict = thaiAddressData.subdistricts.find(
+      (item) => String(item.id) === subdistrictId,
+    );
+
+    setSelectedSubdistrictId(subdistrictId);
+    setAddressFields((current) => ({
+      ...current,
+      subdistrict: subdistrict?.name_th || '',
+      postalCode: subdistrict ? String(subdistrict.zip_code).padStart(5, '0') : '',
+    }));
   };
 
   const saveProfile = async (event) => {
@@ -97,6 +329,7 @@ export default function ProfilePage({ user, onNavigate, onLogout }) {
 
     try {
       const res = await updateMe(token, payload);
+      clearGoogleAddressCompletion();
       updateCurrentUser(res.data);
       setForm((current) => ({
         ...current,
@@ -144,12 +377,33 @@ export default function ProfilePage({ user, onNavigate, onLogout }) {
       <CustomerNavbar user={user} onNavigate={onNavigate} onLogout={onLogout} />
 
       <main className="account-main">
+        <section className="account-hero">
+          <div className="account-hero-avatar" aria-hidden="true">{profileInitial}</div>
+          <div className="account-hero-copy">
+            <p>บัญชีสมาชิกชุมชน</p>
+            <h1>บัญชีของฉัน</h1>
+            <span>จัดการข้อมูลส่วนตัว ที่อยู่จัดส่ง และความปลอดภัยของบัญชี</span>
+          </div>
+          <div className="account-hero-status">
+            <span>สถานะบัญชี</span>
+            <strong><i /> พร้อมใช้งาน</strong>
+          </div>
+        </section>
+
         {error ? <div className="account-alert error">{error}</div> : null}
         {message ? <div className="account-alert success">{message}</div> : null}
+        {completingGoogleAddress ? (
+          <div className="account-alert notice">
+            เข้าสู่ระบบด้วย Google สำเร็จ กรุณากรอกเบอร์โทรศัพท์และที่อยู่สำหรับจัดส่งสินค้าให้ครบถ้วน
+          </div>
+        ) : null}
 
-        <section className="account-card">
+        <section className="account-card account-profile-card">
           <div className="account-card-header">
-            <h2>ตั้งค่าข้อมูลส่วนตัว</h2>
+            <div>
+              <p>ข้อมูลสำหรับการติดต่อและจัดส่ง</p>
+              <h2>ข้อมูลส่วนตัว</h2>
+            </div>
             <button type="button" className="account-edit-button" aria-expanded={editingProfile} onClick={() => setEditingProfile((open) => !open)}>
               ✎ แก้ไข
             </button>
@@ -189,29 +443,84 @@ export default function ProfilePage({ user, onNavigate, onLogout }) {
 
               <fieldset className="account-address-fields">
                 <legend>ที่อยู่สำหรับจัดส่ง</legend>
+                {addressDataError ? (
+                  <div className="account-address-data-message error">{addressDataError}</div>
+                ) : null}
                 <div className="account-address-grid">
                   <label className="address-half">
                     <span className="account-field-label">รหัสไปรษณีย์<span className="account-required">*</span></span>
                     <input
                       value={addressFields.postalCode}
-                      onChange={(event) => handleAddressChange('postalCode', event.target.value.replace(/\D/g, '').slice(0, 5))}
+                      onChange={(event) => handlePostalCodeChange(event.target.value)}
                       inputMode="numeric"
                       autoComplete="postal-code"
                       maxLength="5"
+                      autoFocus={completingGoogleAddress}
+                      disabled={saving || addressDataLoading}
                       required
                     />
+                    {addressDataLoading ? <small>กำลังโหลดข้อมูลพื้นที่...</small> : null}
+                    {!addressDataLoading &&
+                    !addressDataError &&
+                    addressFields.postalCode.length === 5 &&
+                    postalCodeMatches.length === 0 ? (
+                      <small className="account-field-error">ไม่พบรหัสไปรษณีย์นี้</small>
+                    ) : null}
+                    {postalCodeMatches.length > 1 && !selectedSubdistrictId ? (
+                      <small>พบหลายพื้นที่ กรุณาเลือกจังหวัด อำเภอ และตำบล</small>
+                    ) : null}
                   </label>
                   <label className="address-half">
                     จังหวัด
-                    <input value={addressFields.province} onChange={(event) => handleAddressChange('province', event.target.value)} autoComplete="address-level1" />
+                    <select
+                      value={selectedProvinceId}
+                      onChange={(event) => selectProvince(event.target.value)}
+                      autoComplete="address-level1"
+                      disabled={saving || addressDataLoading || Boolean(addressDataError)}
+                    >
+                      <option value="">เลือกจังหวัด</option>
+                      {provinceOptions.map((province) => (
+                        <option key={province.id} value={province.id}>{province.name_th}</option>
+                      ))}
+                    </select>
                   </label>
                   <label className="address-half">
                     อำเภอ / เขต
-                    <input value={addressFields.district} onChange={(event) => handleAddressChange('district', event.target.value)} autoComplete="address-level2" />
+                    <select
+                      value={selectedDistrictId}
+                      onChange={(event) => selectDistrict(event.target.value)}
+                      autoComplete="address-level2"
+                      disabled={
+                        saving ||
+                        addressDataLoading ||
+                        Boolean(addressDataError) ||
+                        !selectedProvinceId
+                      }
+                    >
+                      <option value="">เลือกอำเภอ / เขต</option>
+                      {districtOptions.map((district) => (
+                        <option key={district.id} value={district.id}>{district.name_th}</option>
+                      ))}
+                    </select>
                   </label>
                   <label className="address-half">
                     ตำบล / แขวง
-                    <input value={addressFields.subdistrict} onChange={(event) => handleAddressChange('subdistrict', event.target.value)} autoComplete="address-level3" />
+                    <select
+                      value={selectedSubdistrictId}
+                      onChange={(event) => selectSubdistrict(event.target.value)}
+                      autoComplete="address-level3"
+                      disabled={
+                        saving ||
+                        addressDataLoading ||
+                        Boolean(addressDataError) ||
+                        !selectedDistrictId
+                      }
+                    >
+                      <option value="">เลือกตำบล / แขวง</option>
+                      {subdistrictOptions.map((subdistrict) => (
+                        <option key={subdistrict.id} value={subdistrict.id}>{subdistrict.name_th}</option>
+                      ))}
+                    </select>
                   </label>
                   <label className="address-four">
                     บ้านเลขที่
@@ -276,9 +585,12 @@ export default function ProfilePage({ user, onNavigate, onLogout }) {
           )}
         </section>
 
-        <section className="account-card">
+        <section className="account-card account-security-card">
           <div className="account-card-header">
-            <h2>เปลี่ยนรหัสผ่าน</h2>
+            <div>
+              <p>รักษาบัญชีของคุณให้ปลอดภัย</p>
+              <h2>รหัสผ่านและความปลอดภัย</h2>
+            </div>
             <button type="button" className="account-edit-button" aria-expanded={editingPassword} onClick={() => setEditingPassword((open) => !open)}>
               ✎ แก้ไข
             </button>

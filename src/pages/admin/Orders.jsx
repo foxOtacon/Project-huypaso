@@ -12,6 +12,7 @@ import {
 import { formatCurrency, getStatusLabel } from '../../utils/dashboardStats';
 import { getSafeTrackingUrl } from '../../utils/tracking';
 import { formatAddressForDisplay } from '../../utils/profileAddress';
+import { matchesSearch } from '../../utils/search';
 
 const STATUS_OPTIONS = [
   { value: 'all', label: 'ทั้งหมด' },
@@ -34,10 +35,6 @@ function formatDate(dateValue) {
     month: '2-digit',
     year: 'numeric',
   });
-}
-
-function normalizeText(value) {
-  return String(value || '').trim().toLowerCase();
 }
 
 function buildOrderRows(orders, users, orderItems, products) {
@@ -124,16 +121,10 @@ export default function Orders() {
   );
 
   const filteredRows = useMemo(() => {
-    const customerQuery = normalizeText(filters.customer);
-    const orderQuery = normalizeText(filters.orderCode);
-
     return rows.filter((order) => {
       const matchesStatus = filters.status === 'all' || order.order_status === filters.status;
-      const matchesCustomer = !customerQuery || normalizeText(order.customerName).includes(customerQuery);
-      const matchesOrder =
-        !orderQuery ||
-        normalizeText(order.code).includes(orderQuery) ||
-        String(order.order_id).includes(orderQuery);
+      const matchesCustomer = matchesSearch(filters.customer, [order.customerName]);
+      const matchesOrder = matchesSearch(filters.orderCode, [order.code, order.order_id]);
 
       return matchesStatus && matchesCustomer && matchesOrder;
     });
@@ -203,7 +194,7 @@ export default function Orders() {
   }
 
   return (
-    <>
+    <div className="orders-page">
       {error ? <div className="admin-error orders-inline-error">{error}</div> : null}
 
       <section className="orders-stat-grid">
@@ -226,6 +217,10 @@ export default function Orders() {
       </section>
 
       <section className="orders-filter-panel" aria-label="ค้นหาคำสั่งซื้อ">
+        <div className="orders-filter-heading">
+          <div><span>ค้นหาและกรอง</span><h2>จัดการคำสั่งซื้อ</h2></div>
+          <strong>{filteredRows.length} รายการ</strong>
+        </div>
         <label>
           สถานะ
           <select
@@ -263,6 +258,10 @@ export default function Orders() {
       </section>
 
       <section className="admin-panel orders-table-panel">
+        <div className="orders-table-heading">
+          <div><span>รายการทั้งหมด</span><h2>คำสั่งซื้อ</h2></div>
+          <p>คลิกแถวเพื่อดูรายละเอียดและอัปเดตสถานะ</p>
+        </div>
         <div className="admin-table-wrap">
           <table className="admin-table orders-table">
             <thead>
@@ -441,7 +440,7 @@ export default function Orders() {
           </section>
         </div>
       ) : null}
-    </>
+    </div>
   );
 }
 

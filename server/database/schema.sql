@@ -29,6 +29,7 @@ CREATE TABLE products (
     image_url VARCHAR(255),
     production_source TEXT,
     stock_quantity INT NOT NULL DEFAULT 0,
+    status ENUM('active','suspended') NOT NULL DEFAULT 'active',
     created_by INT NOT NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 

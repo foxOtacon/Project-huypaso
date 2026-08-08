@@ -51,7 +51,7 @@ async function createOrderWithItems({ userId, items, shippingName, shippingPhone
     const productIds = [...new Set(items.map((item) => item.product_id))];
     const products = await run(
       connection,
-      `SELECT product_id, product_name, price, stock_quantity
+      `SELECT product_id, product_name, price, stock_quantity, status
        FROM products
        WHERE product_id IN (?)
        FOR UPDATE`,
@@ -67,6 +67,14 @@ async function createOrderWithItems({ userId, items, shippingName, shippingPhone
         const error = new Error(`Product not found: ${item.product_id}`);
         error.status = 400;
         error.missingProductId = item.product_id;
+        throw error;
+      }
+
+      if (product.status !== "active") {
+        const error = new Error(
+          `${product.product_name} ถูกระงับการขายชั่วคราว กรุณานำสินค้าออกจากตะกร้า`,
+        );
+        error.status = 409;
         throw error;
       }
 

@@ -7,8 +7,10 @@ import {
   fetchShippingCarriers,
   updateShippingCarrier,
 } from '../../api/admin';
+import { matchesSearch } from '../../utils/search';
 
 const EMPTY_FORM = { carrier_name: '', tracking_url: '', description: '', status: 'active' };
+const DUPLICATE_CARRIER_MESSAGE = 'มีชื่อบริษัทขนส่งนี้อยู่แล้ว กรุณาตรวจสอบรายการเดิมหรือใช้ชื่ออื่น';
 
 function normalize(value) {
   return String(value || '').trim().toLowerCase();
@@ -33,6 +35,7 @@ export default function ShippingCarriers() {
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
   const [error, setError] = useState('');
+  const [formError, setFormError] = useState('');
 
   useEffect(() => {
     async function loadItems() {
@@ -48,22 +51,29 @@ export default function ShippingCarriers() {
   }, []);
 
   const filteredItems = useMemo(() => {
-    const keyword = normalize(filters.search);
     return items.filter((item) => {
-      const matchesSearch = !keyword
-        || normalize(item.carrier_name).includes(keyword)
-        || normalize(item.description).includes(keyword);
+      const matchesKeyword = matchesSearch(filters.search, [
+        item.carrier_name,
+        item.description,
+      ]);
       const matchesStatus = filters.status === 'all' || item.status === filters.status;
-      return matchesSearch && matchesStatus;
+      return matchesKeyword && matchesStatus;
     });
   }, [filters, items]);
 
   const pagination = usePagination(filteredItems, 10, [filters]);
+  const carrierStats = {
+    total: items.length,
+    active: items.filter((item) => item.status === 'active').length,
+    inactive: items.filter((item) => item.status === 'inactive').length,
+    trackable: items.filter((item) => item.tracking_url).length,
+  };
 
   function openCreateForm() {
     setEditingItem(null);
     setForm({ ...EMPTY_FORM });
     setError('');
+    setFormError('');
     setFormOpen(true);
   }
 
@@ -76,6 +86,7 @@ export default function ShippingCarriers() {
       status: item.status || 'active',
     });
     setError('');
+    setFormError('');
     setFormOpen(true);
   }
 
@@ -84,12 +95,23 @@ export default function ShippingCarriers() {
     setFormOpen(false);
     setEditingItem(null);
     setForm({ ...EMPTY_FORM });
+    setFormError('');
   }
 
   async function handleSubmit(event) {
     event.preventDefault();
+    const duplicate = items.some((item) => (
+      String(item.carrier_id) !== String(editingItem?.carrier_id || '')
+      && normalize(item.carrier_name) === normalize(form.carrier_name)
+    ));
+
+    if (duplicate) {
+      setFormError(DUPLICATE_CARRIER_MESSAGE);
+      return;
+    }
+
     setSaving(true);
-    setError('');
+    setFormError('');
     try {
       const saved = editingItem
         ? await updateShippingCarrier(editingItem.carrier_id, buildPayload(form))
@@ -101,7 +123,7 @@ export default function ShippingCarriers() {
       setEditingItem(null);
       setForm({ ...EMPTY_FORM });
     } catch (err) {
-      setError(err.message);
+      setFormError(err.status === 409 ? DUPLICATE_CARRIER_MESSAGE : err.message);
     } finally {
       setSaving(false);
     }
@@ -125,10 +147,21 @@ export default function ShippingCarriers() {
   if (error && items.length === 0) return <div className="admin-error">{error}</div>;
 
   return (
-    <>
+    <div className="admin-carriers-page">
       {error ? <div className="admin-error orders-inline-error">{error}</div> : null}
 
+      <section className="admin-carriers-stat-grid">
+        <article><span>บริษัทขนส่งทั้งหมด</span><strong>{carrierStats.total}</strong></article>
+        <article><span>เปิดใช้งาน</span><strong>{carrierStats.active}</strong></article>
+        <article><span>ปิดใช้งาน</span><strong>{carrierStats.inactive}</strong></article>
+        <article><span>มีลิงก์ติดตาม</span><strong>{carrierStats.trackable}</strong></article>
+      </section>
+
       <section className="products-toolbar">
+        <div className="admin-carriers-toolbar-heading">
+          <div><span>ค้นหาและกรอง</span><h2>จัดการบริษัทขนส่ง</h2></div>
+          <strong>{filteredItems.length} รายการ</strong>
+        </div>
         <input
           type="search"
           value={filters.search}
@@ -147,6 +180,10 @@ export default function ShippingCarriers() {
       </section>
 
       <section className="admin-panel products-table-panel">
+        <div className="admin-carriers-table-heading">
+          <div><span>ผู้ให้บริการทั้งหมด</span><h2>บริษัทขนส่ง</h2></div>
+          <p>จัดการสถานะและลิงก์สำหรับติดตามพัสดุ</p>
+        </div>
         <div className="admin-table-wrap">
           <table className="admin-table products-table carrier-table">
             <thead>
@@ -164,7 +201,7 @@ export default function ShippingCarriers() {
               ) : pagination.pageItems.map((item, index) => (
                 <tr key={item.carrier_id}>
                   <td>{(pagination.page - 1) * pagination.pageSize + index + 1}</td>
-                  <td>
+                  <td className="admin-table-data-left">
                     <div className="carrier-name-cell">
                       <strong>{item.carrier_name}</strong>
                       <span>{item.description || '-'}</span>
@@ -216,14 +253,28 @@ export default function ShippingCarriers() {
               <button type="button" aria-label="ปิด" onClick={closeForm}>×</button>
             </header>
             <div className="products-form-grid">
-              <label className="products-form-wide">
+              <label className={`products-form-wide modal-name-field${formError ? ' has-error' : ''}`}>
                 ชื่อบริษัทขนส่ง
                 <input
                   value={form.carrier_name}
                   maxLength={120}
                   required
-                  onChange={(event) => setForm((current) => ({ ...current, carrier_name: event.target.value }))}
+                  aria-invalid={Boolean(formError)}
+                  aria-describedby={formError ? 'carrier-form-error' : undefined}
+                  onChange={(event) => {
+                    setForm((current) => ({ ...current, carrier_name: event.target.value }));
+                    if (formError) setFormError('');
+                  }}
                 />
+                {formError ? (
+                  <div id="carrier-form-error" className="modal-form-alert" role="alert">
+                    <span className="modal-form-alert-icon" aria-hidden="true">!</span>
+                    <span className="modal-form-alert-copy">
+                      <strong>บันทึกข้อมูลไม่สำเร็จ</strong>
+                      <span>{formError}</span>
+                    </span>
+                  </div>
+                ) : null}
               </label>
               <label className="products-form-wide">
                 URL ติดตามพัสดุ
@@ -260,6 +311,6 @@ export default function ShippingCarriers() {
           </form>
         </div>
       ) : null}
-    </>
+    </div>
   );
 }
