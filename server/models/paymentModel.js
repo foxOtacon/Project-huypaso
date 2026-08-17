@@ -1,4 +1,5 @@
 const { pool } = require("../config/db");
+const { PAYMENT_EXPIRATION_MINUTES } = require("../services/orderExpirationService");
 
 function getConnection() {
   return new Promise((resolve, reject) => {
@@ -96,6 +97,14 @@ async function createOrderWithItems({ userId, items, shippingName, shippingPhone
     );
     const orderId = orderResult.insertId;
 
+    await run(
+      connection,
+      `INSERT INTO payments
+        (order_id, amount, payment_method, payment_status, transaction_ref, payment_date)
+       VALUES (?, ?, 'promptpay', 'pending', ?, NULL)`,
+      [orderId, totalAmount, `ORD${orderId}`],
+    );
+
     for (const item of items) {
       const product = productMap.get(item.product_id);
 
@@ -120,6 +129,9 @@ async function createOrderWithItems({ userId, items, shippingName, shippingPhone
       user_id: userId,
       total_amount: totalAmount,
       order_status: "pending",
+      payment_status: "pending",
+      payment_method: "promptpay",
+      slip_image: null,
       shipping_name: shippingName,
       shipping_phone: shippingPhone,
       shipping_address: shippingAddress,
@@ -132,18 +144,26 @@ async function createOrderWithItems({ userId, items, shippingName, shippingPhone
   }
 }
 
-async function getOrderById(orderId) {
+async function getOrderForUser(orderId, userId) {
   const connection = await getConnection();
 
   try {
-    const rows = await run(connection, "SELECT * FROM orders WHERE order_id = ?", [orderId]);
+    const rows = await run(
+      connection,
+      `SELECT o.*, p.payment_id, p.payment_status, p.payment_method, p.slip_image,
+              p.payment_date, p.transaction_ref
+       FROM orders o
+       LEFT JOIN payments p ON p.order_id = o.order_id
+       WHERE o.order_id = ? AND o.user_id = ?`,
+      [orderId, userId],
+    );
     return rows[0] || null;
   } finally {
     connection.release();
   }
 }
 
-async function createSlipPayment({ orderId, amount, slipImage, paymentMethod }) {
+async function createSlipPayment({ orderId, userId, amount, slipImage, paymentMethod }) {
   const connection = await getConnection();
 
   try {
@@ -151,8 +171,13 @@ async function createSlipPayment({ orderId, amount, slipImage, paymentMethod }) 
 
     const orderRows = await run(
       connection,
-      "SELECT order_status FROM orders WHERE order_id = ? FOR UPDATE",
-      [orderId],
+      `SELECT o.order_status, o.order_date, p.payment_id, p.payment_status, p.slip_image,
+              (o.order_date > NOW() - (? * INTERVAL '1 minute')) AS payment_active
+       FROM orders o
+       INNER JOIN payments p ON p.order_id = o.order_id
+       WHERE o.order_id = ? AND o.user_id = ?
+       FOR UPDATE OF o, p`,
+      [PAYMENT_EXPIRATION_MINUTES, orderId, userId],
     );
 
     if (!orderRows[0]) {
@@ -161,24 +186,36 @@ async function createSlipPayment({ orderId, amount, slipImage, paymentMethod }) 
       throw error;
     }
 
-    if (orderRows[0].order_status !== "pending") {
+    if (orderRows[0].order_status !== "pending" || orderRows[0].payment_status !== "pending") {
       const error = new Error("Order is no longer awaiting payment");
       error.status = 409;
       throw error;
     }
 
-    const paymentResult = await run(
+    if (!orderRows[0].payment_active) {
+      const error = new Error("Payment time has expired");
+      error.status = 410;
+      throw error;
+    }
+
+    if (orderRows[0].slip_image) {
+      const error = new Error("Payment slip was already submitted");
+      error.status = 409;
+      throw error;
+    }
+
+    await run(
       connection,
-      `INSERT INTO payments
-        (order_id, slip_image, amount, payment_method, payment_status, transaction_ref, payment_date)
-       VALUES (?, ?, ?, ?, 'pending', ?, NOW())`,
-      [orderId, slipImage, amount, paymentMethod, `ORD${orderId}`],
+      `UPDATE payments
+       SET slip_image = ?, amount = ?, payment_method = ?, payment_date = NOW()
+       WHERE payment_id = ? AND payment_status = 'pending'`,
+      [slipImage, amount, paymentMethod, orderRows[0].payment_id],
     );
 
     await commit(connection);
 
     return {
-      payment_id: paymentResult.insertId,
+      payment_id: orderRows[0].payment_id,
       order_id: orderId,
       amount,
       slip_image: slipImage,
@@ -200,8 +237,7 @@ async function cancelPendingOrderForUser({ orderId, userId }) {
     await begin(connection);
     const rows = await run(
       connection,
-      `SELECT o.order_id, o.order_status,
-         EXISTS (SELECT 1 FROM payments p WHERE p.order_id = o.order_id) AS has_payment
+      `SELECT o.order_id, o.order_status
        FROM orders o
        WHERE o.order_id = ? AND o.user_id = ?
        FOR UPDATE OF o`,
@@ -214,7 +250,8 @@ async function cancelPendingOrderForUser({ orderId, userId }) {
       throw error;
     }
 
-    const order = rows[0];
+    const paymentRows = await run(connection, "SELECT payment_id, payment_status FROM payments WHERE order_id = ? FOR UPDATE", [orderId]);
+    const order = { ...rows[0], ...paymentRows[0] };
     if (order.order_status === "cancelled") {
       await commit(connection);
       return { order_id: order.order_id, order_status: "cancelled", already_cancelled: true };
@@ -224,8 +261,8 @@ async function cancelPendingOrderForUser({ orderId, userId }) {
       error.status = 409;
       throw error;
     }
-    if (order.has_payment) {
-      const error = new Error("Order cannot be cancelled after a payment slip was submitted");
+    if (order.payment_status === "approved") {
+      const error = new Error("A paid order cannot be cancelled");
       error.status = 409;
       throw error;
     }
@@ -243,7 +280,8 @@ async function cancelPendingOrderForUser({ orderId, userId }) {
        WHERE p.product_id = restock.product_id`,
       [order.order_id],
     );
-    await run(connection, "UPDATE orders SET order_status = 'cancelled' WHERE order_id = ?", [
+    await run(connection, `UPDATE payments SET payment_status = 'rejected' WHERE order_id = ? AND payment_status = 'pending'`, [order.order_id]);
+    await run(connection, "UPDATE orders SET order_status = 'cancelled', cancellation_reason = 'cancelled_by_user' WHERE order_id = ?", [
       order.order_id,
     ]);
     await commit(connection);
@@ -290,6 +328,13 @@ async function approvePayment(paymentId) {
   try {
     await begin(connection);
 
+    const locked = await run(connection, `SELECT p.*, o.order_status FROM payments p INNER JOIN orders o ON o.order_id = p.order_id WHERE p.payment_id = ? FOR UPDATE OF p, o`, [paymentId]);
+    if (!locked[0]) {
+      const error = new Error("Payment not found"); error.status = 404; throw error;
+    }
+    if (locked[0].order_status !== "pending" || locked[0].payment_status !== "pending") {
+      const error = new Error("Payment is no longer pending"); error.status = 409; throw error;
+    }
     const result = await run(
       connection,
       `UPDATE payments
@@ -305,7 +350,7 @@ async function approvePayment(paymentId) {
     }
 
     const rows = await run(connection, "SELECT * FROM payments WHERE payment_id = ?", [paymentId]);
-    await run(connection, "UPDATE orders SET order_status = 'shipping' WHERE order_id = ?", [
+    await run(connection, "UPDATE orders SET order_status = 'shipping', cancellation_reason = NULL WHERE order_id = ? AND order_status = 'pending'", [
       rows[0].order_id,
     ]);
 
@@ -364,7 +409,7 @@ async function rejectPayment(paymentId) {
         [payment.order_id],
       );
 
-      await run(connection, "UPDATE orders SET order_status = 'cancelled' WHERE order_id = ?", [
+      await run(connection, "UPDATE orders SET order_status = 'cancelled', cancellation_reason = 'payment_rejected' WHERE order_id = ?", [
         payment.order_id,
       ]);
     }
@@ -385,7 +430,7 @@ async function rejectPayment(paymentId) {
 
 module.exports = {
   createOrderWithItems,
-  getOrderById,
+  getOrderForUser,
   createSlipPayment,
   cancelPendingOrderForUser,
   listAdminPayments,

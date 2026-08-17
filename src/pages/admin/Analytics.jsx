@@ -20,13 +20,16 @@ function Trend({ value }) {
 }
 
 function TrendChart({ points }) {
-  const w = 700, h = 230, max = Math.max(...points.map((p) => p.value), 1);
-  const x = (i) => 54 + i / Math.max(points.length - 1, 1) * 626;
+  const w = 700, h = 260, plotLeft = 78, plotRight = 680, max = Math.max(...points.map((p) => p.value), 1);
+  const x = (i) => plotLeft + i / Math.max(points.length - 1, 1) * (plotRight - plotLeft);
   const y = (v) => 18 + (1 - v / max) * 170;
   const path = points.map((p, i) => `${i ? 'L' : 'M'} ${x(i)} ${y(p.value)}`).join(' ');
-  return <div className="analytics-chart-scroll"><svg className="analytics-line-chart" viewBox={`0 0 ${w} ${h}`} role="img" aria-label="กราฟแนวโน้มรายได้">
-    {[0, .25, .5, .75, 1].map((r) => <g key={r}><line x1="54" x2="680" y1={y(max * r)} y2={y(max * r)} /><text x="48" y={y(max * r) + 4} textAnchor="end">{Math.round(max * r).toLocaleString('th-TH')}</text></g>)}
+  return <div className="analytics-chart-scroll"><svg className="analytics-line-chart" viewBox={`0 0 ${w} ${h}`} role="img" aria-label="กราฟแนวโน้มรายได้ แกน X แสดงวันที่ แกน Y แสดงรายได้หน่วยบาท">
+    <title>แนวโน้มรายได้ตามวันที่ หน่วยเป็นบาท</title>
+    <text className="axis-title" x="18" y="103" textAnchor="middle" transform="rotate(-90 18 103)">รายได้ (บาท)</text>
+    {[0, .25, .5, .75, 1].map((r) => <g key={r}><line x1={plotLeft} x2={plotRight} y1={y(max * r)} y2={y(max * r)} /><text x={plotLeft - 8} y={y(max * r) + 4} textAnchor="end">{Math.round(max * r).toLocaleString('th-TH')}</text></g>)}
     <path d={path} className="actual-line" />{points.map((p, i) => <g key={`${p.label}-${i}`}><circle cx={x(i)} cy={y(p.value)} r="4" /><text x={x(i)} y="216" textAnchor="middle">{p.label}</text></g>)}
+    <text className="axis-title" x={(plotLeft + plotRight) / 2} y="248" textAnchor="middle">วันที่</text>
   </svg></div>;
 }
 

@@ -1,8 +1,67 @@
-﻿.admin-shell {
+.admin-shell {
   display: flex;
   min-height: 100svh;
   background: #f3f4f6;
 }
+
+.admin-payment-settings { max-width: 1120px; }
+.admin-payment-settings-form { display: grid; gap: 18px; }
+.admin-payment-settings-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; align-items: start; }
+.admin-payment-settings-card { display: grid; align-content: start; gap: 18px; padding: 26px; border: 1px solid #dfe8e2; border-radius: 16px; background: #fff; box-shadow: 0 14px 34px rgba(35,62,49,.08); }
+.admin-payment-settings-card header p { margin: 0 0 4px; color: #8c6b39; font-size: 12px; font-weight: 900; text-transform: uppercase; }
+.admin-payment-settings-card header h3 { margin: 0; color: #244b38; font-size: 24px; }
+.admin-payment-settings-card label { display: grid; gap: 8px; color: #40594c; font-weight: 800; }
+.admin-payment-settings-card input,
+.admin-payment-settings-card select { min-height: 44px; padding: 9px 12px; border: 1px solid #d4dfd8; border-radius: 8px; background: #fff; color: #26392f; font: inherit; }
+.admin-payment-settings-form > button { min-height: 46px; border: 0; border-radius: 9px; background: #315542; color: #fff; font: inherit; font-weight: 900; cursor: pointer; }
+.admin-payment-settings-form > button:disabled { opacity: .6; cursor: wait; }
+.admin-payment-qr-preview { min-height: 260px; display: grid; place-items: center; padding: 16px; border: 1px dashed #b9c9bf; border-radius: 12px; background: #f3f8f5; color: #6b7e73; }
+.admin-payment-qr-preview img { display: block; width: min(320px, 100%); height: auto; object-fit: contain; }
+.admin-payment-file input { padding: 10px; background: #f7faf8; }
+.admin-bank-transfer-preview { display: flex; min-width: 0; min-height: 260px; align-items: center; justify-content: center; gap: 18px; padding: 24px; border: 1px dashed #b9c9bf; border-radius: 12px; background: #f3f8f5; text-align: left; }
+.admin-bank-transfer-preview img,
+.admin-bank-transfer-logo-fallback { width: 96px; height: 96px; flex: 0 0 96px; border-radius: 20px; }
+.admin-bank-transfer-preview img { display: block; padding: 7px; border: 1px solid #d8e4dd; background: #fff; object-fit: contain; }
+.admin-bank-transfer-logo-fallback { display: grid; place-items: center; background: #315542; color: #fff; font-size: 42px; font-weight: 900; }
+.admin-bank-transfer-preview > div { display: grid; gap: 5px; min-width: 0; }
+.admin-bank-transfer-preview small { color: #718178; font-size: 13px; font-weight: 800; }
+.admin-bank-transfer-preview strong { color: #244b38; font-size: 18px; line-height: 1.45; overflow-wrap: anywhere; }
+.admin-form-error, .admin-form-success { margin: 0; padding: 11px 13px; border-radius: 8px; font-weight: 800; }
+.admin-form-error { color: #9b2d2d; background: #fff0f0; }
+.admin-form-success { color: #24633f; background: #eaf8ef; }
+.admin-bank-picker { min-width: 0; margin: 0; padding: 0; border: 0; }
+.admin-bank-picker legend { margin-bottom: 2px; color: #40594c; font-weight: 800; }
+.admin-bank-picker-help { margin: 0 0 10px; color: #718178; font-size: 13px; }
+.admin-bank-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; max-height: 348px; padding: 2px 5px 2px 2px; overflow-y: auto; scrollbar-color: #9bb2a5 #edf3ef; scrollbar-width: thin; }
+.admin-bank-option { position: relative; display: flex; align-items: center; gap: 10px; min-width: 0; min-height: 64px; padding: 8px 30px 8px 9px; border: 1px solid #d8e3dc; border-radius: 11px; background: #fff; color: #334c3f; font: inherit; font-size: 12px; font-weight: 800; line-height: 1.35; text-align: left; cursor: pointer; transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease; }
+.admin-bank-option:hover { border-color: #8fa99a; transform: translateY(-1px); }
+.admin-bank-option:focus-visible { outline: 3px solid rgba(49,85,66,.2); outline-offset: 2px; }
+.admin-bank-option.is-selected { border-color: #315542; background: #f1f7f3; box-shadow: 0 0 0 2px rgba(49,85,66,.12); }
+.admin-bank-option img { display: block; width: 43px; height: 43px; flex: 0 0 43px; border-radius: 10px; object-fit: contain; }
+.admin-bank-option > span:not(.admin-bank-check) { min-width: 0; overflow-wrap: anywhere; }
+.admin-bank-check { position: absolute; top: 7px; right: 7px; display: grid; width: 19px; height: 19px; place-items: center; border-radius: 50%; background: #315542; color: #fff; font-size: 12px; line-height: 1; }
+.admin-bank-clear { margin-top: 10px; padding: 4px 0; border: 0; background: transparent; color: #8b4b42; font: inherit; font-size: 13px; font-weight: 800; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.admin-bank-legacy { display: flex; align-items: center; gap: 10px; margin: 0 0 10px; padding: 9px 11px; border: 1px solid #d8e3dc; border-radius: 11px; background: #f7faf8; color: #334c3f; font-weight: 800; }
+.admin-bank-legacy small { display: block; margin-bottom: 2px; color: #718178; font-weight: 700; }
+.admin-bank-logo-fallback { display: grid; width: 42px; height: 42px; flex: 0 0 42px; place-items: center; border-radius: 10px; background: #315542; color: #fff; font-size: 20px; }
+.admin-payment-alert-backdrop { position: fixed; inset: 0; z-index: 3000; display: grid; place-items: center; padding: 24px; background: rgba(15,35,25,.58); backdrop-filter: blur(6px); }
+.admin-payment-alert-dialog { width: min(440px, 100%); padding: 30px; border: 1px solid #ead9d3; border-radius: 20px; background: #fff; box-shadow: 0 30px 80px rgba(18,39,28,.28); text-align: center; animation: admin-payment-alert-in .18s ease-out; }
+.admin-payment-alert-icon { display: grid; width: 58px; height: 58px; margin: 0 auto 14px; place-items: center; border-radius: 50%; background: #fff0eb; color: #a43f2d; box-shadow: inset 0 0 0 8px #fff7f4; font-size: 30px; font-weight: 950; }
+.admin-payment-alert-eyebrow { margin: 0 0 5px; color: #9a624d; font-size: 12px; font-weight: 900; letter-spacing: .04em; text-transform: uppercase; }
+.admin-payment-alert-dialog h2 { margin: 0; color: #244b38; font-size: 24px; }
+.admin-payment-alert-dialog > p:last-of-type { margin: 10px 0 0; color: #627269; line-height: 1.65; }
+.admin-payment-alert-dialog ul { display: grid; gap: 7px; margin: 18px 0 0; padding: 0; list-style: none; text-align: left; }
+.admin-payment-alert-dialog li { position: relative; padding: 9px 12px 9px 38px; border: 1px solid #f0ddd7; border-radius: 9px; background: #fff8f5; color: #713e33; font-weight: 800; }
+.admin-payment-alert-dialog li::before { position: absolute; left: 13px; content: '!'; color: #b14d39; font-weight: 950; }
+.admin-payment-alert-dialog button { width: 100%; min-height: 46px; margin-top: 22px; border: 0; border-radius: 10px; background: #315542; color: #fff; font: inherit; font-weight: 900; cursor: pointer; }
+.admin-payment-alert-dialog button:hover { background: #244b38; }
+.admin-payment-alert-dialog button:focus-visible { outline: 3px solid rgba(49,85,66,.25); outline-offset: 3px; }
+@keyframes admin-payment-alert-in { from { opacity: 0; transform: translateY(12px) scale(.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@media (max-width: 900px) { .admin-payment-settings-grid { grid-template-columns: 1fr; } }
+@media (max-width: 520px) { .admin-bank-transfer-preview { min-height: 220px; flex-direction: column; text-align: center; } }
+@media (max-width: 520px) { .admin-bank-options { grid-template-columns: 1fr; max-height: 390px; } .admin-payment-alert-backdrop { align-items: end; padding: 0; } .admin-payment-alert-dialog { padding: 27px 20px max(24px, env(safe-area-inset-bottom)); border-radius: 20px 20px 0 0; } }
+.admin-payment-divider { display: flex; align-items: center; gap: 12px; margin-top: 8px; color: #315542; font-weight: 900; }
+.admin-payment-divider::before, .admin-payment-divider::after { flex: 1; height: 1px; background: #dfe8e2; content: ''; }
 
 .admin-sidebar {
   width: 240px;
@@ -1680,6 +1739,7 @@
 .analytics-line-chart { display: block; width: 100%; min-width: 580px; }
 .analytics-line-chart line { stroke: #e4ebe7; stroke-dasharray: 4 4; }
 .analytics-line-chart text { fill: #7b8982; font-size: 10px; }
+.analytics-line-chart .axis-title { fill: #405f50; font-size: 12px; font-weight: 850; }
 .analytics-line-chart .actual-line { fill: none; stroke: #2f5d4a; stroke-width: 3; }
 .analytics-line-chart circle { fill: #2f5d4a; stroke: #fff; stroke-width: 2; }
 .analytics-category-list, .analytics-ranking { list-style: none; margin: 16px 0 0; padding: 0; }
@@ -4371,4 +4431,326 @@
   .analytics-page .analytics-summary-grid article,
   .analytics-page .analytics-card,
   .analytics-page .analytics-insight-panel { padding: 16px; border-radius: 14px; }
+}
+/* History content editor */
+.admin-history-page {
+  width: min(100%, 1120px);
+  margin: 0 auto;
+}
+
+.history-editor-card {
+  overflow: hidden;
+  padding: 0;
+  border: 1px solid #e1e8e3;
+  border-radius: 20px;
+  box-shadow: 0 16px 42px rgba(35, 69, 51, 0.08);
+}
+
+.history-editor-heading,
+.history-editor-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 24px 28px;
+}
+
+.history-editor-heading {
+  border-bottom: 1px solid #e8eeea;
+  background: linear-gradient(135deg, #f7faf8 0%, #fffdf8 100%);
+}
+
+.history-editor-heading span {
+  color: #829087;
+  font-size: 12px;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.history-editor-heading h2 {
+  margin: 4px 0 6px;
+  color: #294a38;
+  font-size: 23px;
+  font-weight: 900;
+}
+
+.history-editor-heading p,
+.history-editor-footer p {
+  margin: 0;
+  color: #74837b;
+  line-height: 1.6;
+}
+
+.history-editor-status {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.history-editor-status span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.history-editor-status.is-saved {
+  color: #32704e;
+  background: #e9f6ee;
+}
+
+.history-editor-status.is-dirty {
+  color: #936817;
+  background: #fff3d9;
+}
+
+.history-editor-notices:empty {
+  display: none;
+}
+
+.history-editor-message {
+  margin: 20px 28px 0;
+}
+
+.history-editor-success {
+  padding: 12px 14px;
+  border: 1px solid #b9dfc7;
+  border-radius: 11px;
+  color: #286442;
+  background: #edf9f1;
+  font-weight: 700;
+}
+
+.history-editor-shell {
+  padding: 24px 28px;
+  background: #fff;
+}
+
+.history-editor-shell .ck.ck-editor {
+  width: 100%;
+}
+
+.history-editor-shell .ck.ck-toolbar {
+  border-color: #d9e2dc;
+  border-radius: 12px 12px 0 0;
+  background: #f6f9f7;
+}
+
+.history-editor-shell .ck.ck-editor__main > .ck-editor__editable {
+  min-height: 420px;
+  padding: 24px 30px;
+  border-color: #d9e2dc;
+  border-radius: 0 0 12px 12px;
+  color: #2f3d36;
+  font-size: 17px;
+  line-height: 1.8;
+  box-shadow: none;
+}
+
+.history-editor-shell .ck.ck-editor__main > .ck-editor__editable.ck-focused {
+  border-color: #557669;
+  box-shadow: 0 0 0 3px rgba(85, 118, 105, 0.12);
+}
+
+.history-editor-footer {
+  border-top: 1px solid #e8eeea;
+  background: #fbfcfb;
+}
+
+.history-editor-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.history-editor-actions button,
+.admin-history-load-error button {
+  min-height: 44px;
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-weight: 850;
+  transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
+}
+
+.history-editor-discard {
+  border: 1px solid #cfd9d2;
+  color: #53655b;
+  background: #fff;
+}
+
+.history-editor-save,
+.admin-history-load-error button {
+  border: 1px solid #426b56;
+  color: #fff;
+  background: #426b56;
+}
+
+.history-editor-actions button:not(:disabled):hover,
+.admin-history-load-error button:hover {
+  transform: translateY(-1px);
+}
+
+.history-editor-save:not(:disabled):hover,
+.admin-history-load-error button:hover {
+  border-color: #315542;
+  background: #315542;
+}
+
+.history-editor-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.history-save-alert {
+  position: fixed;
+  z-index: 1200;
+  right: 28px;
+  bottom: 28px;
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr) 32px;
+  align-items: center;
+  width: min(390px, calc(100vw - 32px));
+  padding: 16px;
+  border: 1px solid #b8ddc5;
+  border-radius: 16px;
+  background: rgba(247, 255, 250, 0.98);
+  box-shadow: 0 18px 48px rgba(29, 70, 48, 0.2);
+  animation: history-alert-in 220ms ease-out;
+}
+
+.history-save-alert-icon {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  background: #3d7a57;
+}
+
+.history-save-alert-icon svg {
+  width: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.5;
+}
+
+.history-save-alert strong {
+  display: block;
+  color: #28543b;
+  font-size: 16px;
+}
+
+.history-save-alert p {
+  margin: 3px 0 0;
+  color: #607168;
+  font-size: 13px;
+}
+
+.history-save-alert button {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  color: #607168;
+  background: transparent;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.history-save-alert button:hover {
+  color: #28543b;
+  background: #e5f3ea;
+}
+
+@keyframes history-alert-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.admin-history-load-error {
+  padding: 28px;
+  border-radius: 16px;
+  text-align: center;
+}
+
+.admin-history-load-error h2 {
+  color: #294a38;
+}
+
+.admin-history-load-error p {
+  margin: 8px 0 18px;
+  color: #8c4b4b;
+}
+
+@media (max-width: 767.98px) {
+  .history-editor-heading,
+  .history-editor-footer {
+    align-items: stretch;
+    flex-direction: column;
+    padding: 20px;
+  }
+
+  .history-editor-status {
+    align-self: flex-start;
+  }
+
+  .history-editor-shell {
+    padding: 18px 20px;
+  }
+
+  .history-editor-shell .ck.ck-editor__main > .ck-editor__editable {
+    min-height: 340px;
+    padding: 18px;
+  }
+
+  .history-editor-actions {
+    width: 100%;
+  }
+
+  .history-editor-actions button {
+    flex: 1;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .history-editor-card {
+    border-radius: 14px;
+  }
+
+  .history-editor-message {
+    margin: 16px 16px 0;
+  }
+
+  .history-editor-shell {
+    padding: 16px;
+  }
+
+  .history-editor-actions {
+    align-items: stretch;
+    flex-direction: column-reverse;
+  }
+
+  .history-save-alert {
+    right: 16px;
+    bottom: 16px;
+  }
 }

@@ -1,12 +1,9 @@
-const generatePayload = require("promptpay-qr");
-const QRCode = require("qrcode");
 const paymentModel = require("../models/paymentModel");
+const paymentSettingsModel = require("../models/paymentSettingsModel");
 const {
   PAYMENT_EXPIRATION_MINUTES,
   cancelExpiredUnpaidOrders,
 } = require("./orderExpirationService");
-
-const PROMPTPAY_ID = process.env.PROMPTPAY_ID || "0634126252";
 
 function assertCustomer(user) {
   if (user?.role !== "customer" && user?.role !== "user") {
@@ -49,9 +46,10 @@ async function createOrder(user, body) {
   });
 }
 
-async function generatePromptPayQr(orderId) {
+async function generatePromptPayQr(user, orderId) {
+  assertCustomer(user);
   await cancelExpiredUnpaidOrders();
-  const order = await paymentModel.getOrderById(orderId);
+  const order = await paymentModel.getOrderForUser(orderId, user.user_id);
 
   if (!order) {
     const error = new Error("Order not found");
@@ -67,12 +65,6 @@ async function generatePromptPayQr(orderId) {
 
   const amount = Number(order.total_amount || 0);
 
-  if (amount < 20) {
-    const error = new Error("PromptPay payment amount must be at least 20 THB");
-    error.status = 400;
-    throw error;
-  }
-
   const expiredAtDate = new Date(
     new Date(order.order_date).getTime() + PAYMENT_EXPIRATION_MINUTES * 60 * 1000,
   );
@@ -81,29 +73,39 @@ async function generatePromptPayQr(orderId) {
     Math.ceil((expiredAtDate.getTime() - Date.now()) / 1000),
   );
   const expiredAt = expiredAtDate.toISOString();
-  const payload = generatePayload(PROMPTPAY_ID, { amount });
-  const qrCode = await QRCode.toDataURL(payload, {
-    errorCorrectionLevel: "M",
-    margin: 2,
-    width: 360,
-  });
+  const settings = await paymentSettingsModel.getPaymentSettings();
+  const hasPromptPay = Boolean(settings?.promptpay_number && settings?.account_name && settings?.qr_image_url);
+  const hasBankTransfer = Boolean(settings?.bank_name && settings?.bank_account_number && settings?.bank_account_name);
+  if (!hasPromptPay && !hasBankTransfer) {
+    const error = new Error("Payment settings are not configured");
+    error.status = 503;
+    throw error;
+  }
 
   return {
     success: true,
     order_id: order.order_id,
     orderId: order.order_id,
     amount,
-    promptPayId: PROMPTPAY_ID,
-    qr_code: qrCode,
-    qrCode,
+    promptPayId: settings.promptpay_number,
+    promptpay_number: settings.promptpay_number,
+    account_name: settings.account_name,
+    bank_name: settings.bank_name,
+    bank_account_number: settings.bank_account_number,
+    bank_account_name: settings.bank_account_name,
+    qr_image_url: settings.qr_image_url,
+    qr_code: settings.qr_image_url,
+    qrCode: settings.qr_image_url,
     expired_at: expiredAt,
     expires_in_seconds: expiresInSeconds,
+    available_methods: { promptpay: hasPromptPay, bank_transfer: hasBankTransfer },
   };
 }
 
-async function uploadSlip({ orderId, file, paymentMethod = "promptpay" }) {
+async function uploadSlip({ user, orderId, file, paymentMethod = "promptpay" }) {
+  assertCustomer(user);
   await cancelExpiredUnpaidOrders();
-  const order = await paymentModel.getOrderById(orderId);
+  const order = await paymentModel.getOrderForUser(orderId, user.user_id);
 
   if (!order) {
     const error = new Error("Order not found");
@@ -125,6 +127,7 @@ async function uploadSlip({ orderId, file, paymentMethod = "promptpay" }) {
 
   return paymentModel.createSlipPayment({
     orderId: order.order_id,
+    userId: user.user_id,
     amount: Number(order.total_amount || 0),
     slipImage: `/uploads/slips/${file.filename}`,
     paymentMethod,

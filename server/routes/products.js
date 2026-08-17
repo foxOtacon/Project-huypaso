@@ -91,8 +91,8 @@ router.get(
     res.json({ success: true, data: rows[0] });
   }),
 );
-router.post("/", asyncHandler(controller.create));
-router.put("/:id", asyncHandler(controller.update));
-router.delete("/:id", asyncHandler(controller.remove));
+router.post("/", authenticate, authorize("admin"), asyncHandler(controller.create));
+router.put("/:id", authenticate, authorize("admin"), asyncHandler(controller.update));
+router.delete("/:id", authenticate, authorize("admin"), asyncHandler(controller.remove));
 
 module.exports = router;

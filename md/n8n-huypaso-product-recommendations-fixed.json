@@ -1,0 +1,213 @@
+{
+  "name": "Huypaso Product Recommendations - Secure",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "huypaso-product-recommendations",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [-640, 0],
+      "id": "1a47068b-b430-48a0-84da-4d4c0f802086",
+      "name": "Webhook",
+      "webhookId": "5ec82925-dd2b-4dfe-a278-b49e5d0227d5",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "SELECT_RECOMMENDATION_WEBHOOK_AUTH_AFTER_IMPORT",
+          "name": "Huypaso Recommendation Webhook Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst body = input.body ?? input;\nconst userId = Number(body.user_id);\nconst requestedLimit = body.limit === undefined ? 5 : Number(body.limit);\n\nif (!Number.isSafeInteger(userId) || userId < 1) {\n  throw new Error('Invalid user_id');\n}\n\nif (!Number.isSafeInteger(requestedLimit) || requestedLimit < 1 || requestedLimit > 5) {\n  throw new Error('Invalid limit; expected an integer from 1 to 5');\n}\n\nreturn [{ json: {\n  user_id: userId,\n  limit: requestedLimit,\n  requested_at: new Date().toISOString(),\n  execution_id: String($execution.id)\n} }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-416, 0],
+      "id": "49780af2-bfa7-4a55-950d-cb93406cab23",
+      "name": "Validate Request",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://ylyktcnopqvkyvicrxui.supabase.co/rest/v1/rpc/get_user_recommendation_data",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { p_user_id: $('Validate Request').first().json.user_id } }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [-192, 0],
+      "id": "dc75d051-0272-4b64-9b94-b4bb7bc98316",
+      "name": "Get Recommendation Data",
+      "onError": "continueErrorOutput",
+      "credentials": {
+        "httpCustomAuth": {
+          "id": "SELECT_SUPABASE_SERVICE_ROLE_AFTER_IMPORT",
+          "name": "Supabase Service Role Custom Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "let source = $input.first().json;\nif (Array.isArray(source) && source.length === 1) source = source[0];\nif (source?.data && typeof source.data === 'object') source = source.data;\nif (typeof source === 'string') source = JSON.parse(source);\n\nconst context = $('Validate Request').first().json;\nif (!source || typeof source !== 'object') throw new Error('Recommendation data not found');\nif (Number(source.user_id) !== context.user_id) throw new Error('Recommendation user mismatch');\nif (!Array.isArray(source.products)) throw new Error('Products not found in recommendation data');\n\nconst products = source.products\n  .filter((product) => Number.isSafeInteger(Number(product.product_id)) && Number(product.stock_quantity) > 0)\n  .slice(0, 50)\n  .map((product) => ({\n    product_id: Number(product.product_id),\n    product_name: String(product.product_name ?? ''),\n    category_id: Number(product.category_id),\n    category_name: product.category_name ?? null,\n    description: String(product.description ?? '').slice(0, 300),\n    price: Number(product.price ?? 0),\n    unit: product.unit ?? null,\n    image_url: product.image_url ?? null,\n    production_source: String(product.production_source ?? '').slice(0, 160) || null,\n    stock_quantity: Number(product.stock_quantity),\n    user_view_count: Math.max(0, Number(product.user_view_count) || 0),\n    category_affinity: Math.max(0, Number(product.category_affinity) || 0),\n    global_views_90d: Math.max(0, Number(product.global_views_90d) || 0),\n    last_viewed_at: product.last_viewed_at ?? null\n  }));\n\nif (products.length === 0) throw new Error('No active in-stock products available');\n\nconst userBehavior = Array.isArray(source.user_behavior)\n  ? source.user_behavior.slice(0, 50).map((row) => ({\n      product_id: Number(row.product_id),\n      category_id: Number(row.category_id),\n      view_count: Math.max(0, Number(row.view_count) || 0),\n      last_viewed_at: row.last_viewed_at ?? null\n    }))\n  : [];\n\nreturn [{ json: {\n  user_id: context.user_id,\n  limit: context.limit,\n  user_behavior: userBehavior,\n  products\n} }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [32, 0],
+      "id": "48acd574-28c5-4e34-af5a-351d46a5bb29",
+      "name": "Prepare AI Input",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=คุณเป็นระบบแนะนำสินค้าสำหรับเว็บไซต์ผลิตภัณฑ์ชุมชน\n\nเลือกสินค้าที่ผู้ใช้น่าจะสนใจจาก products ที่ให้มา โดยพิจารณาจำนวนการเข้าชม ความสนใจในหมวดหมู่ ความสดใหม่ของพฤติกรรม ความนิยมใน 90 วัน และรายละเอียดสินค้า\n\nกฎ:\n1. เลือกได้เฉพาะ product_id ที่อยู่ใน products\n2. ห้ามสร้าง product_id ใหม่และห้าม product_id ซ้ำ\n3. คืนไม่เกิน {{ $json.limit }} รายการ\n4. score ต้องเป็นจำนวนเต็ม 0-100 และเรียงจากมากไปน้อย\n5. reason เป็นเหตุผลภาษาไทยสั้น ๆ ไม่เกิน 120 ตัวอักษร\n6. คืนเฉพาะ JSON ที่ถูกต้อง ห้าม Markdown และห้ามข้อความนอก JSON\n\nรูปแบบ:\n{\"recommendations\":[{\"product_id\":1,\"score\":95,\"reason\":\"ตรงกับหมวดหมู่ที่คุณสนใจ\"}]}\n\nพฤติกรรมผู้ใช้:\n{{ JSON.stringify($json.user_behavior) }}\n\nสินค้าที่เลือกได้:\n{{ JSON.stringify($json.products.map((product) => ({ product_id: product.product_id, product_name: product.product_name, category_id: product.category_id, category_name: product.category_name, description: product.description, price: product.price, stock_quantity: product.stock_quantity, user_view_count: product.user_view_count, category_affinity: product.category_affinity, global_views_90d: product.global_views_90d, last_viewed_at: product.last_viewed_at }))) }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [256, 0],
+      "id": "d6711696-853a-486f-acd4-82e6aea6f06b",
+      "name": "AI Recommend Products",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [256, 208],
+      "id": "f7db2be5-40ef-492d-8cfe-555bc29debc6",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "SELECT_GEMINI_CREDENTIAL_AFTER_IMPORT",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const aiResult = $input.first().json;\nconst source = $('Prepare AI Input').first().json;\nlet output = aiResult.output ?? aiResult.text ?? aiResult.response ?? aiResult.content ?? aiResult;\nif (output && typeof output === 'object') output = output.output ?? output.text ?? output.response ?? output.content ?? output;\n\nlet parsed = output;\nif (typeof output === 'string') {\n  let cleaned = output.trim().replace(/^```(?:json)?\\s*/i, '').replace(/\\s*```$/i, '').trim();\n  const firstBrace = cleaned.indexOf('{');\n  const lastBrace = cleaned.lastIndexOf('}');\n  if (firstBrace >= 0 && lastBrace > firstBrace) cleaned = cleaned.slice(firstBrace, lastBrace + 1);\n  parsed = JSON.parse(cleaned);\n}\nif (!Array.isArray(parsed?.recommendations)) throw new Error('AI did not return recommendations');\n\nconst productMap = new Map(source.products.map((product) => [product.product_id, product]));\nconst seen = new Set();\nconst recommendations = [];\n\nfor (const item of parsed.recommendations) {\n  const productId = Number(item.product_id);\n  if (!Number.isSafeInteger(productId) || !productMap.has(productId) || seen.has(productId)) continue;\n  const product = productMap.get(productId);\n  seen.add(productId);\n  recommendations.push({\n    product_id: productId,\n    product_name: product.product_name,\n    category_id: product.category_id,\n    category_name: product.category_name,\n    description: product.description || null,\n    price: product.price,\n    unit: product.unit,\n    image_url: product.image_url,\n    production_source: product.production_source,\n    stock_quantity: product.stock_quantity,\n    score: Math.max(0, Math.min(100, Math.round(Number(item.score) || 0))),\n    reason: String(item.reason || 'สินค้าแนะนำสำหรับคุณ').trim().slice(0, 160)\n  });\n}\n\nrecommendations.sort((a, b) => b.score - a.score || a.product_id - b.product_id);\n\nfor (const product of source.products) {\n  if (recommendations.length >= source.limit) break;\n  if (seen.has(product.product_id)) continue;\n  seen.add(product.product_id);\n  const score = Math.min(100, Math.round(35 + Math.min(product.user_view_count, 10) * 3 + Math.min(product.category_affinity, 20) * 2 + Math.min(product.global_views_90d, 20)));\n  recommendations.push({\n    product_id: product.product_id,\n    product_name: product.product_name,\n    category_id: product.category_id,\n    category_name: product.category_name,\n    description: product.description || null,\n    price: product.price,\n    unit: product.unit,\n    image_url: product.image_url,\n    production_source: product.production_source,\n    stock_quantity: product.stock_quantity,\n    score,\n    reason: product.user_view_count > 0 ? 'จากสินค้าที่คุณเคยเข้าชม' : product.category_affinity > 0 ? 'อยู่ในหมวดหมู่ที่คุณสนใจ' : 'สินค้าที่กำลังได้รับความสนใจ'\n  });\n}\n\nreturn [{ json: {\n  user_id: source.user_id,\n  strategy: source.user_behavior.length > 0 ? 'ai-personalized' : 'ai-popular',\n  generated_at: new Date().toISOString(),\n  recommendations: recommendations.slice(0, source.limit)\n} }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [512, 0],
+      "id": "f8459e0d-8ae3-4b7d-852e-ae9fee1f929c",
+      "name": "Normalize Recommendations",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const source = $('Prepare AI Input').first().json;\nconst recommendations = source.products.slice(0, source.limit).map((product) => {\n  const score = Math.min(100, Math.round(35 + Math.min(product.user_view_count, 10) * 3 + Math.min(product.category_affinity, 20) * 2 + Math.min(product.global_views_90d, 20)));\n  return {\n    product_id: product.product_id,\n    product_name: product.product_name,\n    category_id: product.category_id,\n    category_name: product.category_name,\n    description: product.description || null,\n    price: product.price,\n    unit: product.unit,\n    image_url: product.image_url,\n    production_source: product.production_source,\n    stock_quantity: product.stock_quantity,\n    score,\n    reason: product.user_view_count > 0 ? 'จากสินค้าที่คุณเคยเข้าชม' : product.category_affinity > 0 ? 'อยู่ในหมวดหมู่ที่คุณสนใจ' : 'สินค้าที่กำลังได้รับความสนใจ'\n  };\n});\nreturn [{ json: {\n  user_id: source.user_id,\n  strategy: source.user_behavior.length > 0 ? 'fallback-personalized' : 'fallback-popular',\n  generated_at: new Date().toISOString(),\n  recommendations\n} }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [512, 192],
+      "id": "bc96d58c-14ac-4fd4-8b3e-30ca8586a273",
+      "name": "Build Fallback Recommendations"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { success: true, data: $json } }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [768, 64],
+      "id": "b1704c82-e86c-4e3c-b1ec-bbd713086851",
+      "name": "Respond Success"
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json ?? {};\nconst rawMessage = item.error?.message ?? item.message ?? item.description ?? 'Recommendation workflow failed';\nconst message = String(rawMessage).slice(0, 500);\nconst invalidRequest = /invalid user_id|invalid limit/i.test(message);\nconst notFound = /active customer not found|no active in-stock products/i.test(message);\nreturn [{ json: {\n  status_code: invalidRequest ? 400 : notFound ? 404 : 502,\n  body: {\n    success: false,\n    message: invalidRequest ? 'Invalid recommendation request' : notFound ? 'Recommendation data not found' : 'Unable to generate recommendations',\n    error: message\n  }\n} }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [288, 384],
+      "id": "f1339f23-8e38-42cf-9dd8-1e1a076b44a8",
+      "name": "Format Error Response"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json.body }}",
+        "options": {
+          "responseCode": "={{ $json.status_code }}"
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [544, 384],
+      "id": "2e99acf2-22e3-4ad7-b364-67e2ea602819",
+      "name": "Respond Error"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [[{"node":"Validate Request","type":"main","index":0}]]
+    },
+    "Validate Request": {
+      "main": [
+        [{"node":"Get Recommendation Data","type":"main","index":0}],
+        [{"node":"Format Error Response","type":"main","index":0}]
+      ]
+    },
+    "Get Recommendation Data": {
+      "main": [
+        [{"node":"Prepare AI Input","type":"main","index":0}],
+        [{"node":"Format Error Response","type":"main","index":0}]
+      ]
+    },
+    "Prepare AI Input": {
+      "main": [
+        [{"node":"AI Recommend Products","type":"main","index":0}],
+        [{"node":"Format Error Response","type":"main","index":0}]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [[{"node":"AI Recommend Products","type":"ai_languageModel","index":0}]]
+    },
+    "AI Recommend Products": {
+      "main": [
+        [{"node":"Normalize Recommendations","type":"main","index":0}],
+        [{"node":"Build Fallback Recommendations","type":"main","index":0}]
+      ]
+    },
+    "Normalize Recommendations": {
+      "main": [
+        [{"node":"Respond Success","type":"main","index":0}],
+        [{"node":"Build Fallback Recommendations","type":"main","index":0}]
+      ]
+    },
+    "Build Fallback Recommendations": {
+      "main": [[{"node":"Respond Success","type":"main","index":0}]]
+    },
+    "Format Error Response": {
+      "main": [[{"node":"Respond Error","type":"main","index":0}]]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}

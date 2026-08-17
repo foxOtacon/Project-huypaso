@@ -26,7 +26,7 @@ async function createOrder(req, res) {
 async function getPromptPayQr(req, res) {
   if (handleValidation(req, res)) return;
 
-  const data = await paymentService.generatePromptPayQr(req.params.orderId);
+  const data = await paymentService.generatePromptPayQr(req.user, req.params.orderId);
   res.json(data);
 }
 
@@ -34,6 +34,7 @@ async function uploadSlip(req, res) {
   if (handleValidation(req, res)) return;
 
   await paymentService.uploadSlip({
+    user: req.user,
     orderId: req.body.orderId,
     file: req.file,
     paymentMethod: req.body.paymentMethod || "promptpay",

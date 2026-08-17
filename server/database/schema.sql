@@ -160,7 +160,9 @@ CREATE TABLE user_product_views (
     REFERENCES users(user_id),
     CONSTRAINT fk_views_product
     FOREIGN KEY (product_id)
-    REFERENCES products(product_id)
+    REFERENCES products(product_id),
+    INDEX user_product_views_user_recent_idx (user_id, viewed_at),
+    INDEX user_product_views_product_recent_idx (product_id, viewed_at)
 );
 
 CREATE TABLE IF NOT EXISTS shipping_carriers (

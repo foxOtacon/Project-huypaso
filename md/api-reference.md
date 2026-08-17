@@ -2,7 +2,7 @@
 
 เอกสารนี้สรุป API จากโค้ดใน `server/index.js` และ `server/routes/*` ตามสถานะปัจจุบันของโปรเจกต์
 
-อัปเดตล่าสุด: 24 กรกฎาคม 2026
+อัปเดตล่าสุด: 13 สิงหาคม 2026
 
 ## Base URL
 
@@ -85,13 +85,11 @@ API CRUD ต่อไปนี้ยังไม่มี middleware ตรว�
 
 - `/api/users`
 - `/api/categories`
-- `/api/products`
 - `/api/cart`
 - `/api/cart-items`
 - CRUD ของ `/api/orders`
 - `/api/order-items`
 - `/api/payments`
-- `/api/user-product-views`
 - `/api/uploads`
 - `/api/shipping-carriers`
 
@@ -277,15 +275,16 @@ Response ของการอ่านทั้งหมด:
 
 ## 6. Products — `/api/products`
 
-สิทธิ์ปัจจุบัน: Public ทุก endpoint
+สิทธิ์: อ่านสินค้าเป็น Public ส่วนสร้าง แก้ไข และลบใช้สิทธิ์ Admin
 
-| Method | Endpoint | Input |
-|---|---|---|
-| `GET` | `/api/products` | ไม่มี |
-| `GET` | `/api/products/:id` | Path `id` |
-| `POST` | `/api/products` | JSON สินค้า |
-| `PUT` | `/api/products/:id` | ฟิลด์สินค้าที่ต้องการแก้ |
-| `DELETE` | `/api/products/:id` | Path `id` |
+| Method | Endpoint | สิทธิ์ | Input |
+|---|---|---|---|
+| `GET` | `/api/products` | Public | ไม่มี |
+| `GET` | `/api/products/:id` | Public | Path `id` |
+| `GET` | `/api/products/admin/all` | Admin | ไม่มี |
+| `POST` | `/api/products` | Admin | JSON สินค้า |
+| `PUT` | `/api/products/:id` | Admin | ฟิลด์สินค้าที่ต้องการแก้ |
+| `DELETE` | `/api/products/:id` | Admin | Path `id` |
 
 สร้างสินค้า:
 
@@ -698,23 +697,40 @@ product_id, predicted_quantity, predicted_month
 
 ## 18. User Product Views — `/api/user-product-views`
 
-สิทธิ์ปัจจุบัน: Public ทุก endpoint
+สิทธิ์: Customer JWT
 
-| Method | Endpoint | Input |
-|---|---|---|
-| `GET` | `/api/user-product-views` | ไม่มี |
-| `GET` | `/api/user-product-views/:id` | Path `id` |
-| `POST` | `/api/user-product-views` | `user_id`, `product_id` บังคับ |
-| `PUT` | `/api/user-product-views/:id` | ฟิลด์ที่อนุญาต |
-| `DELETE` | `/api/user-product-views/:id` | Path `id` |
-
-ฟิลด์ที่อนุญาต:
-
-```text
-user_id, product_id, view_count
+```http
+POST /api/user-product-views/:productId
+Authorization: Bearer <customer-token>
 ```
 
-## 19. Automation/n8n — `/api/automation`
+Backend ใช้ `user_id` จาก JWT เท่านั้นและเพิ่มตัวนับการเปิดดูของสินค้า หากสินค้าไม่มีอยู่หรือถูกระงับจะไม่บันทึก
+
+## 19. Product Recommendations — `/api/product-recommendations`
+
+สิทธิ์: Customer JWT
+
+```http
+POST /api/product-recommendations
+Authorization: Bearer <customer-token>
+Content-Type: application/json
+```
+
+```json
+{
+  "limit": 3
+}
+```
+
+- `limit` รองรับ 1–5 และค่าเริ่มต้นคือ 3
+- จัดอันดับจากหมวดหมู่ที่สนใจ จำนวนครั้ง ความล่าสุด และความนิยม
+- แสดงเฉพาะสินค้า `active` ที่ยังมีสต็อก
+- ไม่รับ `user_id` จาก Browser
+- Response มี `strategy` เป็น `personalized` หรือ `popular` และมี `reason` ภาษาไทยในแต่ละรายการ
+
+รายละเอียดเพิ่มเติม: `md/PRODUCT_RECOMMENDATIONS.md`
+
+## 20. Automation/n8n — `/api/automation`
 
 ทุก endpoint ในหมวดนี้ต้องส่ง:
 
@@ -799,7 +815,7 @@ Automation errors:
 | Predictions ว่าง/เกิน 500 | `400` |
 | รูปแบบ prediction ไม่ถูกต้อง | `400` |
 
-## 20. Admin Analytics Runs — `/api/admin/analytics`
+## 21. Admin Analytics Runs — `/api/admin/analytics`
 
 ทุก endpoint ใช้สิทธิ์ Admin และ Frontend จะไม่เรียก n8n Webhook โดยตรง
 
@@ -887,7 +903,7 @@ ANALYTICS_RUN_STALE_MINUTES=30
 
 n8n ต้องอัปเดต `analysis_runs` เป็น `running` เมื่อเริ่ม และเป็น `completed` หรือ `failed` เมื่อจบ เพื่อให้หน้า Admin หยุด polling และโหลดผลล่าสุด
 
-## 21. ตัวอย่างเรียก API
+## 22. ตัวอย่างเรียก API
 
 ### curl: Login
 
@@ -926,7 +942,7 @@ const response = await fetch(
 const result = await response.json();
 ```
 
-## 22. Source Mapping
+## 23. Source Mapping
 
 | หมวด | Source |
 |---|---|

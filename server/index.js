@@ -15,14 +15,17 @@ const orderItemsRoutes = require("./routes/orderItems");
 const paymentsRoutes = require("./routes/payments");
 const checkoutRoutes = require("./routes/checkout");
 const paymentRoutes = require("./routes/payment");
+const paymentSettingsRoutes = require("./routes/paymentSettings");
 const adminPaymentRoutes = require("./routes/adminPayment");
 const adminAnalyticsRoutes = require("./routes/adminAnalytics");
 const newsRoutes = require("./routes/news");
 const salesPredictionRoutes = require("./routes/salesPrediction");
 const userProductViewsRoutes = require("./routes/userProductViews");
+const productRecommendationsRoutes = require("./routes/productRecommendations");
 const uploadsRoutes = require("./routes/uploads");
 const shippingCarriersRoutes = require("./routes/shippingCarriers");
 const automationRoutes = require("./routes/automation");
+const siteContentRoutes = require("./routes/siteContent");
 const { startOrderExpirationJob } = require("./services/orderExpirationService");
 
 const app = express();
@@ -89,6 +92,7 @@ app.get("/", (_req, res) => {
       salesPrediction: "/api/sales-prediction",
       adminAnalytics: "/api/admin/analytics",
       userProductViews: "/api/user-product-views",
+      productRecommendations: "POST /api/product-recommendations",
       uploads: "/api/uploads",
       shippingCarriers: "/api/shipping-carriers",
     },
@@ -107,13 +111,16 @@ app.use("/api/payments", paymentsRoutes);
 app.use("/api/news", newsRoutes);
 app.use("/api/checkout", checkoutRoutes);
 app.use("/api/payment", paymentRoutes);
+app.use("/api/payment-settings", paymentSettingsRoutes);
 app.use("/api/admin/analytics", adminAnalyticsRoutes);
 app.use("/api/admin", adminPaymentRoutes);
 app.use("/api/sales-prediction", salesPredictionRoutes);
 app.use("/api/user-product-views", userProductViewsRoutes);
+app.use("/api/product-recommendations", productRecommendationsRoutes);
 app.use("/api/uploads", uploadsRoutes);
 app.use("/api/shipping-carriers", shippingCarriersRoutes);
 app.use("/api/automation", automationRoutes);
+app.use("/api/site-content", siteContentRoutes);
 
 app.use((_req, res) => {
   res.status(404).json({ success: false, message: "Route not found" });

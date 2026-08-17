@@ -1,0 +1,501 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst body = input.body ?? {};\nconst runId = Number(body.run_id);\nconst months = Number(body.months ?? 12);\n\nif (!Number.isSafeInteger(runId) || runId < 1) {\n  throw new Error('Invalid run_id');\n}\n\nif (!Number.isSafeInteger(months) || months < 1 || months > 36) {\n  throw new Error('Invalid months');\n}\n\nconst requestedAt = body.requested_at ? new Date(body.requested_at) : new Date();\nif (Number.isNaN(requestedAt.getTime())) {\n  throw new Error('Invalid requested_at');\n}\n\nconst parts = Object.fromEntries(\n  new Intl.DateTimeFormat('en-US', {\n    timeZone: 'Asia/Bangkok',\n    year: 'numeric',\n    month: 'numeric',\n  })\n    .formatToParts(requestedAt)\n    .filter((part) => ['year', 'month'].includes(part.type))\n    .map((part) => [part.type, part.value]),\n);\n\nconst year = Number(parts.year);\nconst month = Number(parts.month);\nconst nextYear = month === 12 ? year + 1 : year;\nconst nextMonth = month === 12 ? 1 : month + 1;\nconst expectedMonth = `${nextYear}-${String(nextMonth).padStart(2, '0')}-01`;\n\nreturn [{\n  json: {\n    run_id: runId,\n    months,\n    requested_by: body.requested_by ?? null,\n    requested_at: requestedAt.toISOString(),\n    expected_month: expectedMonth,\n    execution_id: String($execution.id),\n  },\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -176,
+        -64
+      ],
+      "id": "8c151833-c191-4938-8aa4-81c7748e6866",
+      "name": "Run context"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ 'https://ylyktcnopqvkyvicrxui.supabase.co/rest/v1/analysis_runs?run_id=eq.' + $('Run context').first().json.run_id + '&status=in.(queued,running)&or=(n8n_execution_id.is.null,n8n_execution_id.eq.' + encodeURIComponent($('Run context').first().json.execution_id) + ')' }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { status: 'running', started_at: $now.toISO(), error_message: null, n8n_execution_id: $('Run context').first().json.execution_id } }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        48,
+        -64
+      ],
+      "id": "062cf50f-e9d0-4830-b1a1-50dc3a6c543e",
+      "name": "Mark run running",
+      "notesInFlow": true,
+      "alwaysOutputData": true,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "38knTOGO3hhQtGmH",
+          "name": "Header Auth account 2"
+        }
+      },
+      "onError": "continueErrorOutput",
+      "notes": "The Supabase credential must use a server-side service-role key stored only in n8n Credentials."
+    },
+    {
+      "parameters": {
+        "jsCode": "const context = $('Run context').first().json;\n\nconst rows = $input.all().flatMap((item) =>\n  Array.isArray(item.json) ? item.json : [item.json]\n);\n\nconst claimed = rows.find(\n  (row) => Number(row.run_id) === context.run_id\n);\n\nif (!claimed) {\n  throw new Error(\n    `Run ${context.run_id} was not updated. ` +\n    `Check Supabase service_role credential, RLS permissions, ` +\n    `Prefer: return=representation, and the current run status. ` +\n    `Supabase response: ${JSON.stringify(rows).slice(0, 500)}`\n  );\n}\n\nreturn [{\n  json: {\n    ...context,\n    run: claimed\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        272,
+        -64
+      ],
+      "id": "63f16f5b-4f2a-4512-bfea-223982ecd218",
+      "name": "Assert run claimed"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://ylyktcnopqvkyvicrxui.supabase.co/rest/v1/rpc/get_sales_analysis_data",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        496,
+        -64
+      ],
+      "id": "ccafd9da-faf9-47ac-a683-beead32abc98",
+      "name": "Get analysis data",
+      "notesInFlow": true,
+      "alwaysOutputData": true,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "38knTOGO3hhQtGmH",
+          "name": "Header Auth account 2"
+        }
+      },
+      "onError": "continueErrorOutput",
+      "notes": "The current RPC analyzes a fixed 12-month period. Use a service-role Supabase credential."
+    },
+    {
+      "parameters": {
+        "jsCode": "const normalized = $('Normalize predictions1').first().json.predictions;\nconst expectedIds = new Set(normalized.map((item) => Number(item.product_id)));\nconst rows = $input.all()\n  .flatMap((item) => Array.isArray(item.json) ? item.json : [item.json])\n  .filter((row) => row && row.prediction_id != null && Number.isSafeInteger(Number(row.product_id)));\nconst savedIds = new Set(rows.map((row) => Number(row.product_id)));\n\nif (\n  rows.length !== normalized.length ||\n  savedIds.size !== expectedIds.size ||\n  [...expectedIds].some((productId) => !savedIds.has(productId))\n) {\n  throw new Error(`Saved ${rows.length} of ${normalized.length} predictions`);\n}\n\nreturn [{ json: { saved_count: rows.length } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1472,
+        -64
+      ],
+      "id": "536582f4-73f0-4e0b-b9d7-922f84c2a0d7",
+      "name": "Verify saved predictions",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ 'https://ylyktcnopqvkyvicrxui.supabase.co/rest/v1/analysis_runs?run_id=eq.' + $('Run context').first().json.run_id + '&status=in.(queued,running)&n8n_execution_id=eq.' + encodeURIComponent($('Run context').first().json.execution_id) }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { status: 'completed', result_count: Number($('Normalize predictions1').first().json.prediction_count), error_message: null, completed_at: $now.toISO() } }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1712,
+        -64
+      ],
+      "id": "6cc47f07-c05e-440b-8d01-1802518f791a",
+      "name": "Complete run",
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "38knTOGO3hhQtGmH",
+          "name": "Header Auth account 2"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const runId = $('Run context').first().json.run_id;\nconst rows = $input.all().flatMap((item) =>\n  Array.isArray(item.json) ? item.json : [item.json]\n);\nconst completed = rows.find((row) =>\n  Number(row.run_id) === runId && row.status === 'completed'\n);\n\nif (!completed) {\n  throw new Error('Run was not completed; it may have expired or lost ownership');\n}\n\nreturn [{ json: completed }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1952,
+        -64
+      ],
+      "id": "e6e62331-ecc0-4ed2-a452-1aad4bd3f292",
+      "name": "Assert run completed",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ 'https://ylyktcnopqvkyvicrxui.supabase.co/rest/v1/analysis_runs?run_id=eq.' + $('Run context').first().json.run_id + '&status=in.(queued,running)&n8n_execution_id=eq.' + encodeURIComponent($('Run context').first().json.execution_id) }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { status: 'failed', result_count: 0, error_message: String($json.error?.message ?? $json.message ?? $json.description ?? 'n8n workflow failed').slice(0, 1000), completed_at: $now.toISO() } }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1232,
+        256
+      ],
+      "id": "9dc6705e-43d6-4212-964e-b9c1c71ea9b1",
+      "name": "Mark run failed",
+      "executeOnce": true,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "38knTOGO3hhQtGmH",
+          "name": "Header Auth account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "huypaso-sales-analysis",
+        "authentication": "headerAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -400,
+        -64
+      ],
+      "id": "c37003c2-f923-4238-b94a-ef922907bb8c",
+      "name": "Webhook1",
+      "webhookId": "220b9599-bab5-4ccf-a790-a11ad4ac2aa1",
+      "notesInFlow": true,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "kX6nULaobwMaj2D8",
+          "name": "Header Auth account"
+        }
+      },
+      "notes": "After import, select Header Auth: x-webhook-key = N8N_WEBHOOK_KEY, then publish the workflow."
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        720,
+        112
+      ],
+      "id": "90e35ffe-74e8-4759-8240-434a851d9acc",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "2uvv8vdkTuuFoHl1",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=คุณเป็นนักวิเคราะห์ยอดขายสินค้าเกษตร วิเคราะห์ข้อมูล JSON ที่ได้รับ โดยพิจารณา\nยอดขายรายเดือน รายได้ จำนวนลูกค้า การเข้าชมสินค้า\nฤดูกาล และสินค้าคงเหลือ พยากรณ์จำนวนที่จะขายในเดือนถัดไปสำหรับสินค้าทุกชิ้น\n\nข้อกำหนด:\n- ต้องคืนผลสำหรับสินค้าทุกชิ้นใน products\n- predicted_quantity ต้องเป็นจำนวนเต็มตั้งแต่ 0 ขึ้นไป\n- predicted_month ต้องเป็นวันแรกของเดือนถัดไปในรูป YYYY-MM-01\n- ห้ามสร้าง product_id ที่ไม่มีใน input\n- ห้ามคืน product_id ซ้ำ\n- คืนเฉพาะ JSON ที่ valid\n- ห้ามใช้ markdown\n- ห้ามมีคำอธิบายนอก JSON\n\nรูปแบบผลลัพธ์:\n{\"predictions\":[{\"product_id\":1,\"predicted_quantity\":25,\"predicted_month\":\"2026-08-01\"}]}\n\nข้อมูลสำหรับวิเคราะห์:\nTarget predicted_month (must match exactly): {{ $('Run context').first().json.expected_month }}\n\n{{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        720,
+        -64
+      ],
+      "id": "7c9c4c7c-9558-41a4-89a4-a95e758f3a57",
+      "name": "AI predict sales1",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const aiResult = $input.first().json;\n\nconst output =\n  aiResult.output ??\n  aiResult.text ??\n  aiResult.response ??\n  aiResult;\n\nlet parsed;\n\nif (typeof output === 'string') {\n  const cleaned = output\n    .trim()\n    .replace(/^```(?:json)?\\s*/i, '')\n    .replace(/\\s*```$/, '');\n\n  parsed = JSON.parse(cleaned);\n} else {\n  parsed = output;\n}\n\nif (\n  !Array.isArray(parsed.predictions) ||\n  parsed.predictions.length === 0\n) {\n  throw new Error('AI did not return predictions');\n}\n\n// ต้องตรงกับชื่อ HTTP Request Node บน Canvas\nlet source = $('Get analysis data').first().json;\n\nif (typeof source === 'string') {\n  source = JSON.parse(source);\n}\n\nif (!Array.isArray(source.products) || source.products.length === 0) {\n  throw new Error('No products found in analysis data');\n}\n\nconst allowedProductIds = new Set(\n  source.products.map((product) => Number(product.product_id)),\n);\n\n// คำนวณเดือนถัดไปตามเวลาไทย\nconst context = $('Run context').first().json;\nconst expectedMonth = context.expected_month;\n\nconst seenProductIds = new Set();\n\nconst predictions = parsed.predictions.map((item) => {\n  const productId = Number(item.product_id);\n  const quantity = Number(item.predicted_quantity);\n  const predictedMonth =\n    String(item.predicted_month ?? '').slice(0, 10);\n\n  if (!Number.isInteger(productId) || !allowedProductIds.has(productId)) {\n    throw new Error(`Unknown product_id: ${item.product_id}`);\n  }\n\n  if (seenProductIds.has(productId)) {\n    throw new Error(`Duplicate product_id: ${productId}`);\n  }\n\n  if (!Number.isFinite(quantity)) {\n    throw new Error(`Invalid quantity for product_id: ${productId}`);\n  }\n\n  if (predictedMonth !== expectedMonth) {\n    throw new Error(\n      `Invalid month for product_id ${productId}. Expected ${expectedMonth}`,\n    );\n  }\n\n  seenProductIds.add(productId);\n\n  return {\n    product_id: productId,\n    predicted_quantity: Math.max(0, Math.round(quantity)),\n    predicted_month: predictedMonth,\n  };\n});\n\nconst missingProductIds = [...allowedProductIds].filter(\n  (productId) => !seenProductIds.has(productId),\n);\n\nif (missingProductIds.length > 0) {\n  throw new Error(\n    `AI omitted product IDs: ${missingProductIds.join(', ')}`,\n  );\n}\n\nreturn [{\n  json: {\n    run_id: context.run_id,\n    execution_id: context.execution_id,\n    predictions,\n    predicted_month: expectedMonth,\n    prediction_count: predictions.length,\n  },\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1040,
+        -80
+      ],
+      "id": "dec96cdb-d7bc-4270-922d-660926c40b42",
+      "name": "Normalize predictions1",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://ylyktcnopqvkyvicrxui.supabase.co/rest/v1/sales_prediction?on_conflict=product_id,predicted_month",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Prefer",
+              "value": "resolution=merge-duplicates,return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json.predictions }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1232,
+        -64
+      ],
+      "id": "6fdc6aff-9c9a-444b-b31e-10bf591fa3eb",
+      "name": "Upsert predictions1",
+      "alwaysOutputData": true,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "38knTOGO3hhQtGmH",
+          "name": "Header Auth account 2"
+        }
+      },
+      "onError": "continueErrorOutput"
+    }
+  ],
+  "connections": {
+    "Run context": {
+      "main": [
+        [
+          {
+            "node": "Mark run running",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark run running": {
+      "main": [
+        [
+          {
+            "node": "Assert run claimed",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mark run failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assert run claimed": {
+      "main": [
+        [
+          {
+            "node": "Get analysis data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get analysis data": {
+      "main": [
+        [
+          {
+            "node": "AI predict sales1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mark run failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify saved predictions": {
+      "main": [
+        [
+          {
+            "node": "Complete run",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mark run failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Complete run": {
+      "main": [
+        [
+          {
+            "node": "Assert run completed",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mark run failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assert run completed": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Mark run failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook1": {
+      "main": [
+        [
+          {
+            "node": "Run context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI predict sales1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI predict sales1": {
+      "main": [
+        [
+          {
+            "node": "Normalize predictions1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mark run failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize predictions1": {
+      "main": [
+        [
+          {
+            "node": "Upsert predictions1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mark run failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upsert predictions1": {
+      "main": [
+        [
+          {
+            "node": "Verify saved predictions",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Mark run failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8c37ae09c90e0e5b86e6b6ee49a0834a3272f20cfd08e5316ece2aacdf8aac54"
+  }
+}

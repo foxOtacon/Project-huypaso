@@ -39,6 +39,7 @@ const CUSTOMER_ROUTES = [
 
 function AppRoutes() {
   const { route, navigate } = useHashRoute();
+  const routePath = route.split('?')[0];
   const { user, loading, logout } = useAuth();
 
   const goHome = () => navigate("/");
@@ -158,7 +159,7 @@ function AppRoutes() {
     );
   }
 
-  switch (route) {
+  switch (routePath) {
     case "/contact":
       return <ContactPage user={user} onNavigate={navigate} onLogout={handleLogout} />;
     case "/products":
@@ -233,7 +234,7 @@ function AppRoutes() {
         );
       }
 
-      if (route === "/profile") {
+      if (routePath === "/profile") {
         return (
           <ProfilePage
             user={user}
@@ -243,7 +244,7 @@ function AppRoutes() {
         );
       }
 
-      if (route === "/payment") {
+      if (routePath === "/payment") {
         return (
           <PaymentPage
             user={user}

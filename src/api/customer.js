@@ -29,3 +29,8 @@ export async function fetchMyOrderDetail(token, orderId) {
   const res = await request(`/orders/my/${orderId}`, token);
   return res.data;
 }
+
+export async function cancelMyOrder(token, orderId) {
+  const res = await request(`/payment/order/${orderId}`, token, { method: 'DELETE' });
+  return res.data;
+}

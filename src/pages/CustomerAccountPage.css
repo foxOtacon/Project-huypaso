@@ -1130,6 +1130,17 @@
   margin-top: 30px;
 }
 
+.customer-order-payment-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; margin-bottom: 14px; }
+.customer-order-payment-actions span { color: #8c6b39; font-weight: 800; }
+.customer-order-payment-actions button { min-height: 38px; padding: 0 14px; border: 0; border-radius: 7px; background: #315542; color: #fff; font: inherit; font-weight: 850; cursor: pointer; }
+.customer-order-payment-actions .is-cancel { border: 1px solid #d9aaaa; background: #fff; color: #a33a3a; }
+.customer-cancellation-reason { margin: 0 0 14px; padding: 10px 12px; border-radius: 8px; background: #fff0f0; color: #9b2d2d; font-weight: 800; }
+.customer-cancel-modal { width: min(430px, calc(100% - 32px)); padding: 28px; border-radius: 20px; background: #fff; text-align: center; box-shadow: 0 28px 70px rgba(17,32,24,.25); }
+.customer-cancel-modal h2 { margin: 0 0 22px; color: #243e31; }
+.customer-cancel-modal div { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.customer-cancel-modal button { min-height: 44px; border: 1px solid #d6e0da; border-radius: 9px; background: #fff; font: inherit; font-weight: 850; cursor: pointer; }
+.customer-cancel-modal button:last-child { border-color: #a33a3a; background: #a33a3a; color: #fff; }
+
 .customer-detail-modal {
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.7);

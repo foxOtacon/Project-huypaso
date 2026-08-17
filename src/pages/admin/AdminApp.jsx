@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import AdminLayout from '../../components/admin/AdminLayout';
 import AdminPlaceholder from './AdminPlaceholder';
 import Analytics from './Analytics';
@@ -8,7 +9,10 @@ import Orders from './Orders';
 import Products from './Products';
 import ShippingCarriers from './ShippingCarriers';
 import Transactions from './Transactions';
+import PaymentSettings from './PaymentSettings';
 import Users from './Users';
+
+const HistoryContent = lazy(() => import('./HistoryContent'));
 
 function AdminPageContent({ route, user }) {
   if (route === '/admin' || route === '/admin/dashboard') {
@@ -26,6 +30,7 @@ function AdminPageContent({ route, user }) {
   if (route === '/admin/products') {
     return <Products user={user} />;
   }
+  if (route === '/admin/payment-settings') return <PaymentSettings />;
 
   if (route === '/admin/categories') {
     return <Categories />;
@@ -33,6 +38,14 @@ function AdminPageContent({ route, user }) {
 
   if (route === '/admin/shipping-carriers') {
     return <ShippingCarriers />;
+  }
+
+  if (route === '/admin/history') {
+    return (
+      <Suspense fallback={<div className="admin-loading">กำลังเปิดตัวแก้ไขความเป็นมา...</div>}>
+        <HistoryContent />
+      </Suspense>
+    );
   }
 
   if (route === '/admin/news') {

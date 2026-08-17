@@ -1,7 +1,9 @@
 ﻿import { useEffect, useMemo, useRef, useState } from 'react';
 import { fetchCatalogCategories, fetchCatalogProducts } from '../api/catalog';
+import { recordProductView } from '../api/recommendations';
 import BrandLogo from '../components/BrandLogo';
 import Pagination from '../components/Pagination';
+import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import usePagination from '../hooks/usePagination';
 import { isCustomerUser } from '../utils/roles';
@@ -97,6 +99,7 @@ function sortProducts(products, sortBy) {
 }
 
 export default function ProductsPage({ user, onNavigate, onLogout }) {
+  const { token } = useAuth();
   const { addItem, itemCount } = useCart();
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -235,6 +238,13 @@ export default function ProductsPage({ user, onNavigate, onLogout }) {
 
   function getProductCategoryName(product) {
     return categoryById[String(product.category_id)] || 'สินค้าเกษตร';
+  }
+
+  function openProductDetail(product, index) {
+    setSelectedProduct({ ...product, imageUrl: getImageUrl(product, index) });
+    if (token && isCustomerUser(user)) {
+      recordProductView(token, product.product_id).catch(() => {});
+    }
   }
 
   return (
@@ -433,7 +443,7 @@ export default function ProductsPage({ user, onNavigate, onLogout }) {
                       <button
                         type="button"
                         className="catalog-detail-button"
-                        onClick={() => setSelectedProduct({ ...product, imageUrl: getImageUrl(product, index) })}
+                        onClick={() => openProductDetail(product, index)}
                       >
                         ดูเพิ่มเติม
                       </button>

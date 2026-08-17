@@ -3,6 +3,7 @@ const createCrudController = require("../utils/crudController");
 const asyncHandler = require("../utils/asyncHandler");
 const { authenticate } = require("../middleware/auth");
 const { query } = require("../config/db");
+const { PAYMENT_EXPIRATION_MINUTES, cancelExpiredUnpaidOrders } = require("../services/orderExpirationService");
 
 const router = express.Router();
 
@@ -28,18 +29,22 @@ router.get(
   "/my",
   authenticate,
   asyncHandler(async (req, res) => {
+    await cancelExpiredUnpaidOrders();
     const rows = await query(
       `SELECT
           o.*,
           p.payment_id,
           p.payment_method,
           p.payment_status,
-          p.payment_date
+          p.payment_date,
+          p.slip_image,
+          (o.order_date + (? * INTERVAL '1 minute')) AS payment_expires_at,
+          GREATEST(0, EXTRACT(EPOCH FROM (o.order_date + (? * INTERVAL '1 minute') - NOW())))::int AS expires_in_seconds
        FROM orders o
        LEFT JOIN payments p ON p.order_id = o.order_id
        WHERE o.user_id = ?
        ORDER BY o.order_date DESC, o.order_id DESC`,
-      [req.user.user_id],
+      [PAYMENT_EXPIRATION_MINUTES, PAYMENT_EXPIRATION_MINUTES, req.user.user_id],
     );
 
     res.json({ success: true, data: rows });
@@ -50,6 +55,7 @@ router.get(
   "/my/:id",
   authenticate,
   asyncHandler(async (req, res) => {
+    await cancelExpiredUnpaidOrders();
     const orderRows = await query(
       `SELECT
           o.*,
@@ -58,12 +64,14 @@ router.get(
           p.payment_status,
           p.payment_date,
           p.slip_image,
-          p.transaction_ref
+          p.transaction_ref,
+          (o.order_date + (? * INTERVAL '1 minute')) AS payment_expires_at,
+          GREATEST(0, EXTRACT(EPOCH FROM (o.order_date + (? * INTERVAL '1 minute') - NOW())))::int AS expires_in_seconds
        FROM orders o
        LEFT JOIN payments p ON p.order_id = o.order_id
        WHERE o.order_id = ? AND o.user_id = ?
        LIMIT 1`,
-      [req.params.id, req.user.user_id],
+      [PAYMENT_EXPIRATION_MINUTES, PAYMENT_EXPIRATION_MINUTES, req.params.id, req.user.user_id],
     );
 
     if (orderRows.length === 0) {

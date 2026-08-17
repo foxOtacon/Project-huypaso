@@ -153,3 +153,25 @@
     grid-row: 1;
   }
 }
+.site-header .main-nav button[aria-current='page'] {
+  color: #315542;
+}
+
+.site-header .main-nav button[aria-current='page']::after {
+  transform: scaleX(1);
+}
+/* Keep the active state filled on pages that use CustomerNavbar. */
+.site-header .main-nav button[aria-current='page'] {
+  background: #557669;
+  box-shadow: 0 8px 20px rgba(49, 85, 66, 0.2);
+  color: #ffffff;
+}
+
+.site-header .main-nav button[aria-current='page']:hover {
+  background: #416254;
+  color: #ffffff;
+}
+
+.site-header .main-nav button[aria-current='page']::after {
+  transform: scaleX(0);
+}

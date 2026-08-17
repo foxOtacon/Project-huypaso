@@ -1,5 +1,5 @@
 ﻿import { useEffect, useRef, useState } from 'react';
-import { fetchMyOrderDetail, fetchMyOrders } from '../api/customer';
+import { cancelMyOrder, fetchMyOrderDetail, fetchMyOrders } from '../api/customer';
 import CustomerNavbar from '../components/CustomerNavbar';
 import Pagination from '../components/Pagination';
 import TrackingGuideModal from '../components/TrackingGuideModal';
@@ -17,14 +17,14 @@ const pageContent = {
 };
 
 const ORDER_STATUS_LABELS = {
-  pending: 'รอดำเนินการ',
+  pending: 'รอชำระเงิน',
   shipping: 'กำลังจัดส่ง',
   completed: 'สำเร็จ',
   cancelled: 'ยกเลิก',
 };
 
 const PAYMENT_STATUS_LABELS = {
-  pending: 'รอตรวจสอบ',
+  pending: 'รอชำระเงิน',
   approved: 'อนุมัติแล้ว',
   rejected: 'ถูกปฏิเสธ',
 };
@@ -58,6 +58,18 @@ function getShippingProvider(order) {
   return String(order?.shipping_provider || order?.shipping_carrier || '').trim();
 }
 
+function formatRemaining(seconds) {
+  const value = Math.max(0, Number(seconds || 0));
+  return `${String(Math.floor(value / 60)).padStart(2, '0')}:${String(value % 60).padStart(2, '0')}`;
+}
+
+function getCancellationReason(reason) {
+  if (reason === 'payment_expired') return 'ไม่ชำระเงินภายในเวลาที่กำหนด';
+  if (reason === 'cancelled_by_user') return 'ผู้ใช้ยกเลิกคำสั่งซื้อ';
+  if (reason === 'payment_rejected') return 'หลักฐานการชำระเงินถูกปฏิเสธ';
+  return '';
+}
+
 export default function CustomerAccountPage({ user, onNavigate, onLogout }) {
   const { token } = useAuth();
   const [orders, setOrders] = useState([]);
@@ -67,6 +79,9 @@ export default function CustomerAccountPage({ user, onNavigate, onLogout }) {
   const [loadingOrderId, setLoadingOrderId] = useState(null);
   const [detailError, setDetailError] = useState('');
   const [trackingGuide, setTrackingGuide] = useState(null);
+  const [cancelTarget, setCancelTarget] = useState(null);
+  const [cancelling, setCancelling] = useState(false);
+  const [clock, setClock] = useState(0);
   const detailRequestRef = useRef(0);
   const copyAttemptRef = useRef(0);
   const latestOrder = orders[0];
@@ -120,6 +135,29 @@ export default function CustomerAccountPage({ user, onNavigate, onLogout }) {
   useEffect(() => {
     loadOrders();
   }, [token]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setClock(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  function remainingFor(order) {
+    return Math.max(0, Math.ceil((new Date(order.payment_expires_at).getTime() - clock) / 1000));
+  }
+
+  async function confirmCancelOrder() {
+    if (!cancelTarget || cancelling) return;
+    try {
+      setCancelling(true);
+      await cancelMyOrder(token, cancelTarget.order_id);
+      setCancelTarget(null);
+      await loadOrders();
+    } catch (err) {
+      setError(err.message || 'ไม่สามารถยกเลิกคำสั่งซื้อได้');
+    } finally {
+      setCancelling(false);
+    }
+  }
 
   function closeOrderDetail() {
     copyAttemptRef.current += 1;
@@ -273,6 +311,17 @@ export default function CustomerAccountPage({ user, onNavigate, onLogout }) {
                   </div>
                 </dl>
 
+                {order.order_status === 'pending' && order.payment_status === 'pending' && remainingFor(order) > 0 && !order.slip_image ? (
+                  <div className="customer-order-payment-actions">
+                    <span>เหลือเวลา {formatRemaining(remainingFor(order))}</span>
+                    <button type="button" onClick={() => onNavigate(`/payment?orderId=${order.order_id}`)}>ชำระเงินต่อ</button>
+                    <button type="button" className="is-cancel" onClick={() => setCancelTarget(order)}>ยกเลิกคำสั่งซื้อ</button>
+                  </div>
+                ) : null}
+                {order.order_status === 'cancelled' && getCancellationReason(order.cancellation_reason) ? (
+                  <p className="customer-cancellation-reason">{getCancellationReason(order.cancellation_reason)}</p>
+                ) : null}
+
                 <button
                   type="button"
                   className="customer-detail-button"
@@ -394,6 +443,18 @@ export default function CustomerAccountPage({ user, onNavigate, onLogout }) {
           onOpenWebsite={openTrackingWebsite}
           onClose={closeTrackingGuide}
         />
+      ) : null}
+
+      {cancelTarget ? (
+        <div className="customer-modal-backdrop" role="presentation" onMouseDown={() => !cancelling && setCancelTarget(null)}>
+          <section className="customer-cancel-modal" role="alertdialog" aria-modal="true" onMouseDown={(event) => event.stopPropagation()}>
+            <h2>คุณต้องการยกเลิกคำสั่งซื้อนี้หรือไม่?</h2>
+            <div>
+              <button type="button" onClick={() => setCancelTarget(null)} disabled={cancelling}>กลับ</button>
+              <button type="button" onClick={confirmCancelOrder} disabled={cancelling}>{cancelling ? 'กำลังยกเลิก...' : 'ยืนยันการยกเลิก'}</button>
+            </div>
+          </section>
+        </div>
       ) : null}
     </div>
   );

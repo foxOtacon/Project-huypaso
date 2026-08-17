@@ -57,6 +57,7 @@ router.post(
 
 router.get(
   "/promptpay/:orderId",
+  authenticate,
   [param("orderId").isInt({ min: 1 })],
   asyncHandler(paymentController.getPromptPayQr),
 );

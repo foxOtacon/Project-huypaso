@@ -25,15 +25,28 @@ const MENU_ITEMS = [
   { path: '/admin', label: 'แดชบอร์ด' },
   { path: '/admin/orders', label: 'คำสั่งซื้อ' },
   { path: '/admin/transactions', label: 'ธุรกรรม' },
+  { path: '/admin/payment-settings', label: 'ตั้งค่าการชำระเงิน' },
   { path: '/admin/products', label: 'สินค้า' },
   { path: '/admin/categories', label: 'หมวดหมู่สินค้า' },
   { path: '/admin/shipping-carriers', label: 'บริษัทขนส่ง' },
+  { path: '/admin/history', label: 'ความเป็นมา' },
   { path: '/admin/news', label: 'ข่าว' },
   { path: '/admin/users', label: 'ผู้ใช้งาน' },
   { path: '/admin/analytics', label: 'วิเคราะห์ข้อมูล' },
-];
+].sort((first, second) => {
+  if (first.path === '/admin') return -1;
+  if (second.path === '/admin') return 1;
+  return first.label.localeCompare(second.label, 'th', {
+    sensitivity: 'base',
+    numeric: true,
+  });
+});
 
 const PAGE_HEADERS = {
+  '/admin/payment-settings': {
+    title: 'ตั้งค่าการชำระเงิน',
+    subtitle: 'จัดการรูป QR Code หมายเลขพร้อมเพย์ และชื่อบัญชีผู้รับเงิน',
+  },
   '/admin': {
     title: 'Dashboard',
     subtitle: 'ภาพรวมสถิติและข้อมูลธุรกิจ',
@@ -61,6 +74,10 @@ const PAGE_HEADERS = {
   '/admin/shipping-carriers': {
     title: 'บริษัทขนส่ง',
     subtitle: 'จัดการบริษัทขนส่งและลิงก์ติดตามพัสดุ',
+  },
+  '/admin/history': {
+    title: 'ความเป็นมา',
+    subtitle: 'แก้ไขเนื้อหาเรื่องราวของชุมชนที่แสดงบนหน้าแรก',
   },
   '/admin/news': {
     title: 'ข่าวและประชาสัมพันธ์',

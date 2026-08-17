@@ -1,4 +1,4 @@
-﻿const API_BASE = import.meta.env.VITE_API_URL || '/api';
+const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
 import { handleInvalidSession } from '../utils/session';
 
@@ -254,6 +254,25 @@ export async function rejectAdminPayment(paymentId) {
   return res.data;
 }
 
+export async function fetchPaymentSettings() {
+  const res = await request('/payment-settings');
+  return res.data;
+}
+
+export async function savePaymentSettings({ promptpayNumber, accountName, qrFile, bankName, bankAccountNumber, bankAccountName }) {
+  const formData = new FormData();
+  formData.append('promptpay_number', promptpayNumber);
+  formData.append('account_name', accountName);
+  if (qrFile) formData.append('qr', qrFile);
+  formData.append('bank_name', bankName);
+  formData.append('bank_account_number', bankAccountNumber);
+  formData.append('bank_account_name', bankAccountName);
+  const response = await fetch(`${API_BASE}/payment-settings`, { method: 'PUT', headers: getAuthHeaders(), body: formData });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) { handleInvalidSession(response, data); throw new Error(data.message || 'ไม่สามารถบันทึกการตั้งค่าการชำระเงินได้'); }
+  return data.data;
+}
+
 export async function fetchNews() {
   const res = await request('/news/admin/all');
   return res.data || [];
@@ -280,4 +299,16 @@ export async function deleteNews(newsId) {
     method: 'DELETE',
   });
   return res;
+}
+export async function fetchHistoryContent() {
+  const res = await request('/site-content/history');
+  return res.data;
+}
+
+export async function updateHistoryContent(contentHtml) {
+  const res = await request('/site-content/history', {
+    method: 'PUT',
+    body: JSON.stringify({ content_html: contentHtml }),
+  });
+  return res.data;
 }

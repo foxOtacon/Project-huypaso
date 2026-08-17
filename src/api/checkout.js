@@ -66,8 +66,10 @@ export async function createPromptPayOrder(token, payload) {
   return res.data;
 }
 
-export async function fetchPromptPayQr(orderId) {
-  return request(`/payment/promptpay/${orderId}`);
+export async function fetchPromptPayQr(token, orderId) {
+  return request(`/payment/promptpay/${orderId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
 }
 
 export async function cancelPromptPayOrder(token, orderId) {

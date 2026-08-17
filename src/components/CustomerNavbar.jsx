@@ -13,16 +13,33 @@ export default function CustomerNavbar({ user, onNavigate, onLogout }) {
   const { itemCount } = useCart();
   const [profileOpen, setProfileOpen] = useState(false);
   const [profileReminderDismissed, setProfileReminderDismissed] = useState(false);
+  const [currentPath, setCurrentPath] = useState(() => window.location.hash.slice(1).split('?')[0] || '/');
   const profileRef = useRef(null);
   const profileInitial = user?.full_name?.trim()?.charAt(0)?.toUpperCase() || 'U';
   const isCustomer = isCustomerUser(user);
   const profileReminder = profileReminderDismissed ? null : readGoogleProfileReminder(user);
   const needsProfileCompletion = Boolean(profileReminder?.missingFields?.length);
+  const mainMenuItems = [
+    { label: 'หน้าหลัก', path: '/' },
+    { label: 'สินค้า', path: '/products' },
+    { label: 'ข่าว', path: '/news' },
+    { label: 'ติดต่อ', path: '/contact' },
+  ];
+
+  function isActivePath(path) {
+    return path === '/' ? currentPath === '/' : currentPath === path || currentPath.startsWith(`${path}/`);
+  }
 
   const profileMenuItems = [
     { label: 'การสั่งซื้อของฉัน', path: '/order-status' },
     { label: 'บัญชีของฉัน', path: '/profile' },
   ];
+
+  useEffect(() => {
+    const updateCurrentPath = () => setCurrentPath(window.location.hash.slice(1).split('?')[0] || '/');
+    window.addEventListener('hashchange', updateCurrentPath);
+    return () => window.removeEventListener('hashchange', updateCurrentPath);
+  }, []);
 
   useEffect(() => {
     if (!profileOpen) return undefined;
@@ -73,10 +90,20 @@ export default function CustomerNavbar({ user, onNavigate, onLogout }) {
         </button>
 
         <nav className="main-nav" aria-label="เมนูหลัก">
-          <button type="button" onClick={() => onNavigate('/')}>หน้าหลัก</button>
-          <button type="button" onClick={() => onNavigate('/products')}>สินค้า</button>
-          <button type="button" onClick={() => onNavigate('/news')}>ข่าว</button>
-          <button type="button" onClick={() => onNavigate('/contact')}>ติดต่อ</button>
+          {mainMenuItems.map((item) => {
+            const active = isActivePath(item.path);
+            return (
+              <button
+                type="button"
+                key={item.path}
+                className={active ? 'active' : undefined}
+                aria-current={active ? 'page' : undefined}
+                onClick={() => onNavigate(item.path)}
+              >
+                {item.label}
+              </button>
+            );
+          })}
         </nav>
 
         <div className="account-actions">

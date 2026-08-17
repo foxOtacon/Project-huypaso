@@ -6,17 +6,20 @@ import {
   uploadPromptPaySlip,
 } from '../api/checkout';
 import { useRef } from 'react';
+import { fetchMyOrderDetail } from '../api/customer';
 import CustomerNavbar from '../components/CustomerNavbar';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { formatAddressForDisplay } from '../utils/profileAddress';
+import { findThaiBank } from '../utils/thaiBanks';
 import './PaymentPage.css';
 
 function formatPrice(value) {
   return new Intl.NumberFormat('th-TH', {
     style: 'currency',
     currency: 'THB',
-    maximumFractionDigits: 0,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   }).format(Number(value || 0));
 }
 
@@ -28,7 +31,7 @@ function formatCountdown(seconds) {
 
 export default function PaymentPage({ user, onNavigate, onLogout }) {
   const { token } = useAuth();
-  const { items, totalAmount, clearCart, removeItem } = useCart();
+  const { items, totalAmount, clearCart } = useCart();
   const [form, setForm] = useState({
     shipping_name: user?.full_name || '',
     shipping_phone: user?.phone || '',
@@ -46,14 +49,49 @@ export default function PaymentPage({ user, onNavigate, onLogout }) {
   const [error, setError] = useState('');
   const [validationAlert, setValidationAlert] = useState(null);
   const [cancelAlertOpen, setCancelAlertOpen] = useState(false);
+  const [leaveTarget, setLeaveTarget] = useState(null);
+  const [resumeItems, setResumeItems] = useState([]);
+  const [loadingResume, setLoadingResume] = useState(() => Boolean(new URLSearchParams(window.location.hash.split('?')[1] || '').get('orderId')));
+  const [copiedPromptPay, setCopiedPromptPay] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState('promptpay');
   const paymentFormRef = useRef(null);
+  const displayItems = createdOrder && resumeItems.length ? resumeItems : items;
+  const awaitingPayment = Boolean(createdOrder && !completed && createdOrder.order_status === 'pending' && createdOrder.payment_status === 'pending' && !createdOrder.slip_image && secondsLeft > 0);
+  const selectedBank = findThaiBank(promptPayQr?.bank_name);
+
+  function guardedNavigate(path) {
+    if (awaitingPayment) setLeaveTarget(path);
+    else onNavigate(path);
+  }
+
+  async function copyPromptPayNumber() {
+    if (!promptPayQr?.promptpay_number) return;
+    try {
+      await navigator.clipboard.writeText(promptPayQr.promptpay_number);
+      setCopiedPromptPay(true);
+      window.setTimeout(() => setCopiedPromptPay(false), 1800);
+    } catch {
+      setError('ไม่สามารถคัดลอกหมายเลขพร้อมเพย์ได้');
+    }
+  }
+
+  async function copyBankAccountNumber() {
+    if (!promptPayQr?.bank_account_number) return;
+    try {
+      await navigator.clipboard.writeText(promptPayQr.bank_account_number);
+      setCopiedPromptPay(true);
+      window.setTimeout(() => setCopiedPromptPay(false), 1800);
+    } catch {
+      setError('ไม่สามารถคัดลอกเลขบัญชีได้');
+    }
+  }
 
   const canCreateOrder = useMemo(() => {
     return (
       form.shipping_name.trim() &&
       form.shipping_phone.trim() &&
       form.shipping_address.trim() &&
-      totalAmount >= 20 &&
+      totalAmount > 0 &&
       items.length > 0
     );
   }, [form, items.length, totalAmount]);
@@ -80,9 +118,7 @@ export default function PaymentPage({ user, onNavigate, onLogout }) {
 
     if (!canCreateOrder) {
       setError(
-        totalAmount < 20
-          ? 'ยอดชำระผ่าน PromptPay ต้องไม่น้อยกว่า 20 บาท'
-          : 'กรุณากรอกข้อมูลจัดส่งให้ครบถ้วน',
+        'กรุณากรอกข้อมูลจัดส่งให้ครบถ้วน',
       );
       return;
     }
@@ -106,10 +142,15 @@ export default function PaymentPage({ user, onNavigate, onLogout }) {
         shipping_phone: form.shipping_phone.trim(),
         shipping_address: form.shipping_address.trim(),
       });
-      const qr = await fetchPromptPayQr(order.order_id);
+      const qr = await fetchPromptPayQr(token, order.order_id);
 
       setCreatedOrder(order);
+      setResumeItems(items);
       setPromptPayQr(qr);
+      setPaymentMethod((current) => {
+        if (qr.available_methods?.[current]) return current;
+        return qr.available_methods?.promptpay ? 'promptpay' : 'bank_transfer';
+      });
       setSecondsLeft(Number(qr.expires_in_seconds || 10 * 60));
     } catch (err) {
       if (err.message?.includes('Product not found')) {
@@ -153,7 +194,7 @@ export default function PaymentPage({ user, onNavigate, onLogout }) {
       setUploading(true);
       await uploadPromptPaySlip(token, {
         orderId: createdOrder.order_id,
-        paymentMethod: 'promptpay',
+        paymentMethod,
         file: slipFile,
       });
       clearCart();
@@ -184,7 +225,7 @@ export default function PaymentPage({ user, onNavigate, onLogout }) {
         setSlipPreview('');
       }
 
-      onNavigate('/cart');
+      onNavigate('/order-status');
     } catch (err) {
       setCancelAlertOpen(false);
       setError(err.message || 'ไม่สามารถยกเลิกคำสั่งซื้อได้');
@@ -206,6 +247,35 @@ export default function PaymentPage({ user, onNavigate, onLogout }) {
   }, [completed, createdOrder, secondsLeft]);
 
   useEffect(() => {
+    const orderId = new URLSearchParams(window.location.hash.split('?')[1] || '').get('orderId');
+    if (!orderId || !token) return;
+    let active = true;
+    Promise.all([fetchMyOrderDetail(token, orderId), fetchPromptPayQr(token, orderId)])
+      .then(([order, qr]) => {
+        if (!active) return;
+        setCreatedOrder(order);
+        setResumeItems(order.items || []);
+        setForm({ shipping_name: order.shipping_name || '', shipping_phone: order.shipping_phone || '', shipping_address: formatAddressForDisplay(order.shipping_address) });
+        setPromptPayQr(qr);
+        setPaymentMethod((current) => {
+          if (qr.available_methods?.[current]) return current;
+          return qr.available_methods?.promptpay ? 'promptpay' : 'bank_transfer';
+        });
+        setSecondsLeft(Number(qr.expires_in_seconds || 0));
+      })
+      .catch((err) => active && setError(err.message || 'ไม่สามารถกลับมาชำระคำสั่งซื้อนี้ได้'))
+      .finally(() => active && setLoadingResume(false));
+    return () => { active = false; };
+  }, [token]);
+
+  useEffect(() => {
+    if (!awaitingPayment) return undefined;
+    const warn = (event) => { event.preventDefault(); event.returnValue = ''; };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [awaitingPayment]);
+
+  useEffect(() => {
     return () => {
       if (slipPreview) {
         URL.revokeObjectURL(slipPreview);
@@ -216,7 +286,7 @@ export default function PaymentPage({ user, onNavigate, onLogout }) {
   if (completed) {
     return (
       <div className="payment-page">
-        <CustomerNavbar user={user} onNavigate={onNavigate} onLogout={onLogout} />
+        <CustomerNavbar user={user} onNavigate={guardedNavigate} onLogout={() => guardedNavigate('/logout')} />
 
         <main className="payment-success">
           <section>
@@ -239,16 +309,18 @@ export default function PaymentPage({ user, onNavigate, onLogout }) {
 
   return (
     <div className="payment-page">
-        <CustomerNavbar user={user} onNavigate={onNavigate} onLogout={onLogout} />
+        <CustomerNavbar user={user} onNavigate={guardedNavigate} onLogout={() => guardedNavigate('/logout')} />
 
       <main className="payment-main">
         <section className="payment-title">
           <p>Checkout</p>
           <h1>ชำระเงิน</h1>
-          <span>สร้าง QR PromptPay แล้วแนบสลิปเพื่อส่งให้แอดมินตรวจสอบ</span>
+          <span>เลือกโอนผ่านบัญชีธนาคารหรือพร้อมเพย์ แล้วแนบสลิปเพื่อส่งให้แอดมินตรวจสอบ</span>
         </section>
 
-        {items.length === 0 && !createdOrder ? (
+        {loadingResume ? (
+          <section className="payment-empty"><p>กำลังโหลดคำสั่งซื้อเดิม...</p></section>
+        ) : items.length === 0 && !createdOrder ? (
           <section className="payment-empty">
             <h2>ไม่มีสินค้าในตะกร้า</h2>
             <p>กรุณาเลือกสินค้าก่อนชำระเงิน</p>
@@ -293,17 +365,55 @@ export default function PaymentPage({ user, onNavigate, onLogout }) {
             </section>
 
             <section className="payment-card">
-              <h2>PromptPay</h2>
-              <div className="payment-bank-box">
-                <strong>ยอดที่ต้องชำระ {formatPrice(createdOrder?.total_amount || totalAmount)}</strong>
-                <span>PromptPay: 0634126252</span>
-                <span>หลังโอนเงินแล้วแนบสลิปเพื่อส่งตรวจสอบ</span>
+              <h2>{paymentMethod === 'bank_transfer' ? 'โอนผ่านบัญชีธนาคาร' : 'PromptPay'}</h2>
+              <div className="payment-method-selector" aria-label="เลือกวิธีชำระเงิน">
+                <button
+                  type="button"
+                  className={paymentMethod === 'bank_transfer' ? 'active' : ''}
+                  aria-pressed={paymentMethod === 'bank_transfer'}
+                  disabled={Boolean(promptPayQr && !promptPayQr.available_methods?.bank_transfer)}
+                  onClick={() => setPaymentMethod('bank_transfer')}
+                >
+                  โอนผ่านบัญชีธนาคาร
+                </button>
+                <button
+                  type="button"
+                  className={paymentMethod === 'promptpay' ? 'active' : ''}
+                  aria-pressed={paymentMethod === 'promptpay'}
+                  disabled={Boolean(promptPayQr && !promptPayQr.available_methods?.promptpay)}
+                  onClick={() => setPaymentMethod('promptpay')}
+                >
+                  พร้อมเพย์
+                </button>
               </div>
+              {paymentMethod === 'bank_transfer' && promptPayQr?.available_methods?.bank_transfer ? (
+                <div className="payment-bank-transfer-box">
+                  <header className="payment-bank-brand">
+                    {selectedBank
+                      ? <img src={selectedBank.logo} alt="" aria-hidden="true" />
+                      : <span className="payment-bank-logo-fallback" aria-hidden="true">฿</span>}
+                    <div><p>ธนาคาร</p><strong>{promptPayQr.bank_name}</strong></div>
+                  </header>
+                  <p>เลขบัญชี</p><strong>{promptPayQr.bank_account_number}</strong>
+                  <p>ชื่อบัญชี</p><strong>{promptPayQr.bank_account_name}</strong>
+                  <button type="button" onClick={copyBankAccountNumber}>{copiedPromptPay ? 'คัดลอกแล้ว' : 'คัดลอกเลขบัญชี'}</button>
+                  <div><span>ยอดที่ต้องชำระ</span><b>{formatPrice(createdOrder?.total_amount || totalAmount)}</b></div>
+                  <small>กรุณาโอนให้ตรงตามยอดและอัปโหลดสลิปก่อนหมดเวลา</small>
+                </div>
+              ) : null}
+              {paymentMethod === 'promptpay' ? <div className="payment-bank-box">
+                <strong>ยอดที่ต้องชำระ {formatPrice(createdOrder?.total_amount || totalAmount)}</strong>
+                {promptPayQr ? <span>ชื่อบัญชี: {promptPayQr.account_name}</span> : null}
+                {promptPayQr ? <span>หมายเลขพร้อมเพย์: {promptPayQr.promptpay_number}</span> : null}
+                <span>หลังโอนเงินแล้วแนบสลิปเพื่อส่งตรวจสอบ</span>
+              </div> : null}
 
-              {promptPayQr && (
+              {promptPayQr && paymentMethod === 'promptpay' && promptPayQr.available_methods?.promptpay && (
                 <div className="payment-qr-box">
                   <img src={promptPayQr.qr_code || promptPayQr.qrCode} alt="PromptPay QR Code" />
-                  <strong>PromptPay 0634126252</strong>
+                  <strong>ชื่อบัญชี: {promptPayQr.account_name}</strong>
+                  <span>หมายเลขพร้อมเพย์: {promptPayQr.promptpay_number}</span>
+                  <button type="button" className="payment-copy-promptpay" onClick={copyPromptPayNumber}>{copiedPromptPay ? 'คัดลอกแล้ว' : 'คัดลอกหมายเลขพร้อมเพย์'}</button>
                   <span>ยอดชำระ {formatPrice(promptPayQr.amount)}</span>
                   <small>Order ID: {promptPayQr.order_id || promptPayQr.orderId}</small>
                   <small>
@@ -334,7 +444,7 @@ export default function PaymentPage({ user, onNavigate, onLogout }) {
             <aside className="payment-summary">
               <h2>สรุปรายการ</h2>
               <div className="payment-summary-list">
-                {items.map((item) => (
+                {displayItems.map((item) => (
                   <div key={item.product_id}>
                     <span>
                       {item.product_name}
@@ -348,9 +458,6 @@ export default function PaymentPage({ user, onNavigate, onLogout }) {
                 <span>ยอดรวม</span>
                 <strong>{formatPrice(createdOrder?.total_amount || totalAmount)}</strong>
               </div>
-              {totalAmount < 20 && !createdOrder && (
-                <p className="payment-error">ยอดชำระผ่าน PromptPay ต้องไม่น้อยกว่า 20 บาท</p>
-              )}
               {error && <p className="payment-error">{error}</p>}
               {createdOrder && secondsLeft <= 0 && (
                 <p className="payment-error">
@@ -360,7 +467,7 @@ export default function PaymentPage({ user, onNavigate, onLogout }) {
               {!createdOrder ? (
                 <div className="payment-checkout-actions">
                   <button type="submit" disabled={submitting || items.length === 0}>
-                    {submitting ? 'กำลังสร้าง QR...' : 'สร้าง QR PromptPay'}
+                    {submitting ? 'กำลังโหลด' : 'ชำระเงิน'}
                   </button>
                   
                 </div>
@@ -434,18 +541,35 @@ export default function PaymentPage({ user, onNavigate, onLogout }) {
             <div className="payment-alert-icon payment-cancel-icon" aria-hidden="true">!</div>
             <div className="payment-alert-content">
               <p>ยืนยันการยกเลิก</p>
-              <h2 id="payment-cancel-title">ต้องการยกเลิกคำสั่งซื้อนี้หรือไม่?</h2>
+              <h2 id="payment-cancel-title">คุณต้องการยกเลิกคำสั่งซื้อนี้หรือไม่?</h2>
               <div id="payment-cancel-description" className="payment-cancel-description">
                 ระบบจะคืนสินค้าเข้าสต็อก และพาคุณกลับไปแก้ไขสินค้าในตะกร้า
               </div>
             </div>
             <div className="payment-cancel-actions">
               <button type="button" onClick={() => setCancelAlertOpen(false)} disabled={cancelling}>
-                ไม่ยกเลิก
+                กลับ
               </button>
               <button type="button" autoFocus onClick={handleCancelOrder} disabled={cancelling}>
-                {cancelling ? 'กำลังยกเลิก...' : 'ยืนยันยกเลิก'}
+                {cancelling ? 'กำลังยกเลิก...' : 'ยืนยันการยกเลิก'}
               </button>
+            </div>
+          </section>
+        </div>
+      )}
+
+      {leaveTarget && (
+        <div className="payment-alert-backdrop" role="presentation" onMouseDown={() => setLeaveTarget(null)}>
+          <section className="payment-alert-dialog" role="alertdialog" aria-modal="true" onMouseDown={(event) => event.stopPropagation()}>
+            <div className="payment-alert-icon" aria-hidden="true">!</div>
+            <div className="payment-alert-content">
+              <p>ยังไม่ได้ชำระเงิน</p>
+              <h2>คำสั่งซื้อของคุณยังไม่ได้ชำระเงิน</h2>
+              <div className="payment-cancel-description">หากออกจากหน้านี้ คุณสามารถกลับมาชำระต่อได้จากประวัติการสั่งซื้อก่อนหมดเวลาชำระ</div>
+            </div>
+            <div className="payment-cancel-actions">
+              <button type="button" autoFocus onClick={() => setLeaveTarget(null)}>ชำระเงินต่อ</button>
+              <button type="button" onClick={() => { const target = leaveTarget; setLeaveTarget(null); if (target === '/logout') onLogout?.(); else onNavigate(target); }}>ออกจากหน้านี้</button>
             </div>
           </section>
         </div>

@@ -1,8 +1,12 @@
-﻿import { useEffect, useRef, useState } from 'react';
+﻿import { useEffect, useMemo, useRef, useState } from 'react';
+import DOMPurify from 'dompurify';
 import BrandLogo from '../components/BrandLogo';
 import GoogleProfileAlert from '../components/GoogleProfileAlert';
 import { fetchCatalogCategories, fetchCatalogProducts } from '../api/catalog';
 import { fetchPublishedNews } from '../api/news';
+import { fetchProductRecommendations, recordProductView } from '../api/recommendations';
+import { fetchHistoryContent } from '../api/siteContent';
+import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { isCustomerUser } from '../utils/roles';
 import './Home.css';
@@ -11,6 +15,32 @@ import './ProductsPage.css';
 const FEATURED_KEYWORDS = ['ชา', 'กาแฟ', 'tea', 'coffee'];
 const FALLBACK_PRODUCT_IMAGE =
   'https://images.unsplash.com/photo-1447933601403-0c6688de566e?auto=format&fit=crop&w=900&q=80';
+const HISTORY_SANITIZE_OPTIONS = {
+  ALLOWED_TAGS: [
+    'p', 'br', 'h2', 'h3', 'h4', 'strong', 'em', 'u', 's', 'a',
+    'ul', 'ol', 'li', 'blockquote', 'hr', 'figure', 'figcaption', 'img',
+    'table', 'caption', 'thead', 'tbody', 'tfoot', 'tr', 'th', 'td', 'span',
+  ],
+  ALLOWED_ATTR: [
+    'href', 'title', 'target', 'rel', 'class', 'style', 'src', 'alt',
+    'width', 'height', 'colspan', 'rowspan', 'scope',
+  ],
+  FORBID_TAGS: ['script', 'style', 'iframe', 'object', 'embed', 'form', 'input', 'button'],
+  FORBID_ATTR: ['srcset'],
+  ALLOW_UNKNOWN_PROTOCOLS: false,
+};
+const HERO_SLIDES = [
+  {
+    src: '/images/huypaso-forest-banner.png',
+    position: 'center 48%',
+    label: 'ทิวทัศน์ป่าบนพื้นที่สูง',
+  },
+  {
+    src: '/images/huypaso-village-banner.png',
+    position: 'center 58%',
+    label: 'ทิวทัศน์ชุมชนห้วยหยวกปากโซ',
+  },
+];
 
 function formatProductPrice(value) {
   return new Intl.NumberFormat('th-TH', {
@@ -127,24 +157,48 @@ function Icon({ name }) {
 
 
 export default function Home({ user, onNavigate, onLogout }) {
+  const { token } = useAuth();
   const { addItem, itemCount } = useCart();
   const [profileOpen, setProfileOpen] = useState(false);
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [featuredCategories, setFeaturedCategories] = useState({});
   const [featuredLoading, setFeaturedLoading] = useState(true);
   const [featuredError, setFeaturedError] = useState('');
+  const [featuredStrategy, setFeaturedStrategy] = useState('general');
   const [addedProductId, setAddedProductId] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [latestNews, setLatestNews] = useState([]);
   const [newsLoading, setNewsLoading] = useState(true);
   const [newsError, setNewsError] = useState('');
+  const [historyHtml, setHistoryHtml] = useState('');
+  const [heroSlideIndex, setHeroSlideIndex] = useState(0);
   const profileRef = useRef(null);
+  const featuredTrackRef = useRef(null);
+
+  const sanitizedHistoryHtml = useMemo(() => {
+    const content = String(historyHtml || '').trim();
+    return content ? DOMPurify.sanitize(content, HISTORY_SANITIZE_OPTIONS).trim() : '';
+  }, [historyHtml]);
+
+  useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      return undefined;
+    }
+
+    const intervalId = window.setInterval(() => {
+      setHeroSlideIndex((current) => (current + 1) % HERO_SLIDES.length);
+    }, 6000);
+
+    return () => window.clearInterval(intervalId);
+  }, []);
 
   useEffect(() => {
     let active = true;
 
     async function loadFeaturedProducts() {
       try {
+        setFeaturedLoading(true);
+        setFeaturedError('');
         const [products, categories] = await Promise.all([
           fetchCatalogProducts(),
           fetchCatalogCategories(),
@@ -154,8 +208,10 @@ export default function Home({ user, onNavigate, onLogout }) {
         const categoryMap = Object.fromEntries(
           categories.map((category) => [String(category.category_id), category.category_name]),
         );
-        const featured = products.filter((product) => {
-          if (product.status === 'suspended') return false;
+        const availableProducts = products.filter(
+          (product) => product.status !== 'suspended' && Number(product.stock_quantity || 0) > 0,
+        );
+        const keywordProducts = availableProducts.filter((product) => {
 
           const searchableText = [
             product.product_name,
@@ -167,9 +223,59 @@ export default function Home({ user, onNavigate, onLogout }) {
             .toLowerCase();
           return FEATURED_KEYWORDS.some((keyword) => searchableText.includes(keyword));
         });
+        const keywordIds = new Set(keywordProducts.map((product) => Number(product.product_id)));
+        const generalRecommendations = [
+          ...keywordProducts,
+          ...availableProducts.filter((product) => !keywordIds.has(Number(product.product_id))),
+        ].slice(0, 5);
 
         setFeaturedCategories(categoryMap);
-        setFeaturedProducts(featured.slice(0, 3));
+        setFeaturedProducts(generalRecommendations);
+        setFeaturedStrategy('general');
+        setFeaturedLoading(false);
+
+        if (token && isCustomerUser(user)) {
+          try {
+            const recommendationData = await fetchProductRecommendations(token, 5);
+            if (!active) return;
+            const productMap = new Map(
+              availableProducts.map((product) => [Number(product.product_id), product]),
+            );
+            const personalizedIds = new Set();
+            const personalized = [];
+            const recommendations = Array.isArray(recommendationData.recommendations)
+              ? recommendationData.recommendations
+              : [];
+
+            for (const recommendation of recommendations) {
+              const product = productMap.get(Number(recommendation.product_id));
+              const productId = Number(product?.product_id);
+              if (!product || personalizedIds.has(productId)) continue;
+
+              personalizedIds.add(productId);
+              personalized.push({
+                ...product,
+                recommendation_reason: String(recommendation.reason || '').trim(),
+                recommendation_score: Number(recommendation.score || 0),
+              });
+              if (personalized.length === 5) break;
+            }
+
+            if (personalized.length > 0) {
+              const filledRecommendations = [
+                ...personalized,
+                ...generalRecommendations.filter(
+                  (product) => !personalizedIds.has(Number(product.product_id)),
+                ),
+              ].slice(0, 5);
+
+              setFeaturedProducts(filledRecommendations);
+              setFeaturedStrategy(recommendationData.strategy || 'popular');
+            }
+          } catch {
+            // Recommendation failures must not prevent the normal catalog from loading.
+          }
+        }
       } catch (error) {
         if (active) setFeaturedError(error.message || 'ไม่สามารถโหลดสินค้าแนะนำได้');
       } finally {
@@ -181,7 +287,7 @@ export default function Home({ user, onNavigate, onLogout }) {
     return () => {
       active = false;
     };
-  }, []);
+  }, [token, user]);
 
   useEffect(() => {
     let active = true;
@@ -204,6 +310,28 @@ export default function Home({ user, onNavigate, onLogout }) {
     };
   }, []);
 
+  useEffect(() => {
+    let active = true;
+
+    async function loadHistoryContent() {
+      try {
+        const content = await fetchHistoryContent();
+        const nextHtml = String(content?.content_html || '').trim();
+
+        if (active && nextHtml) {
+          setHistoryHtml(nextHtml);
+        }
+      } catch {
+        // Keep the built-in community history visible when the CMS is unavailable.
+      }
+    }
+
+    loadHistoryContent();
+    return () => {
+      active = false;
+    };
+  }, []);
+
   function handleFeaturedAddToCart(product) {
     if (!isCustomerUser(user)) {
       onNavigate('/login');
@@ -213,6 +341,23 @@ export default function Home({ user, onNavigate, onLogout }) {
     addItem(product, 1);
     setAddedProductId(product.product_id);
     window.setTimeout(() => setAddedProductId(null), 1300);
+  }
+
+  function openFeaturedProductDetail(product) {
+    setSelectedProduct({ ...product, imageUrl: getImageUrl(product) });
+    if (token && isCustomerUser(user)) {
+      recordProductView(token, product.product_id).catch(() => {});
+    }
+  }
+
+  function scrollFeaturedProducts(direction) {
+    const track = featuredTrackRef.current;
+    if (!track) return;
+
+    track.scrollBy({
+      left: direction * Math.max(track.clientWidth * 0.82, 280),
+      behavior: 'smooth',
+    });
   }
 
   useEffect(() => {
@@ -291,7 +436,7 @@ export default function Home({ user, onNavigate, onLogout }) {
           </button>
 
           <nav className="main-nav" aria-label="เมนูหลัก">
-            <button type="button" onClick={() => scrollTo('top')}>หน้าหลัก</button>
+            <button type="button" className="active" aria-current="page" onClick={() => scrollTo('top')}>หน้าหลัก</button>
             <button type="button" onClick={() => onNavigate('/products')}>สินค้า</button>
             <button type="button" onClick={() => scrollTo('news')}>ข่าว</button>
             <button type="button" onClick={() => onNavigate('/contact')}>ติดต่อ</button>
@@ -380,6 +525,18 @@ export default function Home({ user, onNavigate, onLogout }) {
 
       <main id="top">
         <section className="hero-section" aria-label="หน้าหลัก">
+          <div className="hero-backgrounds" aria-hidden="true">
+            {HERO_SLIDES.map((slide, index) => (
+              <div
+                key={slide.src}
+                className={`hero-background-slide ${index === heroSlideIndex ? 'is-active' : ''}`}
+                style={{
+                  backgroundImage: `url(${slide.src})`,
+                  backgroundPosition: slide.position,
+                }}
+              />
+            ))}
+          </div>
           <div className="hero-overlay" />
           <div className="site-shell hero-content">
             <span className="hero-kicker">ผลิตภัณฑ์จากพื้นที่สูงเชียงราย</span>
@@ -406,6 +563,18 @@ export default function Home({ user, onNavigate, onLogout }) {
           <button type="button" className="scroll-cue" onClick={() => scrollTo('products')} aria-label="เลื่อนไปยังสินค้า">
             ↓
           </button>
+          <div className="hero-slide-dots" aria-label="เลือกภาพแบนเนอร์">
+            {HERO_SLIDES.map((slide, index) => (
+              <button
+                key={slide.src}
+                type="button"
+                className={index === heroSlideIndex ? 'is-active' : ''}
+                onClick={() => setHeroSlideIndex(index)}
+                aria-label={slide.label}
+                aria-current={index === heroSlideIndex ? 'true' : undefined}
+              />
+            ))}
+          </div>
         </section>
 
         <section className="impact-strip" aria-label="ภาพรวมชุมชน">
@@ -470,18 +639,23 @@ export default function Home({ user, onNavigate, onLogout }) {
                 </div>
               </div>
 
-              <div className="history-copy">
-                <p>บ้านห้วยหยวกป่าโซ ตั้งอยู่หมู่ที่ 9 ตำบลแม่สลองใน อำเภอแม่ฟ้าหลวง จังหวัดเชียงราย ก่อตั้งขึ้นเมื่อปี พ.ศ. 2512 โดยนายป่าโซ มาเยอะ ได้นำประชาชนจากหลายพื้นที่เข้ามาตั้งถิ่นฐานร่วมกัน ได้แก่ บ้านพญาไพร บ้านโป่งไฮ บ้านนาโต่ และบ้านเล่าลิ่ว</p>
-                <ul>
-                  <li>ในช่วงแรก ชุมชนตั้งอยู่บนสันเขาใกล้ชายแดนไทย–เมียนมา แต่ด้วยพื้นที่ห่างไกลจากแหล่งน้ำและจำนวนประชากรเพิ่มขึ้น ทำให้การอุปโภคบริโภคและการทำเกษตรประสบปัญหากับความไม่เพียงพอ จึงมีการย้ายถิ่นฐานไปทางทิศตะวันออกประมาณ 6 กิโลเมตร และก่อตั้งหมู่บ้านในพื้นที่ปัจจุบันเมื่อปี พ.ศ. 2519</li>
-                  <li>หมู่บ้านตั้งอยู่บนพื้นที่ภูเขาสูงประมาณ 1,200–1,500 เมตรจากระดับน้ำทะเล มีภูมิประเทศที่ซับซ้อนและลาดชัน ประชากรประกอบด้วยกลุ่มชาติพันธุ์อาข่า ลาหู่ และจีนฮ่อ ซึ่งมีภาษา ศาสนา ประเพณี และวัฒนธรรมที่แตกต่างกัน แต่สามารถอยู่ร่วมกันได้อย่างกลมกลืน จึงเป็นชุมชนที่มีความหลากหลายทางวัฒนธรรมและเอกลักษณ์เฉพาะตัว</li>
-                  <li>อาชีพดั้งเดิมของชาวบ้านคือการทำนาขั้นบันได เลี้ยงสัตว์ และปลูกพืชเพื่อบริโภค ต่อมาได้เริ่มปลูกชาและกาแฟอาราบิกาเป็นพืชเศรษฐกิจ เนื่องจากสภาพอากาศเย็นและพื้นที่สูงเหมาะสมต่อการเพาะปลูก จนกลายเป็นผลิตภัณฑ์สำคัญที่ช่วยเสริมรายได้ให้กับครัวเรือนในชุมชน</li>
-                  <li>เมื่อวันที่ 14 มกราคม พ.ศ. 2546 สมเด็จพระนางเจ้าสิริกิติ์ พระบรมราชินีนาถพระบรมราชชนนีพันปีหลวง เสด็จทอดพระเนตรพื้นที่ป่าและลุ่มน้ำแม่คำ ซึ่งขณะนั้นประสบปัญหาป่าเสื่อมโทรม จึงทรงมีพระราชดำริให้จัดตั้งสถานีพัฒนาการเกษตรที่สูงตามพระราชดำริ บ้านห้วยหยวกป่าโซ 
-                    เพื่อส่งเสริมการใช้ที่ดินอย่างเหมาะสม พัฒนาการเกษตรแบบครบวงจร ลดการใช้สารเคมี และฟื้นฟูทรัพยากรป่าไม้และแหล่งต้นน้ำ</li>
-                    </ul>
+              {sanitizedHistoryHtml ? (
+                <div
+                  className="history-copy"
+                  dangerouslySetInnerHTML={{ __html: sanitizedHistoryHtml }}
+                />
+              ) : (
+                <div className="history-copy">
+                  <p>บ้านห้วยหยวกป่าโซ ตั้งอยู่หมู่ที่ 9 ตำบลแม่สลองใน อำเภอแม่ฟ้าหลวง จังหวัดเชียงราย ก่อตั้งขึ้นเมื่อปี พ.ศ. 2512 โดยนายป่าโซ มาเยอะ ได้นำประชาชนจากหลายพื้นที่เข้ามาตั้งถิ่นฐานร่วมกัน ได้แก่ บ้านพญาไพร บ้านโป่งไฮ บ้านนาโต่ และบ้านเล่าลิ่ว</p>
+                  <ul>
+                    <li>ในช่วงแรก ชุมชนตั้งอยู่บนสันเขาใกล้ชายแดนไทย–เมียนมา แต่ด้วยพื้นที่ห่างไกลจากแหล่งน้ำและจำนวนประชากรเพิ่มขึ้น ทำให้การอุปโภคบริโภคและการทำเกษตรประสบปัญหากับความไม่เพียงพอ จึงมีการย้ายถิ่นฐานไปทางทิศตะวันออกประมาณ 6 กิโลเมตร และก่อตั้งหมู่บ้านในพื้นที่ปัจจุบันเมื่อปี พ.ศ. 2519</li>
+                    <li>หมู่บ้านตั้งอยู่บนพื้นที่ภูเขาสูงประมาณ 1,200–1,500 เมตรจากระดับน้ำทะเล มีภูมิประเทศที่ซับซ้อนและลาดชัน ประชากรประกอบด้วยกลุ่มชาติพันธุ์อาข่า ลาหู่ และจีนฮ่อ ซึ่งมีภาษา ศาสนา ประเพณี และวัฒนธรรมที่แตกต่างกัน แต่สามารถอยู่ร่วมกันได้อย่างกลมกลืน จึงเป็นชุมชนที่มีความหลากหลายทางวัฒนธรรมและเอกลักษณ์เฉพาะตัว</li>
+                    <li>อาชีพดั้งเดิมของชาวบ้านคือการทำนาขั้นบันได เลี้ยงสัตว์ และปลูกพืชเพื่อบริโภค ต่อมาได้เริ่มปลูกชาและกาแฟอาราบิกาเป็นพืชเศรษฐกิจ เนื่องจากสภาพอากาศเย็นและพื้นที่สูงเหมาะสมต่อการเพาะปลูก จนกลายเป็นผลิตภัณฑ์สำคัญที่ช่วยเสริมรายได้ให้กับครัวเรือนในชุมชน</li>
+                    <li>เมื่อวันที่ 14 มกราคม พ.ศ. 2546 สมเด็จพระนางเจ้าสิริกิติ์ พระบรมราชินีนาถพระบรมราชชนนีพันปีหลวง เสด็จทอดพระเนตรพื้นที่ป่าและลุ่มน้ำแม่คำ ซึ่งขณะนั้นประสบปัญหาป่าเสื่อมโทรม จึงทรงมีพระราชดำริให้จัดตั้งสถานีพัฒนาการเกษตรที่สูงตามพระราชดำริ บ้านห้วยหยวกป่าโซ เพื่อส่งเสริมการใช้ที่ดินอย่างเหมาะสม พัฒนาการเกษตรแบบครบวงจร ลดการใช้สารเคมี และฟื้นฟูทรัพยากรป่าไม้และแหล่งต้นน้ำ</li>
+                  </ul>
                   <p>ปัจจุบันบ้านห้วยหยวกป่าโซเป็นชุมชนบนพื้นที่สูงที่โดดเด่นด้วยความหลากหลายทางชาติพันธุ์ วิถีชีวิต วัฒนธรรม และภูมิปัญญาท้องถิ่น ชาวบ้านยังคงประกอบอาชีพเกษตรกรรมควบคู่กับการอนุรักษ์ธรรมชาติ โดยเฉพาะการปลูกชาและกาแฟอาราบิกา ซึ่งได้รับการพัฒนาเป็นผลิตภัณฑ์ของชุมชนและเป็นแหล่งรายได้สำคัญที่ช่วยยกระดับคุณภาพชีวิตของประชาชนในหมู่บ้าน</p>
-                
-              </div>
+                </div>
+              )}
             </article>
           </div>
         </section>
@@ -489,21 +663,38 @@ export default function Home({ user, onNavigate, onLogout }) {
         <section id="products" className="section products-section">
           <div className="site-shell">
             <div className="section-heading reveal-on-scroll">
-              <span className="section-kicker">คัดสรรจากชุมชน</span>
-              <h2>สินค้าแนะนำ</h2>
+              <span className="section-kicker">
+                {featuredStrategy === 'personalized' ? 'คัดสรรจากสิ่งที่คุณสนใจ' : 'คัดสรรจากชุมชน'}
+              </span>
+              <h2>{featuredStrategy === 'personalized' ? 'สินค้าแนะนำสำหรับคุณ' : 'สินค้าแนะนำ'}</h2>
               <p>
-                สินค้าคุณภาพสูงจากทีมเกษตรกรห้วยหยวกปากโซ อันหลากหลายทั้งสด
-                ปลอดสารเคมี สดใหม่ที่สุด เลือกซื้อเพื่อสนับสนุนชุมชนเกษตรกร
+                {featuredStrategy === 'personalized'
+                  ? 'แนะนำจากหมวดหมู่ ความถี่ และความล่าสุดของสินค้าที่คุณเปิดดู'
+                  : 'สินค้าคุณภาพจากทีมเกษตรกรห้วยหยวกปากโซ เลือกซื้อเพื่อสนับสนุนชุมชนเกษตรกร'}
               </p>
             </div>
 
             {featuredLoading ? <div className="featured-products-state">กำลังโหลดสินค้าแนะนำ...</div> : null}
             {featuredError ? <div className="featured-products-state is-error">{featuredError}</div> : null}
             {!featuredLoading && !featuredError && featuredProducts.length === 0 ? (
-              <div className="featured-products-state">ยังไม่พบสินค้าชาหรือกาแฟในระบบ</div>
+              <div className="featured-products-state">ยังไม่พบสินค้าที่พร้อมจำหน่ายในระบบ</div>
             ) : null}
 
-            {featuredProducts.length > 0 ? <div className="product-grid">
+            {featuredProducts.length > 0 ? <div className="featured-carousel">
+              <button
+                type="button"
+                className="featured-carousel-button is-previous"
+                aria-label="ดูสินค้าแนะนำก่อนหน้า"
+                onClick={() => scrollFeaturedProducts(-1)}
+              >
+                ‹
+              </button>
+              <div
+                className="product-grid featured-product-track"
+                ref={featuredTrackRef}
+                tabIndex="0"
+                aria-label="สินค้าแนะนำ 5 รายการ เลื่อนในแนวนอนเพื่อดูเพิ่มเติม"
+              >
               {featuredProducts.map((product) => {
                 const stock = Number(product.stock_quantity || 0);
                 return (
@@ -517,6 +708,11 @@ export default function Home({ user, onNavigate, onLogout }) {
                   </div>
                   <div className="product-body">
                     <h3>{product.product_name}</h3>
+                    {product.recommendation_reason ? (
+                      <p className="product-recommendation-reason">
+                        <span aria-hidden="true">✦</span>{product.recommendation_reason}
+                      </p>
+                    ) : null}
                     <p className="product-description">
                       {product.description || 'ผลิตภัณฑ์คุณภาพจากชุมชนห้วยหยวกปากโซ'}
                     </p>
@@ -537,7 +733,7 @@ export default function Home({ user, onNavigate, onLogout }) {
                     <button
                         type="button"
                         className="catalog-detail-button"
-                        onClick={() => setSelectedProduct({ ...product, imageUrl: getImageUrl(product) })}
+                        onClick={() => openFeaturedProductDetail(product)}
                       >
                         ดูเพิ่มเติม
                       </button>
@@ -545,6 +741,16 @@ export default function Home({ user, onNavigate, onLogout }) {
                   
                 </article>
               );})}
+              </div>
+              <button
+                type="button"
+                className="featured-carousel-button is-next"
+                aria-label="ดูสินค้าแนะนำถัดไป"
+                onClick={() => scrollFeaturedProducts(1)}
+              >
+                ›
+              </button>
+
             </div> : null}
             {featuredProducts.length > 0 ? (
               <div className="section-cta reveal-on-scroll is-visible">

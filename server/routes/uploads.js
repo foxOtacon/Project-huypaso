@@ -3,6 +3,9 @@ const fs = require("fs/promises");
 const path = require("path");
 const asyncHandler = require("../utils/asyncHandler");
 
+const multer = require('multer');
+const { authenticate, authorize } = require('../middleware/auth');
+
 const router = express.Router();
 
 const ALLOWED_IMAGE_TYPES = new Map([
@@ -11,6 +14,21 @@ const ALLOWED_IMAGE_TYPES = new Map([
   ["image/webp", "webp"],
   ["image/gif", "gif"],
 ]);
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+
+const historyImageUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: MAX_IMAGE_BYTES, files: 1 },
+  fileFilter: (_req, file, callback) => {
+    if (!ALLOWED_IMAGE_TYPES.has(file.mimetype)) {
+      const error = new Error('รองรับเฉพาะไฟล์ JPEG, PNG, WebP และ GIF');
+      error.status = 400;
+      callback(error);
+      return;
+    }
+    callback(null, true);
+  },
+});
 
 function sanitizeBaseName(fileName = "image") {
   const parsed = path.parse(fileName);
@@ -40,9 +58,7 @@ async function saveImageUpload({ fileName, dataUrl, folder }) {
   }
 
   const buffer = Buffer.from(base64Data, "base64");
-  const maxBytes = 5 * 1024 * 1024;
-
-  if (buffer.length > maxBytes) {
+  if (buffer.length > MAX_IMAGE_BYTES) {
     const error = new Error("Image must be 5MB or smaller");
     error.status = 400;
     throw error;
@@ -58,6 +74,16 @@ async function saveImageUpload({ fileName, dataUrl, folder }) {
   await fs.writeFile(filePath, buffer);
 
   return `/uploads/${folder}/${uniqueName}`;
+}
+
+async function saveHistoryImage(file) {
+  const extension = ALLOWED_IMAGE_TYPES.get(file.mimetype);
+  const uploadDir = path.join(__dirname, '..', 'uploads', 'history');
+  await fs.mkdir(uploadDir, { recursive: true });
+  const safeName = sanitizeBaseName(file.originalname);
+  const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1e9)}-${safeName}.${extension}`;
+  await fs.writeFile(path.join(uploadDir, uniqueName), file.buffer);
+  return `/uploads/history/${uniqueName}`;
 }
 
 router.post(
@@ -102,6 +128,21 @@ router.post(
         url,
       },
     });
+  }),
+);
+
+router.post(
+  '/history-image',
+  authenticate,
+  authorize('admin'),
+  historyImageUpload.single('upload'),
+  asyncHandler(async (req, res) => {
+    if (!req.file) {
+      res.status(400).json({ success: false, message: 'กรุณาเลือกไฟล์รูปภาพ' });
+      return;
+    }
+    const url = await saveHistoryImage(req.file);
+    res.status(201).json({ success: true, data: { url }, url });
   }),
 );
 
