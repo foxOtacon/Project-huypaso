@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import Pagination from '../../components/Pagination';
+import AdminConfirmDialog from '../../components/admin/AdminConfirmDialog';
 import usePagination from '../../hooks/usePagination';
 import {
   createShippingCarrier,
@@ -36,6 +37,7 @@ export default function ShippingCarriers() {
   const [deletingId, setDeletingId] = useState(null);
   const [error, setError] = useState('');
   const [formError, setFormError] = useState('');
+  const [pendingDelete, setPendingDelete] = useState(null);
 
   useEffect(() => {
     async function loadItems() {
@@ -130,7 +132,6 @@ export default function ShippingCarriers() {
   }
 
   async function handleDelete(item) {
-    if (!window.confirm(`ลบบริษัทขนส่ง "${item.carrier_name}" หรือไม่?`)) return;
     setDeletingId(item.carrier_id);
     setError('');
     try {
@@ -140,6 +141,7 @@ export default function ShippingCarriers() {
       setError(err.message);
     } finally {
       setDeletingId(null);
+      setPendingDelete(null);
     }
   }
 
@@ -226,7 +228,7 @@ export default function ShippingCarriers() {
                         type="button"
                         className="products-delete-button"
                         disabled={deletingId === item.carrier_id}
-                        onClick={() => handleDelete(item)}
+                        onClick={() => setPendingDelete(item)}
                       >
                         {deletingId === item.carrier_id ? 'กำลังลบ...' : 'ลบ'}
                       </button>
@@ -311,6 +313,15 @@ export default function ShippingCarriers() {
           </form>
         </div>
       ) : null}
+      <AdminConfirmDialog
+        open={Boolean(pendingDelete)}
+        title="ลบบริษัทขนส่ง"
+        message={pendingDelete ? `คุณต้องการลบบริษัทขนส่ง “${pendingDelete.carrier_name}” หรือไม่? การลบแล้วไม่สามารถย้อนกลับได้` : ''}
+        confirmLabel="ลบบริษัทขนส่ง"
+        busy={Boolean(deletingId)}
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={() => handleDelete(pendingDelete)}
+      />
     </div>
   );
 }

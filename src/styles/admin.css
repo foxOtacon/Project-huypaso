@@ -4151,9 +4151,10 @@
 }
 
 .admin-users-page .users-toolbar > button {
-  min-height: 43px;
-  border-radius: 999px;
-  background: #607269;
+   background: #6da187;
+    border-radius: 999px;
+    min-height: 43px;
+    color: white;
 }
 
 .admin-users-page .users-table-panel {
@@ -4773,4 +4774,22 @@
     right: 16px;
     bottom: 16px;
   }
+}
+
+.admin-confirm-backdrop { position: fixed; inset: 0; z-index: 1300; display: grid; place-items: center; padding: 20px; background: rgba(18, 36, 29, 0.58); backdrop-filter: blur(4px); }
+.admin-confirm-dialog { width: min(100%, 440px); padding: 28px; border: 1px solid #d8e5de; border-radius: 20px; background: #fff; box-shadow: 0 24px 70px rgba(12, 38, 28, 0.28); text-align: center; }
+.admin-confirm-icon { display: grid; place-items: center; width: 52px; height: 52px; margin: 0 auto 14px; border-radius: 50%; background: #fff0ed; color: #b83a2e; font-size: 26px; font-weight: 900; }
+.admin-confirm-eyebrow { margin: 0 0 6px; color: #738078; font-size: 13px; font-weight: 800; }
+.admin-confirm-dialog h2 { margin: 0; color: #173f30; font-size: 24px; }
+.admin-confirm-dialog > p:last-of-type { margin: 12px 0 0; color: #52625a; line-height: 1.65; }
+.admin-confirm-actions { display: flex; justify-content: center; gap: 10px; margin-top: 24px; }
+.admin-confirm-actions button { min-width: 120px; padding: 11px 18px; border-radius: 10px; font-weight: 800; cursor: pointer; }
+.admin-confirm-actions button:disabled { cursor: wait; opacity: 0.65; }
+.admin-confirm-cancel { border: 1px solid #ced9d3; background: #fff; color: #42564c; }
+.admin-confirm-submit { border: 1px solid #b83a2e; background: #b83a2e; color: #fff; }
+
+@media (max-width: 480px) {
+  .admin-confirm-dialog { padding: 24px 18px; }
+  .admin-confirm-actions { flex-direction: column-reverse; }
+  .admin-confirm-actions button { width: 100%; }
 }

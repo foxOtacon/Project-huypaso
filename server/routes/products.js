@@ -65,6 +65,19 @@ const controller = createCrudController({
   afterUpdate: removeReplacedProductImage,
 });
 
+const validateUniqueProductName = asyncHandler(async (req, res, next) => {
+  const productName = String(req.body?.product_name || '').trim();
+  if (!productName) return next();
+  const params = [productName];
+  let sql = 'SELECT product_id FROM products WHERE LOWER(TRIM(product_name)) = LOWER(TRIM(?))';
+  if (req.params.id) { sql += ' AND product_id <> ?'; params.push(req.params.id); }
+  if ((await query(sql, params)).length) {
+    res.status(409).json({ success: false, code: 'DUPLICATE_PRODUCT_NAME', message: 'ชื่อสินค้าซ้ำ กรุณาใช้ชื่ออื่น' });
+    return;
+  }
+  next();
+});
+
 router.get(
   "/",
   asyncHandler(async (_req, res) => {
@@ -96,8 +109,8 @@ router.get(
     res.json({ success: true, data: rows[0] });
   }),
 );
-router.post("/", authenticate, authorize("admin"), asyncHandler(controller.create));
-router.put("/:id", authenticate, authorize("admin"), asyncHandler(controller.update));
+router.post("/", authenticate, authorize("admin"), validateUniqueProductName, asyncHandler(controller.create));
+router.put("/:id", authenticate, authorize("admin"), validateUniqueProductName, asyncHandler(controller.update));
 router.delete("/:id", authenticate, authorize("admin"), asyncHandler(controller.remove));
 
 module.exports = router;

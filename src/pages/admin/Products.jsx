@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import Pagination from '../../components/Pagination';
+import AdminConfirmDialog from '../../components/admin/AdminConfirmDialog';
 import usePagination from '../../hooks/usePagination';
 import {
   createProduct,
@@ -24,6 +25,10 @@ const EMPTY_FORM = {
   stock_quantity: '',
   status: 'active',
 };
+const normalizeProductName = (value) => String(value || '').trim().toLocaleLowerCase('th');
+const DUPLICATE_PRODUCT_MESSAGE = 'ชื่อสินค้าซ้ำ กรุณาใช้ชื่ออื่น';
+const isDuplicateProductError = (error) => error?.status === 409
+  || ['duplicate', 'unique', 'ซ้ำ'].some((word) => normalizeProductName(error?.message).includes(word));
 
 function buildPayload(form) {
   return {
@@ -60,6 +65,9 @@ export default function Products({ user }) {
   const [saving, setSaving] = useState(false);
   const [updatingStatusId, setUpdatingStatusId] = useState(null);
   const [error, setError] = useState('');
+  const [formError, setFormError] = useState('');
+  const [pendingDelete, setPendingDelete] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
 
   useEffect(() => {
     async function loadProducts() {
@@ -112,6 +120,7 @@ export default function Products({ user }) {
   }, [categoryMap, filters, products]);
 
   const openCreateForm = () => {
+    setFormError('');
     setEditingProduct(null);
     setForm({ ...EMPTY_FORM });
     setImageFile(null);
@@ -120,6 +129,7 @@ export default function Products({ user }) {
   };
 
   const openEditForm = (product) => {
+    setFormError('');
     setEditingProduct(product);
     setForm({
       product_name: product.product_name || '',
@@ -143,10 +153,12 @@ export default function Products({ user }) {
     setForm(EMPTY_FORM);
     setImageFile(null);
     setImagePreview('');
+    setFormError('');
   };
 
   const handleChange = (field, value) => {
     setForm((current) => ({ ...current, [field]: value }));
+    if (field === 'product_name' && formError) setFormError('');
   };
 
   const handleImageChange = (file) => {
@@ -162,8 +174,15 @@ export default function Products({ user }) {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    const duplicate = products.some((product) => product.product_id !== editingProduct?.product_id
+      && normalizeProductName(product.product_name) === normalizeProductName(form.product_name));
+    if (duplicate) {
+      setFormError(DUPLICATE_PRODUCT_MESSAGE);
+      return;
+    }
     setSaving(true);
     setError('');
+    setFormError('');
 
     try {
       let imageUrl = form.image_url;
@@ -195,16 +214,14 @@ export default function Products({ user }) {
       setImageFile(null);
       setImagePreview('');
     } catch (err) {
-      setError(err.message);
+      setFormError(isDuplicateProductError(err) ? DUPLICATE_PRODUCT_MESSAGE : err.message);
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async (product) => {
-    const confirmed = window.confirm(`ลบสินค้า "${product.product_name}" หรือไม่?`);
-    if (!confirmed) return;
-
+    setDeletingId(product.product_id);
     setError('');
     try {
       await deleteProduct(product.product_id);
@@ -213,6 +230,9 @@ export default function Products({ user }) {
       );
     } catch (err) {
       setError(err.message);
+    } finally {
+      setDeletingId(null);
+      setPendingDelete(null);
     }
   };
 
@@ -372,7 +392,7 @@ export default function Products({ user }) {
                           <button type="button" className="products-edit-button" onClick={() => openEditForm(product)}>
                             แก้ไข
                           </button>
-                          <button type="button" className="products-delete-button" onClick={() => handleDelete(product)}>
+                          <button type="button" className="products-delete-button" onClick={() => setPendingDelete(product)}>
                             ลบ
                           </button>
                         </div>
@@ -398,9 +418,15 @@ export default function Products({ user }) {
             </header>
 
             <div className="products-form-grid">
-              <label>
+              <label className={`modal-name-field${formError ? ' has-error' : ''}`}>
                 ชื่อสินค้า
-                <input value={form.product_name} onChange={(event) => handleChange('product_name', event.target.value)} required />
+                <input value={form.product_name} onChange={(event) => handleChange('product_name', event.target.value)} required aria-invalid={Boolean(formError)} aria-describedby={formError ? 'product-form-error' : undefined} />
+                {formError ? (
+                  <div id="product-form-error" className="modal-form-alert" role="alert">
+                    <span className="modal-form-alert-icon" aria-hidden="true">!</span>
+                    <span className="modal-form-alert-copy"><strong>บันทึกข้อมูลไม่สำเร็จ</strong><span>{formError}</span></span>
+                  </div>
+                ) : null}
               </label>
               <label>
                 หมวดหมู่
@@ -473,6 +499,15 @@ export default function Products({ user }) {
           </form>
         </div>
       )}
+      <AdminConfirmDialog
+        open={Boolean(pendingDelete)}
+        title="ลบสินค้า"
+        message={pendingDelete ? `คุณต้องการลบสินค้า “${pendingDelete.product_name}” หรือไม่? การลบแล้วไม่สามารถย้อนกลับได้` : ''}
+        confirmLabel="ลบสินค้า"
+        busy={Boolean(deletingId)}
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={() => handleDelete(pendingDelete)}
+      />
     </div>
   );
 }
