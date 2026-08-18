@@ -1,6 +1,7 @@
 .admin-shell {
   display: flex;
-  min-height: 100svh;
+  height: 100svh;
+  overflow: hidden;
   background: #f3f4f6;
 }
 
@@ -65,7 +66,11 @@
 
 .admin-sidebar {
   width: 240px;
+  height: 100svh;
   flex-shrink: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   background: #1b4332;
   color: #fff;
   display: flex;
@@ -262,9 +267,13 @@
 
 .admin-main {
   flex: 1;
+  height: 100svh;
   min-width: 0;
   display: flex;
   flex-direction: column;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .admin-topbar {
@@ -1596,11 +1605,16 @@
 
 @media (max-width: 767.98px) {
   .admin-shell {
+    height: auto;
+    min-height: 100svh;
+    overflow: visible;
     flex-direction: column;
   }
 
   .admin-sidebar {
     width: 100%;
+    height: auto;
+    overflow: visible;
     flex-direction: row;
     flex-wrap: wrap;
     align-items: center;
@@ -4773,6 +4787,11 @@
   .history-save-alert {
     right: 16px;
     bottom: 16px;
+  }
+
+  .admin-main {
+    height: auto;
+    overflow: visible;
   }
 }
 
