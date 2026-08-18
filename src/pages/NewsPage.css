@@ -40,7 +40,7 @@
 
 .news-featured {
   display: grid;
-  grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.75fr);
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr);
   overflow: hidden;
   margin-bottom: 20px;
   background: #fff;
@@ -151,7 +151,7 @@
 
 .news-detail {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(360px, 0.85fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);
   overflow: hidden;
   background: #fff;
   border: 1px solid #e1ebe6;

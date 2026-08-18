@@ -526,6 +526,11 @@
 }
 
 @media (max-width: 720px) {
+  .payment-main {
+    width: min(1180px, calc(100% - 24px));
+    padding: 28px 0 56px;
+  }
+
   .payment-header,
   .payment-header-actions {
     align-items: flex-start;
@@ -538,6 +543,25 @@
 
   .payment-layout {
     grid-template-columns: 1fr;
+  }
+
+  .payment-success {
+    min-height: calc(100svh - 120px);
+    padding: 0 4px;
+  }
+
+  .payment-success section {
+    padding: 42px 18px;
+  }
+
+  .payment-success-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .payment-success-actions button {
+    width: 100%;
+    min-height: 46px;
   }
 
   .payment-alert-backdrop {

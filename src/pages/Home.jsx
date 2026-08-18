@@ -2,6 +2,7 @@
 import DOMPurify from 'dompurify';
 import BrandLogo from '../components/BrandLogo';
 import GoogleProfileAlert from '../components/GoogleProfileAlert';
+import HomeHeroBanner from '../components/HomeHeroBanner';
 import { fetchCatalogCategories, fetchCatalogProducts } from '../api/catalog';
 import { fetchPublishedNews } from '../api/news';
 import { fetchProductRecommendations, recordProductView } from '../api/recommendations';
@@ -30,19 +31,6 @@ const HISTORY_SANITIZE_OPTIONS = {
   FORBID_ATTR: ['srcset'],
   ALLOW_UNKNOWN_PROTOCOLS: false,
 };
-const HERO_SLIDES = [
-  {
-    src: '/images/huypaso-forest-banner.png',
-    position: 'center 48%',
-    label: 'ทิวทัศน์ป่าบนพื้นที่สูง',
-  },
-  {
-    src: '/images/huypaso-village-banner.png',
-    position: 'center 58%',
-    label: 'ทิวทัศน์ชุมชนห้วยหยวกปากโซ',
-  },
-];
-
 function formatProductPrice(value) {
   return new Intl.NumberFormat('th-TH', {
     style: 'currency',
@@ -172,7 +160,6 @@ export default function Home({ user, onNavigate, onLogout }) {
   const [newsLoading, setNewsLoading] = useState(true);
   const [newsError, setNewsError] = useState('');
   const [historyHtml, setHistoryHtml] = useState('');
-  const [heroSlideIndex, setHeroSlideIndex] = useState(0);
   const profileRef = useRef(null);
   const featuredTrackRef = useRef(null);
 
@@ -181,18 +168,6 @@ export default function Home({ user, onNavigate, onLogout }) {
     const sanitized = content ? DOMPurify.sanitize(content, HISTORY_SANITIZE_OPTIONS).trim() : '';
     return resolveImageUrlsInHtml(sanitized);
   }, [historyHtml]);
-
-  useEffect(() => {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      return undefined;
-    }
-
-    const intervalId = window.setInterval(() => {
-      setHeroSlideIndex((current) => (current + 1) % HERO_SLIDES.length);
-    }, 6000);
-
-    return () => window.clearInterval(intervalId);
-  }, []);
 
   useEffect(() => {
     let active = true;
@@ -530,58 +505,7 @@ export default function Home({ user, onNavigate, onLogout }) {
       </header>
 
       <main id="top">
-        <section className="hero-section" aria-label="หน้าหลัก">
-          <div className="hero-backgrounds" aria-hidden="true">
-            {HERO_SLIDES.map((slide, index) => (
-              <div
-                key={slide.src}
-                className={`hero-background-slide ${index === heroSlideIndex ? 'is-active' : ''}`}
-                style={{
-                  backgroundImage: `url(${slide.src})`,
-                  backgroundPosition: slide.position,
-                }}
-              />
-            ))}
-          </div>
-          <div className="hero-overlay" />
-          <div className="site-shell hero-content">
-            <span className="hero-kicker">ผลิตภัณฑ์จากพื้นที่สูงเชียงราย</span>
-            <h1>ห้วยหยวกปากโซ</h1>
-            <p className="hero-tagline">ทำด้วยกัน ทำด้วยใจ</p>
-            <p className="hero-copy">
-              แหล่งรวมผลิตภัณฑ์คุณภาพจากเกษตรกรชุมชน สดใหม่ ปลอดสารพิษ
-              ส่งตรงจากไร่ถึงมือคุณ
-            </p>
-            <div className="hero-actions">
-              <button type="button" className="hero-primary" onClick={() => onNavigate('/products')}>
-                เลือกซื้อสินค้า
-              </button>
-              <button type="button" className="hero-secondary" onClick={() => scrollTo('history')}>
-                รู้จักชุมชนของเรา
-              </button>
-            </div>
-            <div className="hero-proof" aria-label="จุดเด่นของผลิตภัณฑ์">
-              <span>ปลูกบนพื้นที่สูง</span>
-              <span>สดใหม่จากชุมชน</span>
-              <span>สนับสนุนเกษตรกร</span>
-            </div>
-          </div>
-          <button type="button" className="scroll-cue" onClick={() => scrollTo('products')} aria-label="เลื่อนไปยังสินค้า">
-            ↓
-          </button>
-          <div className="hero-slide-dots" aria-label="เลือกภาพแบนเนอร์">
-            {HERO_SLIDES.map((slide, index) => (
-              <button
-                key={slide.src}
-                type="button"
-                className={index === heroSlideIndex ? 'is-active' : ''}
-                onClick={() => setHeroSlideIndex(index)}
-                aria-label={slide.label}
-                aria-current={index === heroSlideIndex ? 'true' : undefined}
-              />
-            ))}
-          </div>
-        </section>
+        <HomeHeroBanner onNavigate={onNavigate} onCommunity={() => scrollTo('history')} onScrollNext={() => scrollTo('products')} ariaLabel="หน้าหลัก" />
 
         <section className="impact-strip" aria-label="ภาพรวมชุมชน">
           <div className="site-shell impact-grid">

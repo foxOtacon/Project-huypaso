@@ -149,7 +149,13 @@ function AppRoutes() {
   }
 
   if (route.startsWith("/payment-success")) {
-    return <PaymentSuccessPage onNavigate={navigate} />;
+    return (
+      <PaymentSuccessPage
+        user={user}
+        onNavigate={navigate}
+        onLogout={handleLogout}
+      />
+    );
   }
 
   if (route.startsWith("/news")) {

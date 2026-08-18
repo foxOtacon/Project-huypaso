@@ -1,9 +1,7 @@
-﻿import { useEffect, useRef, useState } from 'react';
-import BrandLogo from '../components/BrandLogo';
+﻿import CustomerNavbar from '../components/CustomerNavbar';
 import { useCart } from '../context/CartContext';
 import { isCustomerUser } from '../utils/roles';
 import { getImageUrl as resolveImageUrl } from '../utils/imageUrl';
-import './Home.css';
 import './ProductsPage.css';
 import './CartPage.css';
 
@@ -22,186 +20,12 @@ function getImageUrl(item) {
   return resolveImageUrl(item.image_url, fallbackImage);
 }
 
-function ProfileMenuIcon({ name }) {
-  if (name === 'profile') {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" />
-        <path d="M4.5 20a7.5 7.5 0 0 1 15 0" />
-      </svg>
-    );
-  }
-
-  if (name === 'card') {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M4 7.5A2.5 2.5 0 0 1 6.5 5h11A2.5 2.5 0 0 1 20 7.5v9a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 16.5v-9Z" />
-        <path d="M4 9h16M7 15h4" />
-      </svg>
-    );
-  }
-
-  if (name === 'box') {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z" />
-        <path d="m4.5 8 7.5 4 7.5-4M12 12v8.5" />
-      </svg>
-    );
-  }
-
-  if (name === 'receipt') {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M7 3h10v18l-2-1.3-2 1.3-2-1.3-2 1.3-2-1.3V3Z" />
-        <path d="M9.5 8h5M9.5 12h5M9.5 16h3" />
-      </svg>
-    );
-  }
-
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M15.5 8.5 19 12l-3.5 3.5M19 12H9" />
-      <path d="M12 5H6.5A2.5 2.5 0 0 0 4 7.5v9A2.5 2.5 0 0 0 6.5 19H12" />
-    </svg>
-  );
-}
-
 export default function CartPage({ user, onNavigate, onLogout }) {
   const { items, itemCount, totalAmount, updateQuantity, removeItem, clearCart } = useCart();
-  const [profileOpen, setProfileOpen] = useState(false);
-  const profileRef = useRef(null);
-
-  useEffect(() => {
-    if (!profileOpen) return undefined;
-
-    function handlePointerDown(event) {
-      if (!profileRef.current?.contains(event.target)) {
-        setProfileOpen(false);
-      }
-    }
-
-    function handleKeyDown(event) {
-      if (event.key === 'Escape') {
-        setProfileOpen(false);
-      }
-    }
-
-    document.addEventListener('pointerdown', handlePointerDown);
-    document.addEventListener('keydown', handleKeyDown);
-
-    return () => {
-      document.removeEventListener('pointerdown', handlePointerDown);
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [profileOpen]);
-
-  const profileInitial = user?.full_name?.trim()?.charAt(0)?.toUpperCase() || 'U';
-  const isCustomer = isCustomerUser(user);
-  const profileMenuItems = [
-    { label: 'การสั่งซื้อของฉัน', path: '/order-status', icon: 'box' },
-    { label: 'บัญชีของฉัน', path: '/profile', icon: 'profile' },
-  ];
-
-  function goToProfilePage(path) {
-    setProfileOpen(false);
-    onNavigate(path);
-  }
 
   return (
     <div className="catalog-page cart-page">
-      <header className="site-header">
-        <div className="site-shell nav-shell">
-          <button type="button" className="brand-link" onClick={() => onNavigate('/')}>
-            <BrandLogo />
-            ห้วยหยวกปากโซ
-          </button>
-
-          <nav className="main-nav" aria-label="เมนูหลัก">
-            <button type="button" onClick={() => onNavigate('/')}>หน้าหลัก</button>
-            <button type="button" onClick={() => onNavigate('/products')}>สินค้า</button>
-            <button type="button" onClick={() => onNavigate('/')}>ข่าว</button>
-            <button type="button" onClick={() => onNavigate('/contact')}>ติดต่อ</button>
-          </nav>
-
-          <div className="account-actions">
-            {isCustomer && (
-              <button type="button" className="home-cart-button cart-home-active" onClick={() => onNavigate('/cart')}>
-                ตะกร้า
-                <span>{itemCount}</span>
-              </button>
-            )}
-
-            {user ? (
-              <div className="profile-menu" ref={profileRef}>
-                <button
-                  type="button"
-                  className="profile-trigger"
-                  aria-haspopup="menu"
-                  aria-expanded={profileOpen}
-                  onClick={() => setProfileOpen((open) => !open)}
-                >
-                  <span className="profile-avatar" aria-hidden="true">
-                    {profileInitial}
-                  </span>
-                  <span className="profile-name">{user.full_name}</span>
-                  <svg className="profile-chevron" viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="m7 10 5 5 5-5" />
-                  </svg>
-                </button>
-
-                {profileOpen && (
-                  <div className="profile-dropdown" role="menu">
-                    <div className="profile-dropdown-head">
-                      <span className="profile-avatar profile-avatar-large" aria-hidden="true">
-                        {profileInitial}
-                      </span>
-                      <div>
-                        <p>สวัสดี</p>
-                        <strong>{user.full_name}</strong>
-                      </div>
-                    </div>
-
-                    <div className="profile-dropdown-list">
-                      {profileMenuItems.map((item) => (
-                        <button
-                          type="button"
-                          role="menuitem"
-                          key={item.path}
-                          onClick={() => goToProfilePage(item.path)}
-                        >
-                          <span>{item.label}</span>
-                        </button>
-                      ))}
-                    </div>
-
-                    <button
-                      type="button"
-                      className="profile-logout"
-                      role="menuitem"
-                      onClick={() => {
-                        setProfileOpen(false);
-                        onLogout();
-                      }}
-                    >
-                      <span>ออกจากระบบ</span>
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <>
-                <button type="button" className="login-button" onClick={() => onNavigate('/login')}>
-                  เข้าสู่ระบบ
-                </button>
-                <button type="button" className="signup-button" onClick={() => onNavigate('/register')}>
-                  สมัครสมาชิก
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-      </header>
+      <CustomerNavbar user={user} onNavigate={onNavigate} onLogout={onLogout} />
 
       <main className="catalog-main">
         <section className="catalog-shell cart-layout">
@@ -292,5 +116,3 @@ export default function CartPage({ user, onNavigate, onLogout }) {
     </div>
   );
 }
-
-

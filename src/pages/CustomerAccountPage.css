@@ -213,6 +213,49 @@
     grid-template-columns: 1fr;
   }
 
+  .customer-order-main {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .customer-status-stack {
+    align-items: flex-start;
+  }
+
+  .customer-order-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .customer-empty-state {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .customer-empty-state button {
+    width: 100%;
+  }
+
+  .customer-modal-backdrop {
+    align-items: end;
+    padding: 0;
+  }
+
+  .customer-detail-modal {
+    width: 100%;
+    max-height: min(92svh, 100dvh);
+    border-radius: 22px 22px 0 0;
+  }
+
+  .customer-cancel-modal {
+    width: 100%;
+    padding: 24px 20px max(24px, env(safe-area-inset-bottom));
+    border-radius: 22px 22px 0 0;
+  }
+
+  .customer-cancel-modal div {
+    grid-template-columns: 1fr;
+  }
 }
 
 .customer-error,
@@ -1241,5 +1284,25 @@
     align-items: flex-start;
     flex-direction: column;
     gap: 6px;
+  }
+
+  .customer-order-main h2 {
+    font-size: 22px;
+  }
+
+  .customer-order-payment-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .customer-order-payment-actions button {
+    width: 100%;
+  }
+
+  .customer-detail-header,
+  .customer-detail-summary,
+  .customer-detail-info,
+  .customer-detail-items {
+    padding-inline: 18px;
   }
 }

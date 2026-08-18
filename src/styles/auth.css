@@ -343,7 +343,19 @@
 @media (max-width: 480px) {
   .auth-modal-backdrop {
     align-items: flex-end;
-    padding: 14px;
+    padding: 0;
+  }
+
+  .auth-modal-backdrop .auth-card {
+    width: 100%;
+    max-width: none;
+    max-height: calc(100dvh - env(safe-area-inset-top));
+    padding: 24px 20px max(24px, env(safe-area-inset-bottom));
+    border-radius: 20px 20px 0 0;
+  }
+
+  .auth-page {
+    padding: 16px;
   }
 
   .auth-card {

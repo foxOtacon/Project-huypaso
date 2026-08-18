@@ -739,6 +739,10 @@
 }
 
 @media (max-width: 460px) {
+  .account-titlebar h1 {
+    font-size: 17px;
+  }
+
   .account-hero {
     grid-template-columns: 1fr;
     text-align: left;

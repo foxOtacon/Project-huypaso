@@ -1,0 +1,104 @@
+/* Shared responsive foundation for customer and auth pages */
+
+html {
+  overflow-x: clip;
+}
+
+body {
+  overflow-x: clip;
+}
+
+img,
+video,
+svg,
+canvas {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Page shells */
+.site-shell,
+.catalog-shell,
+.payment-main,
+.news-main,
+.contact-main,
+.account-main,
+.customer-main {
+  min-width: 0;
+}
+
+.home-page,
+.catalog-page,
+.payment-page,
+.contact-page,
+.account-page,
+.customer-page,
+.news-page {
+  overflow-x: clip;
+}
+
+/* Access denied (App.jsx) */
+.admin-access-denied {
+  min-height: 100svh;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 16px;
+  padding: 32px 20px max(32px, env(safe-area-inset-bottom));
+  text-align: center;
+  color: #6b7280;
+}
+
+.home-btn {
+  min-height: 44px;
+  padding: 0 20px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: #315542;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.home-btn-primary {
+  border-color: #557669;
+  background: #557669;
+  color: #ffffff;
+}
+
+.home-btn-primary:hover {
+  background: #416254;
+}
+
+@media (max-width: 767.98px) {
+  .payment-main,
+  .news-main,
+  .contact-main,
+  .account-main,
+  .customer-main,
+  .catalog-shell {
+    width: min(100% - 28px, 100%);
+  }
+}
+
+@media (max-width: 575.98px) {
+  .payment-main,
+  .news-main,
+  .contact-main,
+  .account-main,
+  .customer-main,
+  .catalog-shell {
+    width: min(100% - 24px, 100%);
+  }
+
+  .admin-access-denied {
+    padding-inline: 16px;
+    font-size: 15px;
+  }
+
+  .home-btn {
+    width: min(100%, 280px);
+  }
+}

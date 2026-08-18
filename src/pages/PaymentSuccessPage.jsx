@@ -1,11 +1,14 @@
+import CustomerNavbar from '../components/CustomerNavbar';
 import './PaymentPage.css';
 
-export default function PaymentSuccessPage({ onNavigate }) {
+export default function PaymentSuccessPage({ user, onNavigate, onLogout }) {
   const params = new URLSearchParams(window.location.hash.split('?')[1] || '');
   const orderId = params.get('order_id');
 
   return (
     <div className="payment-page">
+      <CustomerNavbar user={user} onNavigate={onNavigate} onLogout={onLogout} />
+
       <main className="payment-main payment-success">
         <section>
           <p>Payment Success</p>

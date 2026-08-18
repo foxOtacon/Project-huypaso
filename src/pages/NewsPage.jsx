@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { fetchPublishedNews, fetchPublishedNewsById } from '../api/news';
 import CustomerNavbar from '../components/CustomerNavbar';
+import { HERO_SLIDES } from '../components/HomeHeroBanner';
 import Pagination from '../components/Pagination';
 import usePagination from '../hooks/usePagination';
 import { getImageUrl as resolveImageUrl } from '../utils/imageUrl';
@@ -78,6 +79,13 @@ export default function NewsPage({ route, user, onNavigate, onLogout }) {
   const otherNews = useMemo(() => news.slice(1), [news]);
   const newsPagination = usePagination(otherNews, 6, [newsId, news.length]);
 
+  const [bannerIndex, setBannerIndex] = useState(0);
+  useEffect(() => {
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined;
+    const id = window.setInterval(() => setBannerIndex((i) => (i + 1) % HERO_SLIDES.length), 6000);
+    return () => window.clearInterval(id);
+  }, []);
+
   function handleNewsPageChange(page) {
     newsPagination.setPage(page);
     window.requestAnimationFrame(() => {
@@ -88,9 +96,17 @@ export default function NewsPage({ route, user, onNavigate, onLogout }) {
   return (
     <div className="news-page">
       <CustomerNavbar user={user} onNavigate={onNavigate} onLogout={onLogout} />
+      
 
-      <main className="news-main">
-        <section className="news-shell news-heading">
+      <main id="news-content" className="news-main">
+        <section
+          className="news-shell news-heading"
+          style={{
+            backgroundImage: `linear-gradient(90deg, rgba(10, 38, 25, 0.9), rgba(20, 65, 43, 0.67) 58%, rgba(18, 58, 39, 0.35)), url(${HERO_SLIDES[bannerIndex].src})`,
+            backgroundPosition: HERO_SLIDES[bannerIndex].position,
+            backgroundSize: 'cover',
+          }}
+        >
           <p>เรื่องราวจากพื้นที่สูง</p>
           <h1>{newsId ? 'รายละเอียดข่าว' : 'ข่าวและประชาสัมพันธ์'}</h1>
           <span>ติดตามข่าวชุมชน โปรโมชั่น และกิจกรรมจากห้วยหยวกปากโซ</span>
