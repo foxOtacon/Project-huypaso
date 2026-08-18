@@ -146,7 +146,7 @@
   backdrop-filter: blur(6px);
 }
 
-.admin-notification-toast {
+.admin-notification-dialog {
   position: relative;
   z-index: 200;
   width: min(440px, 100%);
@@ -173,12 +173,12 @@
   font-weight: 900;
 }
 
-.admin-notification-toast strong {
+.admin-notification-dialog strong {
   color: #173c2b;
   font-size: 16px;
 }
 
-.admin-notification-toast p {
+.admin-notification-dialog p {
   margin: 5px 0 0;
   color: #52665d;
   font-size: 13px;
@@ -2058,7 +2058,7 @@
     font-size: 14px;
   }
 
-  .admin-notification-toast {
+  .admin-notification-dialog {
     width: 100%;
     padding: 24px 18px max(22px, env(safe-area-inset-bottom));
     border-radius: 20px 20px 0 0;
