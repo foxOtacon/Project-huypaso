@@ -14,6 +14,7 @@ import {
 import { formatCurrency } from '../../utils/dashboardStats';
 import { formatAddressForDisplay } from '../../utils/profileAddress';
 import { matchesSearch } from '../../utils/search';
+import { getImageUrl } from '../../utils/imageUrl';
 
 const PAYMENT_STATUS_OPTIONS = [
   { value: 'all', label: 'ทั้งหมด' },
@@ -288,7 +289,7 @@ export default function Transactions() {
                     </td>
                     <td>
                       {transaction.slip_image ? (
-                        <a className="transactions-slip-link" href={transaction.slip_image} target="_blank" rel="noreferrer">
+                        <a className="transactions-slip-link" href={getImageUrl(transaction.slip_image)} target="_blank" rel="noreferrer">
                           เปิดสลิป
                         </a>
                       ) : (
@@ -378,7 +379,7 @@ export default function Transactions() {
               {selectedTransaction.slip_image ? (
                 <section>
                   <h3>หลักฐานการชำระเงิน</h3>
-                  <a className="transactions-slip-link" href={selectedTransaction.slip_image} target="_blank" rel="noreferrer">
+                  <a className="transactions-slip-link" href={getImageUrl(selectedTransaction.slip_image)} target="_blank" rel="noreferrer">
                     เปิดสลิป
                   </a>
                 </section>

@@ -8,6 +8,7 @@ import { useCart } from '../context/CartContext';
 import usePagination from '../hooks/usePagination';
 import { isCustomerUser } from '../utils/roles';
 import { getSearchScore, normalizeSearchText } from '../utils/search';
+import { getImageUrl as resolveImageUrl } from '../utils/imageUrl';
 import './Home.css';
 import './ProductsPage.css';
 
@@ -19,17 +20,7 @@ const fallbackImages = [
 ];
 
 function getImageUrl(product, index) {
-  const imageUrl = product.image_url?.trim();
-
-  if (!imageUrl) {
-    return fallbackImages[index % fallbackImages.length];
-  }
-
-  if (imageUrl.startsWith('http') || imageUrl.startsWith('/')) {
-    return imageUrl;
-  }
-
-  return `/${imageUrl}`;
+  return resolveImageUrl(product.image_url, fallbackImages[index % fallbackImages.length]);
 }
 
 function formatPrice(value) {

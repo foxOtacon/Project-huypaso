@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { fetchPaymentSettings, savePaymentSettings } from '../../api/admin';
 import { THAI_BANKS } from '../../utils/thaiBanks';
+import { getImageUrl } from '../../utils/imageUrl';
 
 const PAYMENT_ERROR_TRANSLATIONS = {
   'Please complete every field for the selected payment method': 'กรุณากรอกข้อมูลของช่องทางการชำระเงินที่เลือกให้ครบทุกช่อง',
@@ -115,7 +116,7 @@ export default function PaymentSettings() {
       <div className="admin-payment-settings-grid">
         <section className="admin-payment-settings-card">
           <header><p>QR Payment</p><h3>พร้อมเพย์</h3></header>
-          <div className="admin-payment-qr-preview">{preview || qrUrl ? <img src={preview || qrUrl} alt="QR Code PromptPay ปัจจุบัน" /> : <span>ยังไม่มีรูป QR Code</span>}</div>
+          <div className="admin-payment-qr-preview">{preview || qrUrl ? <img src={getImageUrl(preview || qrUrl)} alt="QR Code PromptPay ปัจจุบัน" /> : <span>ยังไม่มีรูป QR Code</span>}</div>
           <label>เลขพร้อมเพย์<input value={form.promptpayNumber} onChange={(e) => setForm((current) => ({ ...current, promptpayNumber: e.target.value }))} /></label>
           <label>ชื่อบัญชี<input value={form.accountName} onChange={(e) => setForm((current) => ({ ...current, accountName: e.target.value }))} /></label>
           <label className="admin-payment-file">เปลี่ยนรูป QR Code<input type="file" accept="image/jpeg,image/png,image/webp" onChange={selectQr} /></label>

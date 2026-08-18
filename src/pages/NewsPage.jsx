@@ -3,6 +3,7 @@ import { fetchPublishedNews, fetchPublishedNewsById } from '../api/news';
 import CustomerNavbar from '../components/CustomerNavbar';
 import Pagination from '../components/Pagination';
 import usePagination from '../hooks/usePagination';
+import { getImageUrl as resolveImageUrl } from '../utils/imageUrl';
 import './Home.css';
 import './NewsPage.css';
 
@@ -19,17 +20,7 @@ function getNewsIdFromRoute(route) {
 }
 
 function getImageUrl(item, index = 0) {
-  const imageUrl = item?.image_url?.trim();
-
-  if (!imageUrl) {
-    return fallbackImages[index % fallbackImages.length];
-  }
-
-  if (imageUrl.startsWith('http') || imageUrl.startsWith('/')) {
-    return imageUrl;
-  }
-
-  return `/${imageUrl}`;
+  return resolveImageUrl(item?.image_url, fallbackImages[index % fallbackImages.length]);
 }
 
 function formatDate(value) {

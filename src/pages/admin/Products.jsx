@@ -11,6 +11,7 @@ import {
 } from '../../api/admin';
 import { formatCurrency } from '../../utils/dashboardStats';
 import { matchesSearch } from '../../utils/search';
+import { getImageUrl } from '../../utils/imageUrl';
 
 const EMPTY_FORM = {
   product_name: '',
@@ -330,7 +331,7 @@ export default function Products({ user }) {
                       <td>
                         <div className="products-name-cell">
                           {product.image_url ? (
-                            <img src={product.image_url} alt={product.product_name} />
+                            <img src={getImageUrl(product.image_url)} alt={product.product_name} />
                           ) : (
                             <div className="products-image-placeholder" aria-hidden="true" />
                           )}
@@ -451,7 +452,7 @@ export default function Products({ user }) {
               </label>
               {imagePreview ? (
                 <div className="products-image-preview products-form-wide">
-                  <img src={imagePreview} alt="ตัวอย่างรูปสินค้า" />
+                  <img src={getImageUrl(imagePreview)} alt="ตัวอย่างรูปสินค้า" />
                   <span>{imageFile ? imageFile.name : 'รูปภาพปัจจุบัน'}</span>
                 </div>
               ) : null}

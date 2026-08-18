@@ -11,6 +11,7 @@ import CustomerNavbar from '../components/CustomerNavbar';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { formatAddressForDisplay } from '../utils/profileAddress';
+import { getImageUrl } from '../utils/imageUrl';
 import { findThaiBank } from '../utils/thaiBanks';
 import './PaymentPage.css';
 
@@ -410,7 +411,7 @@ export default function PaymentPage({ user, onNavigate, onLogout }) {
 
               {promptPayQr && paymentMethod === 'promptpay' && promptPayQr.available_methods?.promptpay && (
                 <div className="payment-qr-box">
-                  <img src={promptPayQr.qr_code || promptPayQr.qrCode} alt="PromptPay QR Code" />
+                  <img src={getImageUrl(promptPayQr.qr_code || promptPayQr.qrCode)} alt="PromptPay QR Code" />
                   <strong>ชื่อบัญชี: {promptPayQr.account_name}</strong>
                   <span>หมายเลขพร้อมเพย์: {promptPayQr.promptpay_number}</span>
                   <button type="button" className="payment-copy-promptpay" onClick={copyPromptPayNumber}>{copiedPromptPay ? 'คัดลอกแล้ว' : 'คัดลอกหมายเลขพร้อมเพย์'}</button>

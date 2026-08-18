@@ -9,6 +9,7 @@ import { fetchHistoryContent } from '../api/siteContent';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { isCustomerUser } from '../utils/roles';
+import { getImageUrl, resolveImageUrlsInHtml } from '../utils/imageUrl';
 import './Home.css';
 import './ProductsPage.css';
 
@@ -51,13 +52,7 @@ function formatProductPrice(value) {
 }
 
 function getProductImage(product) {
-  const imageUrl = product.image_url?.trim();
-  if (!imageUrl) return FALLBACK_PRODUCT_IMAGE;
-  return imageUrl.startsWith('http') || imageUrl.startsWith('/') ? imageUrl : `/${imageUrl}`;
-}
-
-function getImageUrl(product) {
-  return getProductImage(product);
+  return getImageUrl(product.image_url, FALLBACK_PRODUCT_IMAGE);
 }
 
 const services = [
@@ -103,10 +98,7 @@ const fallbackNews = [
 ];
 
 function getNewsImage(item, index) {
-  const imageUrl = item?.image_url?.trim();
-
-  if (!imageUrl) return fallbackNews[index % fallbackNews.length].image;
-  return imageUrl.startsWith('http') || imageUrl.startsWith('/') ? imageUrl : `/${imageUrl}`;
+  return getImageUrl(item?.image_url, fallbackNews[index % fallbackNews.length].image);
 }
 
 function formatNewsDate(value) {
@@ -177,7 +169,8 @@ export default function Home({ user, onNavigate, onLogout }) {
 
   const sanitizedHistoryHtml = useMemo(() => {
     const content = String(historyHtml || '').trim();
-    return content ? DOMPurify.sanitize(content, HISTORY_SANITIZE_OPTIONS).trim() : '';
+    const sanitized = content ? DOMPurify.sanitize(content, HISTORY_SANITIZE_OPTIONS).trim() : '';
+    return resolveImageUrlsInHtml(sanitized);
   }, [historyHtml]);
 
   useEffect(() => {
@@ -344,7 +337,7 @@ export default function Home({ user, onNavigate, onLogout }) {
   }
 
   function openFeaturedProductDetail(product) {
-    setSelectedProduct({ ...product, imageUrl: getImageUrl(product) });
+    setSelectedProduct({ ...product, imageUrl: getProductImage(product) });
     if (token && isCustomerUser(user)) {
       recordProductView(token, product.product_id).catch(() => {});
     }

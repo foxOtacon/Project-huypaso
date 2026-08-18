@@ -2,6 +2,7 @@
 import BrandLogo from '../components/BrandLogo';
 import { useCart } from '../context/CartContext';
 import { isCustomerUser } from '../utils/roles';
+import { getImageUrl as resolveImageUrl } from '../utils/imageUrl';
 import './Home.css';
 import './ProductsPage.css';
 import './CartPage.css';
@@ -18,10 +19,7 @@ function formatPrice(value) {
 }
 
 function getImageUrl(item) {
-  const imageUrl = item.image_url?.trim();
-  if (!imageUrl) return fallbackImage;
-  if (imageUrl.startsWith('http') || imageUrl.startsWith('/')) return imageUrl;
-  return `/${imageUrl}`;
+  return resolveImageUrl(item.image_url, fallbackImage);
 }
 
 function ProfileMenuIcon({ name }) {

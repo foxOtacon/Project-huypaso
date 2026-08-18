@@ -41,6 +41,7 @@ import {
 } from 'ckeditor5';
 import 'ckeditor5/ckeditor5.css';
 import { fetchHistoryContent, updateHistoryContent } from '../../api/admin';
+import { getImageUrl } from '../../utils/imageUrl';
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api';
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
@@ -84,7 +85,7 @@ class HistoryImageUploadAdapter {
     }
     const url = payload.url || payload.data?.url;
     if (!url) throw new Error('เซิร์ฟเวอร์ไม่ส่ง URL ของรูปกลับมา');
-    return { default: url };
+    return { default: getImageUrl(url) };
   }
 
   abort() {

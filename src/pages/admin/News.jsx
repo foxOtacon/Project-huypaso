@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Pagination from '../../components/Pagination';
 import usePagination from '../../hooks/usePagination';
 import { matchesSearch } from '../../utils/search';
+import { getImageUrl } from '../../utils/imageUrl';
 import {
   createNews,
   deleteNews,
@@ -265,7 +266,7 @@ export default function News({ user }) {
                     <td className="admin-table-data-left">
                       <div className="products-name-cell">
                         {item.image_url ? (
-                          <img src={item.image_url} alt={item.title} />
+                          <img src={getImageUrl(item.image_url)} alt={item.title} />
                         ) : (
                           <div className="products-image-placeholder" aria-hidden="true" />
                         )}
@@ -349,7 +350,7 @@ export default function News({ user }) {
               </label>
               {imagePreview ? (
                 <div className="products-image-preview products-form-wide">
-                  <img src={imagePreview} alt="ตัวอย่างรูปข่าว" />
+                  <img src={getImageUrl(imagePreview)} alt="ตัวอย่างรูปข่าว" />
                   <span>{imageFile ? imageFile.name : 'รูปภาพปัจจุบัน'}</span>
                 </div>
               ) : null}
