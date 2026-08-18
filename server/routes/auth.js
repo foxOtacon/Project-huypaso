@@ -21,7 +21,15 @@ function ensureResetTable() {
       expires_at TIMESTAMPTZ NOT NULL,
       used_at TIMESTAMPTZ,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )`).catch((error) => { resetTablePromise = null; throw error; });
+    )`).catch((error) => {
+      resetTablePromise = null;
+      if (error.code === "42501" || error.code === "42P01") {
+        error.status = 503;
+        error.code = "PASSWORD_RESET_TABLE_REQUIRED";
+        error.message = "ยังไม่ได้ติดตั้งตาราง password_reset_tokens ในฐานข้อมูล";
+      }
+      throw error;
+    });
   }
   return resetTablePromise;
 }

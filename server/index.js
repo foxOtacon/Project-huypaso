@@ -171,7 +171,7 @@ app.use((error, req, res, _next) => {
   }
 
   if (error.status) {
-    res.status(error.status).json({ success: false, message: error.message });
+    res.status(error.status).json({ success: false, code: error.code, message: error.message });
     return;
   }
 

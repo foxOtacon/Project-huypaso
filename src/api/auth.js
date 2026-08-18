@@ -33,7 +33,22 @@ export async function login(email, password) {
 }
 
 export async function requestPasswordReset(email) {
-  return request('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email: email.trim().toLowerCase() }) });
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), 30000);
+  try {
+    return await request('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email: email.trim().toLowerCase() }),
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      throw new Error('ระบบส่งอีเมลใช้เวลานานเกินไป กรุณาตรวจสอบการตั้งค่า SMTP แล้วลองใหม่');
+    }
+    throw error;
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
 }
 
 export async function resetPassword(token, password) {
