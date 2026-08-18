@@ -135,18 +135,27 @@
   line-height: 1;
 }
 
-.admin-notification-toast {
+.admin-notification-backdrop {
   position: fixed;
-  right: 24px;
-  bottom: 24px;
-  z-index: 100;
-  width: min(380px, calc(100vw - 32px));
+  inset: 0;
+  z-index: 199;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(10, 28, 20, 0.58);
+  backdrop-filter: blur(6px);
+}
+
+.admin-notification-toast {
+  position: relative;
+  z-index: 200;
+  width: min(440px, 100%);
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   gap: 14px;
-  padding: 18px;
+  padding: 28px;
   border: 1px solid #d7e8df;
-  border-radius: 16px;
+  border-radius: 22px;
   background: #fff;
   box-shadow: 0 24px 60px rgba(17, 45, 32, 0.22);
   animation: admin-notification-in 240ms ease-out both;
@@ -204,6 +213,12 @@
   font-size: 12px;
   font-weight: 800;
   cursor: pointer;
+}
+
+.admin-notification-actions button.is-dismiss {
+  border: 1px solid #cbd8d1;
+  background: #fff;
+  color: #375548;
 }
 
 @keyframes admin-notification-in {
@@ -2044,9 +2059,14 @@
   }
 
   .admin-notification-toast {
-    right: 12px;
-    bottom: max(12px, env(safe-area-inset-bottom));
-    width: calc(100vw - 24px);
+    width: 100%;
+    padding: 24px 18px max(22px, env(safe-area-inset-bottom));
+    border-radius: 20px 20px 0 0;
+  }
+
+  .admin-notification-backdrop {
+    align-items: end;
+    padding: 0;
   }
 }
 

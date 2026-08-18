@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import BrandLogo from '../BrandLogo';
 import { fetchAdminPayments, fetchOrders } from '../../api/admin';
 import { useAuth } from '../../context/AuthContext';
 import '../../styles/admin.css';
 
-const NOTIFICATION_POLL_MS = 15000;
+const NOTIFICATION_POLL_MS = 10000;
 const SEEN_ORDERS_KEY = 'admin_seen_order_ids';
 const SEEN_PAYMENTS_KEY = 'admin_seen_payment_ids';
 
@@ -98,7 +98,6 @@ export default function AdminLayout({ route, user, onNavigate, onLogout, childre
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notificationCounts, setNotificationCounts] = useState({ orders: 0, payments: 0 });
   const [notification, setNotification] = useState(null);
-  const toastTimerRef = useRef(null);
   const activePath = route === '/admin/dashboard' ? '/admin' : route;
   const pageHeader = PAGE_HEADERS[route] || PAGE_HEADERS['/admin'];
 
@@ -141,8 +140,6 @@ export default function AdminLayout({ route, user, onNavigate, onLogout, childre
 
         if (newOrders.length || newPayments.length) {
           setNotification({ orders: newOrders.length, payments: newPayments.length });
-          window.clearTimeout(toastTimerRef.current);
-          toastTimerRef.current = window.setTimeout(() => setNotification(null), 8000);
         }
       } catch {
         // Individual admin pages display API errors; notification polling stays silent.
@@ -161,7 +158,6 @@ export default function AdminLayout({ route, user, onNavigate, onLogout, childre
     return () => {
       active = false;
       window.clearInterval(interval);
-      window.clearTimeout(toastTimerRef.current);
       document.removeEventListener('visibilitychange', handleVisibility);
     };
   }, [sessionValidated]);
@@ -239,19 +235,29 @@ export default function AdminLayout({ route, user, onNavigate, onLogout, childre
       </div>
 
       {notification ? (
-        <aside className="admin-notification-toast" role="status" aria-live="polite">
-          <button type="button" className="admin-notification-close" aria-label="ปิดการแจ้งเตือน" onClick={() => setNotification(null)}>×</button>
-          <div className="admin-notification-icon" aria-hidden="true">!</div>
-          <div>
-            <strong>มีรายการใหม่เข้ามา</strong>
-            {notification.orders > 0 ? <p>คำสั่งซื้อใหม่ {notification.orders} รายการ</p> : null}
-            {notification.payments > 0 ? <p>ธุรกรรมรอตรวจสอบ {notification.payments} รายการ</p> : null}
+        <div className="admin-notification-backdrop" role="presentation">
+          <section
+            className="admin-notification-dialog"
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="admin-notification-title"
+            aria-describedby="admin-notification-description"
+          >
+            <button type="button" className="admin-notification-close" aria-label="ปิดการแจ้งเตือน" onClick={() => setNotification(null)}>×</button>
+            <div className="admin-notification-icon" aria-hidden="true">!</div>
+            <p className="admin-notification-eyebrow">แจ้งเตือนรายการใหม่</p>
+            <h2 id="admin-notification-title">มีรายการใหม่เข้ามา</h2>
+            <div id="admin-notification-description" className="admin-notification-summary">
+              {notification.orders > 0 ? <p>คำสั่งซื้อใหม่ <strong>{notification.orders}</strong> รายการ</p> : null}
+              {notification.payments > 0 ? <p>ธุรกรรมใหม่ <strong>{notification.payments}</strong> รายการ</p> : null}
+            </div>
             <div className="admin-notification-actions">
               {notification.orders > 0 ? <button type="button" onClick={() => { setNotification(null); handleNavigate('/admin/orders'); }}>ดูคำสั่งซื้อ</button> : null}
               {notification.payments > 0 ? <button type="button" onClick={() => { setNotification(null); handleNavigate('/admin/transactions'); }}>ดูธุรกรรม</button> : null}
+              <button type="button" className="is-dismiss" onClick={() => setNotification(null)}>รับทราบ</button>
             </div>
-          </div>
-        </aside>
+          </section>
+        </div>
       ) : null}
     </div>
   );
