@@ -1,5 +1,6 @@
 const paymentModel = require("../models/paymentModel");
 const paymentSettingsModel = require("../models/paymentSettingsModel");
+const { createSignedImageUrl, uploadImage } = require('./storageService');
 const {
   PAYMENT_EXPIRATION_MINUTES,
   cancelExpiredUnpaidOrders,
@@ -125,11 +126,20 @@ async function uploadSlip({ user, orderId, file, paymentMethod = "promptpay" }) 
     throw error;
   }
 
+  const extension = file.mimetype === 'image/png' ? 'png' : 'jpg';
+  const slipImage = await uploadImage({
+    buffer: file.buffer,
+    contentType: file.mimetype,
+    fileName: file.originalname,
+    folder: 'slips',
+    extension,
+  });
+
   return paymentModel.createSlipPayment({
     orderId: order.order_id,
     userId: user.user_id,
     amount: Number(order.total_amount || 0),
-    slipImage: `/uploads/slips/${file.filename}`,
+    slipImage,
     paymentMethod,
   });
 }
@@ -142,12 +152,20 @@ async function cancelOrder(user, orderId) {
   });
 }
 
+async function listAdminPayments() {
+  const payments = await paymentModel.listAdminPayments();
+  return Promise.all(payments.map(async (payment) => ({
+    ...payment,
+    slip_image: payment.slip_image ? await createSignedImageUrl(payment.slip_image) : null,
+  })));
+}
+
 module.exports = {
   createOrder,
   generatePromptPayQr,
   uploadSlip,
   cancelOrder,
-  listAdminPayments: paymentModel.listAdminPayments,
+  listAdminPayments,
   approvePayment: paymentModel.approvePayment,
   rejectPayment: paymentModel.rejectPayment,
 };

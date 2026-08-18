@@ -1,36 +1,13 @@
 const express = require("express");
 const multer = require("multer");
-const fs = require("fs");
-const path = require("path");
 const asyncHandler = require("../utils/asyncHandler");
 const { authenticate, authorize } = require("../middleware/auth");
 const paymentSettingsModel = require("../models/paymentSettingsModel");
+const { deleteStoredImage, uploadImage } = require('../services/storageService');
 
 const router = express.Router();
-const uploadDir = path.join(__dirname, "..", "uploads", "payment-settings");
-async function deletePreviousQrImage(imageUrl) {
-  const prefix = '/uploads/payment-settings/';
-  if (!imageUrl?.startsWith(prefix)) return;
-
-  const fileName = path.basename(imageUrl);
-  if (!fileName || imageUrl !== prefix + fileName) return;
-
-  try {
-    await fs.promises.unlink(path.join(uploadDir, fileName));
-  } catch (error) {
-    if (error.code !== 'ENOENT') throw error;
-  }
-}
-
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => { fs.mkdirSync(uploadDir, { recursive: true }); cb(null, uploadDir); },
-  filename: (_req, file, cb) => {
-    const base = path.parse(file.originalname).name.toLowerCase().replace(/[^a-z0-9_-]+/g, "-").slice(0, 40) || "promptpay-qr";
-    cb(null, `${Date.now()}-${Math.round(Math.random() * 1e9)}-${base}${path.extname(file.originalname).toLowerCase()}`);
-  },
-});
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
     if (["image/jpeg", "image/png", "image/webp"].includes(file.mimetype)) {
@@ -67,10 +44,19 @@ router.put("/", authenticate, authorize("admin"), upload.single("qr"), asyncHand
     res.status(400).json({ success: false, message: "กรุณาอัปโหลดรูป QR Code พร้อมเพย์" });
     return;
   }
+  const qrImageUrl = req.file
+    ? await uploadImage({
+        buffer: req.file.buffer,
+        contentType: req.file.mimetype,
+        fileName: req.file.originalname,
+        folder: 'payment-settings',
+        extension: req.file.mimetype === 'image/webp' ? 'webp' : req.file.mimetype === 'image/png' ? 'png' : 'jpg',
+      })
+    : null;
   const settings = await paymentSettingsModel.updatePaymentSettings({
     promptpayNumber,
     accountName,
-    qrImageUrl: req.file ? `/uploads/payment-settings/${req.file.filename}` : null,
+    qrImageUrl,
     bankName,
     bankAccountNumber,
     bankAccountName,
@@ -82,7 +68,7 @@ router.put("/", authenticate, authorize("admin"), upload.single("qr"), asyncHand
     throw error;
   }
   if (req.file && existing?.qr_image_url !== settings.qr_image_url) {
-    await deletePreviousQrImage(existing?.qr_image_url);
+    await deleteStoredImage(existing?.qr_image_url);
   }
   res.json({ success: true, data: settings });
 }));

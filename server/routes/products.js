@@ -5,6 +5,7 @@ const { query } = require("../config/db");
 const { authenticate, authorize } = require("../middleware/auth");
 const createCrudController = require("../utils/crudController");
 const asyncHandler = require("../utils/asyncHandler");
+const { deleteStoredImage } = require('../services/storageService');
 
 const router = express.Router();
 
@@ -30,6 +31,10 @@ function resolveLocalProductImage(imageUrl) {
 
 async function removeReplacedProductImage(previous, updated) {
   if (!previous?.image_url || previous.image_url === updated?.image_url) return;
+  if (previous.image_url.includes('/storage/v1/object/public/')) {
+    await deleteStoredImage(previous.image_url);
+    return;
+  }
 
   const oldImagePath = resolveLocalProductImage(previous.image_url);
   if (!oldImagePath) return;

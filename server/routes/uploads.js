@@ -1,7 +1,6 @@
 const express = require("express");
-const fs = require("fs/promises");
-const path = require("path");
 const asyncHandler = require("../utils/asyncHandler");
+const { uploadImage } = require('../services/storageService');
 
 const multer = require('multer');
 const { authenticate, authorize } = require('../middleware/auth');
@@ -30,15 +29,6 @@ const historyImageUpload = multer({
   },
 });
 
-function sanitizeBaseName(fileName = "image") {
-  const parsed = path.parse(fileName);
-  return parsed.name
-    .toLowerCase()
-    .replace(/[^a-z0-9_-]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 40) || "image";
-}
-
 async function saveImageUpload({ fileName, dataUrl, folder }) {
   const match = /^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/.exec(dataUrl || "");
 
@@ -64,30 +54,24 @@ async function saveImageUpload({ fileName, dataUrl, folder }) {
     throw error;
   }
 
-  const uploadDir = path.join(__dirname, "..", "uploads", folder);
-  await fs.mkdir(uploadDir, { recursive: true });
-
-  const safeName = sanitizeBaseName(fileName);
-  const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1e9)}-${safeName}.${extension}`;
-  const filePath = path.join(uploadDir, uniqueName);
-
-  await fs.writeFile(filePath, buffer);
-
-  return `/uploads/${folder}/${uniqueName}`;
+  return uploadImage({ buffer, contentType: mimeType, fileName, folder, extension });
 }
 
 async function saveHistoryImage(file) {
   const extension = ALLOWED_IMAGE_TYPES.get(file.mimetype);
-  const uploadDir = path.join(__dirname, '..', 'uploads', 'history');
-  await fs.mkdir(uploadDir, { recursive: true });
-  const safeName = sanitizeBaseName(file.originalname);
-  const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1e9)}-${safeName}.${extension}`;
-  await fs.writeFile(path.join(uploadDir, uniqueName), file.buffer);
-  return `/uploads/history/${uniqueName}`;
+  return uploadImage({
+    buffer: file.buffer,
+    contentType: file.mimetype,
+    fileName: file.originalname,
+    folder: 'history',
+    extension,
+  });
 }
 
 router.post(
   "/product-image",
+  authenticate,
+  authorize('admin'),
   asyncHandler(async (req, res) => {
     const { fileName, dataUrl } = req.body;
     const url = await saveImageUpload({ fileName, dataUrl, folder: "products" });
@@ -103,6 +87,7 @@ router.post(
 
 router.post(
   "/payment-slip",
+  authenticate,
   asyncHandler(async (req, res) => {
     const { fileName, dataUrl } = req.body;
     const url = await saveImageUpload({ fileName, dataUrl, folder: "payments" });
@@ -118,6 +103,8 @@ router.post(
 
 router.post(
   "/news-image",
+  authenticate,
+  authorize('admin'),
   asyncHandler(async (req, res) => {
     const { fileName, dataUrl } = req.body;
     const url = await saveImageUpload({ fileName, dataUrl, folder: "news" });
