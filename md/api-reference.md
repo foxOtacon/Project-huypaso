@@ -296,7 +296,7 @@ Response ของการอ่านทั้งหมด:
   "price": 250,
   "unit": "ถุง",
   "image_url": "/uploads/products/coffee.jpg",
-  "production_source": "ห้วยหยวกปากโซ",
+  "production_source": "ห้วยหยวกป่าโซ",
   "stock_quantity": 20,
   "created_by": 1
 }

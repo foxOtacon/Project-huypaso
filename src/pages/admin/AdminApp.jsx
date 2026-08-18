@@ -52,6 +52,8 @@ function AdminPageContent({ route, user }) {
     return <News user={user} />;
   }
 
+  
+
   if (route === '/admin/users') {
     return <Users currentUser={user} />;
   }

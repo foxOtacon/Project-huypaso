@@ -278,6 +278,7 @@ export async function fetchNews() {
   return res.data || [];
 }
 
+
 export async function createNews(payload) {
   const res = await request('/news', {
     method: 'POST',

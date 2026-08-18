@@ -34,6 +34,10 @@ export default function CustomerNavbar({ user, onNavigate, onLogout }) {
     { label: 'การสั่งซื้อของฉัน', path: '/order-status' },
     { label: 'บัญชีของฉัน', path: '/profile' },
   ];
+  const isAdmin = user?.role === 'admin';
+  if (isAdmin) {
+    profileMenuItems.unshift({ label: 'แผงผู้ดูแลระบบ', path: '/admin' });
+  }
 
   useEffect(() => {
     const updateCurrentPath = () => setCurrentPath(window.location.hash.slice(1).split('?')[0] || '/');
@@ -86,7 +90,7 @@ export default function CustomerNavbar({ user, onNavigate, onLogout }) {
         <div className="site-shell nav-shell">
         <button type="button" className="brand-link" onClick={() => onNavigate('/')}>
           <BrandLogo />
-          ห้วยหยวกปากโซ
+          ห้วยหยวกป่าโซ
         </button>
 
         <nav className="main-nav" aria-label="เมนูหลัก">

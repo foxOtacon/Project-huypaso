@@ -413,7 +413,7 @@ export default function Home({ user, onNavigate, onLogout }) {
         <div className="site-shell nav-shell">
           <button type="button" className="brand-link" onClick={() => scrollTo('top')}>
             <BrandLogo />
-            ห้วยหยวกปากโซ
+            ห้วยหยวกป่าโซ
           </button>
 
           <nav className="main-nav" aria-label="เมนูหลัก">
@@ -600,7 +600,7 @@ export default function Home({ user, onNavigate, onLogout }) {
               <p>
                 {featuredStrategy === 'personalized'
                   ? 'แนะนำจากหมวดหมู่ ความถี่ และความล่าสุดของสินค้าที่คุณเปิดดู'
-                  : 'สินค้าคุณภาพจากทีมเกษตรกรห้วยหยวกปากโซ เลือกซื้อเพื่อสนับสนุนชุมชนเกษตรกร'}
+                  : 'สินค้าคุณภาพจากทีมเกษตรกรห้วยหยวกป่าโซ เลือกซื้อเพื่อสนับสนุนชุมชนเกษตรกร'}
               </p>
             </div>
 
@@ -644,7 +644,7 @@ export default function Home({ user, onNavigate, onLogout }) {
                       </p>
                     ) : null}
                     <p className="product-description">
-                      {product.description || 'ผลิตภัณฑ์คุณภาพจากชุมชนห้วยหยวกปากโซ'}
+                      {product.description || 'ผลิตภัณฑ์คุณภาพจากชุมชนห้วยหยวกป่าโซ'}
                     </p>
                     
                     <div className="product-footer">
@@ -720,7 +720,7 @@ export default function Home({ user, onNavigate, onLogout }) {
             <div className="section-heading reveal-on-scroll">
               <span className="section-kicker">เรื่องราวล่าสุด</span>
               <h2>ข่าวและกิจกรรม</h2>
-              <p>อัปเดตข่าวสารและกิจกรรมล่าสุดจากชุมชนห้วยหยวกปากโซ</p>
+              <p>อัปเดตข่าวสารและกิจกรรมล่าสุดจากชุมชนห้วยหยวกป่าโซ</p>
             </div>
 
             <div className="news-grid">
@@ -792,7 +792,7 @@ export default function Home({ user, onNavigate, onLogout }) {
               </div>
 
               <h2 id="catalog-detail-title">{selectedProduct.product_name}</h2>
-              <p>{selectedProduct.description || 'ผลิตภัณฑ์คุณภาพจากชุมชนห้วยหยวกปากโซ'}</p>
+              <p>{selectedProduct.description || 'ผลิตภัณฑ์คุณภาพจากชุมชนห้วยหยวกป่าโซ'}</p>
 
               {selectedProduct.production_source && (
                 <div className="catalog-detail-block">
@@ -829,7 +829,7 @@ export default function Home({ user, onNavigate, onLogout }) {
       )}
 
       <footer id="contact" className="site-footer">
-        <p>© 2026 ห้วยหยวกปากโซ. All rights reserved.</p>
+        <p>© 2026 ห้วยหยวกป่าโซ. All rights reserved.</p>
       </footer>
     </div>
   );

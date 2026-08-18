@@ -60,7 +60,7 @@ test("serializeRecommendation normalizes database numeric values", () => {
     price: "150.00",
     unit: "ถุง",
     image_url: "/coffee.png",
-    production_source: "ห้วยหยวกปากโซ",
+    production_source: "ห้วยหยวกป่าโซ",
     stock_quantity: "8",
     status: "active",
     personal_view_count: 1,

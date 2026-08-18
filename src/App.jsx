@@ -78,8 +78,10 @@ function AppRoutes() {
 
   useEffect(() => {
     if (loading || user?.role !== "admin") return;
-    if (CUSTOMER_ROUTES.includes(routePath)) {
-      navigate("/admin");
+    // Only automatically redirect admins from the public homepage to the admin dashboard.
+    // Allow admins to visit customer-facing routes like /products, /news, /contact.
+    if (routePath === '/') {
+      navigate('/admin');
     }
   }, [loading, user, routePath, navigate]);
 

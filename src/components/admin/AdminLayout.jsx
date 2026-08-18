@@ -177,7 +177,7 @@ export default function AdminLayout({ route, user, onNavigate, onLogout, childre
         <div className="admin-sidebar-brand">
           <BrandLogo className="brand-logo-admin" />
           <div>
-            <h2>ห้วยหยวกปากโซ</h2>
+            <h2>ห้วยหยวกป่าโซ</h2>
             <p>Admin Panel</p>
           </div>
         </div>

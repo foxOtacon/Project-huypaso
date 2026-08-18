@@ -244,7 +244,7 @@ export default function ProductsPage({ user, onNavigate, onLogout }) {
         <div className="site-shell nav-shell">
           <button type="button" className="brand-link" onClick={() => onNavigate('/')}>
             <BrandLogo />
-            ห้วยหยวกปากโซ
+            ห้วยหยวกป่าโซ
           </button>
 
           <nav className="main-nav" aria-label="เมนูหลัก">
@@ -338,7 +338,7 @@ export default function ProductsPage({ user, onNavigate, onLogout }) {
           <div className="catalog-hero-copy">
             <span className="catalog-eyebrow">ตลาดชุมชนพื้นที่สูง</span>
             <h1>สินค้าจากใจ<br />ส่งตรงจากชุมชน</h1>
-            <p>คัดสรรชา กาแฟ และผลผลิตคุณภาพจากเกษตรกรห้วยหยวกปากโซ ทุกการสั่งซื้อช่วยสร้างรายได้และดูแลผืนป่าไปพร้อมกัน</p>
+            <p>คัดสรรชา กาแฟ และผลผลิตคุณภาพจากเกษตรกรห้วยหยวกป่าโซ ทุกการสั่งซื้อช่วยสร้างรายได้และดูแลผืนป่าไปพร้อมกัน</p>
             <div className="catalog-benefits" aria-label="จุดเด่นของสินค้า">
               <span>ผลผลิตจากชุมชน</span>
               <span>คัดสรรคุณภาพ</span>
@@ -429,7 +429,7 @@ export default function ProductsPage({ user, onNavigate, onLogout }) {
                       </div>
                       <h2>{product.product_name}</h2>
                       <p className="catalog-card-description">
-                        {product.description || 'ผลิตภัณฑ์คุณภาพจากชุมชนห้วยหยวกปากโซ'}
+                        {product.description || 'ผลิตภัณฑ์คุณภาพจากชุมชนห้วยหยวกป่าโซ'}
                       </p>
                       <button
                         type="button"
@@ -495,7 +495,7 @@ export default function ProductsPage({ user, onNavigate, onLogout }) {
               </div>
 
               <h2 id="catalog-detail-title">{selectedProduct.product_name}</h2>
-              <p>{selectedProduct.description || 'ผลิตภัณฑ์คุณภาพจากชุมชนห้วยหยวกปากโซ'}</p>
+              <p>{selectedProduct.description || 'ผลิตภัณฑ์คุณภาพจากชุมชนห้วยหยวกป่าโซ'}</p>
 
               {selectedProduct.production_source && (
                 <div className="catalog-detail-block">

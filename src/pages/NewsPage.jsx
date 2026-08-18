@@ -109,7 +109,7 @@ export default function NewsPage({ route, user, onNavigate, onLogout }) {
         >
           <p>เรื่องราวจากพื้นที่สูง</p>
           <h1>{newsId ? 'รายละเอียดข่าว' : 'ข่าวและประชาสัมพันธ์'}</h1>
-          <span>ติดตามข่าวชุมชน โปรโมชั่น และกิจกรรมจากห้วยหยวกปากโซ</span>
+          <span>ติดตามข่าวชุมชน โปรโมชั่น และกิจกรรมจากห้วยหยวกป่าโซ</span>
           {!newsId ? (
             <div className="news-heading-highlights" aria-label="ประเภทข่าวสาร">
               <span>ข่าวชุมชน</span>

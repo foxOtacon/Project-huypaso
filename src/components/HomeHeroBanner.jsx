@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 
 export const HERO_SLIDES = [
   { src: '/images/huypaso-forest-banner.png', position: 'center 48%', label: 'ทิวทัศน์ป่าบนพื้นที่สูง' },
-  { src: '/images/huypaso-village-banner.png', position: 'center 58%', label: 'ทิวทัศน์ชุมชนห้วยหยวกปากโซ' },
+  { src: '/images/huypaso-village-banner.png', position: 'center 58%', label: 'ทิวทัศน์ชุมชนห้วยหยวกป่าโซ' },
 ];
 
 export default function HomeHeroBanner({ onNavigate, onCommunity, onScrollNext, ariaLabel = 'แบนเนอร์ชุมชน' }) {
@@ -24,7 +24,7 @@ export default function HomeHeroBanner({ onNavigate, onCommunity, onScrollNext, 
       <div className="hero-overlay" />
       <div className="site-shell hero-content">
         <span className="hero-kicker">ผลิตภัณฑ์จากพื้นที่สูงเชียงราย</span>
-        <h1>ห้วยหยวกปากโซ</h1>
+        <h1>ห้วยหยวกป่าโซ</h1>
         <p className="hero-tagline">ทำด้วยกัน ทำด้วยใจ</p>
         <p className="hero-copy">แหล่งรวมผลิตภัณฑ์คุณภาพจากเกษตรกรชุมชน สดใหม่ ปลอดสารพิษ ส่งตรงจากไร่ถึงมือคุณ</p>
         <div className="hero-actions">

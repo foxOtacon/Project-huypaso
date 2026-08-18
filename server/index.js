@@ -18,6 +18,7 @@ const paymentRoutes = require("./routes/payment");
 const paymentSettingsRoutes = require("./routes/paymentSettings");
 const adminPaymentRoutes = require("./routes/adminPayment");
 const adminAnalyticsRoutes = require("./routes/adminAnalytics");
+const adminContactsRoutes = require("./routes/adminContacts");
 const newsRoutes = require("./routes/news");
 const salesPredictionRoutes = require("./routes/salesPrediction");
 const userProductViewsRoutes = require("./routes/userProductViews");
@@ -26,6 +27,7 @@ const uploadsRoutes = require("./routes/uploads");
 const shippingCarriersRoutes = require("./routes/shippingCarriers");
 const automationRoutes = require("./routes/automation");
 const siteContentRoutes = require("./routes/siteContent");
+const contactRoutes = require("./routes/contact");
 const { startOrderExpirationJob } = require("./services/orderExpirationService");
 
 const app = express();
@@ -114,6 +116,7 @@ app.use("/api/payment", paymentRoutes);
 app.use("/api/payment-settings", paymentSettingsRoutes);
 app.use("/api/admin/analytics", adminAnalyticsRoutes);
 app.use("/api/admin", adminPaymentRoutes);
+app.use("/api/admin/contacts", adminContactsRoutes);
 app.use("/api/sales-prediction", salesPredictionRoutes);
 app.use("/api/user-product-views", userProductViewsRoutes);
 app.use("/api/product-recommendations", productRecommendationsRoutes);
@@ -121,6 +124,7 @@ app.use("/api/uploads", uploadsRoutes);
 app.use("/api/shipping-carriers", shippingCarriersRoutes);
 app.use("/api/automation", automationRoutes);
 app.use("/api/site-content", siteContentRoutes);
+app.use("/api/contact", contactRoutes);
 
 app.use((_req, res) => {
   res.status(404).json({ success: false, message: "Route not found" });

@@ -6,7 +6,7 @@ const CONTACT_ITEMS = [
   {
     icon: 'pin',
     label: 'ที่อยู่',
-    lines: ['ชุมชนห้วยหยวกปากโซ', 'บ้านห้วยหยวก ตำบลแม่แรม อำเภอแม่ริม จังหวัดเชียงใหม่ 50180'],
+    lines: ['ชุมชนห้วยหยวกป่าโซ', 'บ้านห้วยหยวก ตำบลแม่แรม อำเภอแม่ริม จังหวัดเชียงใหม่ 50180'],
   },
   { icon: 'phone', label: 'โทรศัพท์', lines: ['08X-XXX-XXXX'], href: 'tel:08XXXXXXXX' },
   { icon: 'mail', label: 'อีเมล', lines: ['contact@huayyuak.com'], href: 'mailto:contact@huayyuak.com' },
@@ -32,8 +32,22 @@ export default function ContactPage({ user, onNavigate, onLogout }) {
 
   function handleSubmit(event) {
     event.preventDefault();
-    setSent(true);
-    setForm((current) => ({ ...current, subject: '', message: '' }));
+    (async () => {
+      try {
+        const res = await fetch((import.meta.env.VITE_API_URL || '/api') + '/contact', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(form),
+        });
+        if (!res.ok) throw new Error('ไม่สามารถส่งข้อความได้');
+        setSent(true);
+        setForm((current) => ({ ...current, subject: '', message: '' }));
+      } catch (err) {
+        // keep UI simple: mark as not sent and surface nothing more here
+        setSent(false);
+        alert(err.message || 'เกิดข้อผิดพลาดขณะส่งข้อความ');
+      }
+    })();
   }
 
   return (
