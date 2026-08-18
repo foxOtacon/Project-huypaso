@@ -1,16 +1,24 @@
-const THAI_ADDRESS_BASE_URL =
-  'https://raw.githubusercontent.com/kongvut/thai-province-data/refs/heads/master/api/latest';
+const THAI_ADDRESS_BASE_URLS = [
+  'https://cdn.jsdelivr.net/gh/kongvut/thai-province-data@master/api/latest',
+  'https://raw.githubusercontent.com/kongvut/thai-province-data/refs/heads/master/api/latest',
+];
 
 let thaiAddressDataPromise;
 
 async function fetchJson(fileName) {
-  const response = await fetch(`${THAI_ADDRESS_BASE_URL}/${fileName}`);
+  let lastError;
 
-  if (!response.ok) {
-    throw new Error(`Unable to load ${fileName} (${response.status})`);
+  for (const baseUrl of THAI_ADDRESS_BASE_URLS) {
+    try {
+      const response = await fetch(`${baseUrl}/${fileName}`);
+      if (response.ok) return response.json();
+      lastError = new Error(`Unable to load ${fileName} (${response.status})`);
+    } catch (error) {
+      lastError = error;
+    }
   }
 
-  return response.json();
+  throw lastError || new Error(`Unable to load ${fileName}`);
 }
 
 export function fetchThaiAddressData() {
