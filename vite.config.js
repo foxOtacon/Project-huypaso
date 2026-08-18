@@ -4,9 +4,6 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
 
-  // เว็บจริงอยู่ที่ https://student.crru.ac.th/huyyuakpaso/
-  base: '/huyyuakpaso/',
-
   // ใช้เฉพาะตอน npm run dev
   server: {
     proxy: {
