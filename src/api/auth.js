@@ -32,6 +32,14 @@ export async function login(email, password) {
   });
 }
 
+export async function requestPasswordReset(email) {
+  return request('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email: email.trim().toLowerCase() }) });
+}
+
+export async function resetPassword(token, password) {
+  return request('/auth/reset-password', { method: 'POST', body: JSON.stringify({ token, password }) });
+}
+
 export async function loginWithGoogle(credential) {
   return request('/auth/google', {
     method: 'POST',

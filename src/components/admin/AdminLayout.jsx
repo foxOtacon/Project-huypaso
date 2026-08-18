@@ -109,6 +109,7 @@ export default function AdminLayout({ route, user, onNavigate, onLogout, childre
   useEffect(() => {
     let active = true;
     let polling = false;
+    let initialCheck = true;
 
     async function checkNotifications() {
       if (!sessionValidated || polling || document.visibilityState === 'hidden') return;
@@ -138,7 +139,15 @@ export default function AdminLayout({ route, user, onNavigate, onLogout, childre
         saveSeenIds(SEEN_ORDERS_KEY, currentOrderIds);
         saveSeenIds(SEEN_PAYMENTS_KEY, currentPaymentIds);
 
-        if (newOrders.length || newPayments.length) {
+        if (initialCheck) {
+          initialCheck = false;
+          if (pendingOrders.length || pendingPayments.length) {
+            setNotification({
+              orders: pendingOrders.length,
+              payments: pendingPayments.length,
+            });
+          }
+        } else if (newOrders.length || newPayments.length) {
           setNotification({ orders: newOrders.length, payments: newPayments.length });
         }
       } catch {

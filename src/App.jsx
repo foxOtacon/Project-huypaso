@@ -7,6 +7,7 @@ import CartPage from "./pages/CartPage";
 import ContactPage from "./pages/ContactPage";
 import { isAdminRoute } from "./pages/admin/adminRoutes";
 import CustomerAccountPage from "./pages/CustomerAccountPage";
+import ForgotPassword from "./pages/ForgotPassword";
 import GoogleCallback from "./pages/GoogleCallback";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
@@ -16,6 +17,7 @@ import PaymentSuccessPage from "./pages/PaymentSuccessPage";
 import ProductsPage from "./pages/ProductsPage";
 import ProfilePage from "./pages/ProfilePage";
 import Register from "./pages/Register";
+import ResetPassword from "./pages/ResetPassword";
 import { isCustomerUser } from "./utils/roles";
 
 const CUSTOMER_ACCOUNT_ROUTES = [
@@ -33,6 +35,8 @@ const CUSTOMER_ROUTES = [
   "/payment-success",
   "/login",
   "/register",
+  "/forgot-password",
+  "/reset-password",
   "/auth/google/callback",
   ...CUSTOMER_ACCOUNT_ROUTES,
 ];
@@ -74,10 +78,10 @@ function AppRoutes() {
 
   useEffect(() => {
     if (loading || user?.role !== "admin") return;
-    if (CUSTOMER_ROUTES.includes(route)) {
+    if (CUSTOMER_ROUTES.includes(routePath)) {
       navigate("/admin");
     }
-  }, [loading, user, route, navigate]);
+  }, [loading, user, routePath, navigate]);
 
   useEffect(() => {
     if (loading || !user) return;
@@ -94,7 +98,7 @@ function AppRoutes() {
     );
   }
 
-  if (user?.role === "admin" && CUSTOMER_ROUTES.includes(route)) {
+  if (user?.role === "admin" && CUSTOMER_ROUTES.includes(routePath)) {
     return (
       <div className="app-loading">
         <p>กำลังเข้าสู่แดชบอร์ด...</p>
@@ -216,6 +220,10 @@ function AppRoutes() {
           />
         </>
       );
+    case "/forgot-password":
+      return <><Home user={user} onNavigate={navigate} onLogout={handleLogout} /><ForgotPassword onNavigate={navigate} variant="modal" onClose={goHome} /></>;
+    case "/reset-password":
+      return <><Home user={user} onNavigate={navigate} onLogout={handleLogout} /><ResetPassword route={route} onNavigate={navigate} variant="modal" onClose={goHome} /></>;
     case "/payment":
     case "/order-status":
     case "/payment-status":

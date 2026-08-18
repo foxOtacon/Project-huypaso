@@ -1,12 +1,34 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
-const { query } = require("../config/db");
+const crypto = require("crypto");
+const { pool, query } = require("../config/db");
 const asyncHandler = require("../utils/asyncHandler");
 const { signToken } = require("../utils/jwt");
 const { sanitizeUser } = require("../utils/userHelper");
 const { authenticate, getMe } = require("../middleware/auth");
+const { sendPasswordResetEmail } = require("../services/passwordResetEmail");
 
 const router = express.Router();
+const RESET_RESPONSE = "หากอีเมลนี้มีบัญชีอยู่ ระบบจะส่งลิงก์ตั้งรหัสผ่านใหม่ให้คุณ";
+let resetTablePromise;
+
+function ensureResetTable() {
+  if (!resetTablePromise) {
+    resetTablePromise = query(`CREATE TABLE IF NOT EXISTS password_reset_tokens (
+      reset_token_id BIGSERIAL PRIMARY KEY,
+      user_id BIGINT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+      token_hash VARCHAR(64) NOT NULL UNIQUE,
+      expires_at TIMESTAMPTZ NOT NULL,
+      used_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )`).catch((error) => { resetTablePromise = null; throw error; });
+  }
+  return resetTablePromise;
+}
+
+function hashResetToken(token) {
+  return crypto.createHash("sha256").update(token).digest("hex");
+}
 
 async function verifyGoogleCredential(credential) {
   const googleClientId = process.env.GOOGLE_CLIENT_ID;
@@ -243,6 +265,53 @@ router.post(
     });
   })
 );
+
+router.post("/forgot-password", asyncHandler(async (req, res) => {
+  const email = String(req.body?.email || "").trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    res.status(400).json({ success: false, message: "กรุณากรอกอีเมลให้ถูกต้อง" });
+    return;
+  }
+  await ensureResetTable();
+  const users = await query("SELECT user_id, full_name, email FROM users WHERE LOWER(TRIM(email)) = ? AND status = 'active'", [email]);
+  if (users.length) {
+    const user = users[0];
+    const token = crypto.randomBytes(32).toString("hex");
+    const expiresMinutes = Math.max(5, Number(process.env.PASSWORD_RESET_EXPIRES_MINUTES) || 30);
+    await query("UPDATE password_reset_tokens SET used_at = NOW() WHERE user_id = ? AND used_at IS NULL", [user.user_id]);
+    await query("INSERT INTO password_reset_tokens (user_id, token_hash, expires_at) VALUES (?, ?, ?)", [user.user_id, hashResetToken(token), new Date(Date.now() + expiresMinutes * 60000)]);
+    const appUrl = getClientAppUrl().replace(/\/$/, "");
+    await sendPasswordResetEmail({ to: user.email, name: user.full_name, resetUrl: `${appUrl}/#/reset-password?token=${encodeURIComponent(token)}`, expiresMinutes });
+  }
+  res.json({ success: true, message: RESET_RESPONSE });
+}));
+
+router.post("/reset-password", asyncHandler(async (req, res) => {
+  const token = String(req.body?.token || "");
+  const password = String(req.body?.password || "");
+  if (!token || password.length < 6) {
+    res.status(400).json({ success: false, message: "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร" });
+    return;
+  }
+  await ensureResetTable();
+  const client = await pool.getConnection();
+  try {
+    await client.beginTransaction();
+    const tokens = await client.query(`SELECT reset_token_id, user_id FROM password_reset_tokens WHERE token_hash = ? AND used_at IS NULL AND expires_at > NOW() FOR UPDATE`, [hashResetToken(token)]);
+    if (!tokens.length) {
+      await client.rollback();
+      res.status(400).json({ success: false, message: "ลิงก์ตั้งรหัสผ่านไม่ถูกต้องหรือหมดอายุแล้ว" });
+      return;
+    }
+    await client.query("UPDATE users SET password_hash = ? WHERE user_id = ?", [await bcrypt.hash(password, 10), tokens[0].user_id]);
+    await client.query("UPDATE password_reset_tokens SET used_at = NOW() WHERE reset_token_id = ?", [tokens[0].reset_token_id]);
+    await client.commit();
+    res.json({ success: true, message: "ตั้งรหัสผ่านใหม่เรียบร้อยแล้ว" });
+  } catch (error) {
+    await client.rollback().catch(() => {});
+    throw error;
+  } finally { client.release(); }
+}));
 
 router.get("/google/start", (req, res) => {
   const googleClientId = process.env.GOOGLE_CLIENT_ID;

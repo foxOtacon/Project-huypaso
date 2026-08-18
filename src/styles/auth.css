@@ -309,6 +309,11 @@
   text-decoration: underline;
 }
 
+.auth-forgot-link {
+  margin: -4px 0 14px;
+  text-align: right;
+}
+
 .auth-alert {
   border-radius: 10px;
   font-size: 14px;
