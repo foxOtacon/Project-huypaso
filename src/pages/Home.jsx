@@ -119,6 +119,15 @@ function getNewsExcerpt(item) {
   return text.length > 140 ? `${text.slice(0, 137).trimEnd()}...` : text;
 }
 
+function getRandomProducts(products, limit = 5) {
+  const shuffled = [...products];
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const randomIndex = Math.floor(Math.random() * (index + 1));
+    [shuffled[index], shuffled[randomIndex]] = [shuffled[randomIndex], shuffled[index]];
+  }
+  return shuffled.slice(0, limit);
+}
+
 function Icon({ name }) {
   if (name === 'people') {
     return (
@@ -221,13 +230,17 @@ export default function Home({ user, onNavigate, onLogout }) {
           ...keywordProducts,
           ...availableProducts.filter((product) => !keywordIds.has(Number(product.product_id))),
         ].slice(0, 5);
+        const isLoggedInCustomer = Boolean(token && isCustomerUser(user));
+        const initialRecommendations = isLoggedInCustomer
+          ? generalRecommendations
+          : getRandomProducts(availableProducts, 5);
 
         setFeaturedCategories(categoryMap);
-        setFeaturedProducts(generalRecommendations);
-        setFeaturedStrategy('general');
+        setFeaturedProducts(initialRecommendations);
+        setFeaturedStrategy(isLoggedInCustomer ? 'general' : 'guest-random');
         setFeaturedLoading(false);
 
-        if (token && isCustomerUser(user)) {
+        if (isLoggedInCustomer) {
           try {
             const recommendationData = await fetchProductRecommendations(token, 5);
             if (!active) return;
