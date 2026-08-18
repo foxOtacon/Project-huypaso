@@ -101,8 +101,10 @@ export default function Login({ onNavigate, onSuccess, variant, onClose }) {
           </div>
         </Form.Group>
 
-        <p className="auth-footer auth-forgot-link">
-          <a href="#/forgot-password" onClick={(e) => { e.preventDefault(); onNavigate('/forgot-password'); }}>ลืมรหัสผ่าน?</a>
+        <p className="auth-footer auth-forgot-link" style={{ display: 'none' }}>
+          <a href="#/forgot-password" onClick={(e) => { e.preventDefault(); onNavigate('/forgot-password'); } }>
+            ลืมรหัสผ่าน?
+          </a>
         </p>
 
         <button type="submit" className="auth-submit" disabled={loading}>
