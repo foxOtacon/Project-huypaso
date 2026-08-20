@@ -15,7 +15,7 @@
 
 * {
   box-sizing: border-box;
-  font-size: 14px;
+  font-size: 16px;
 }
 
 body {
@@ -102,6 +102,25 @@ select {
   font-weight: 900;
   cursor: pointer;
   transition: transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
+}
+
+.floating-contact-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #d94a4a;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1;
+  box-shadow: 0 8px 20px rgba(217, 74, 74, 0.35);
 }
 
 .floating-contact-button svg {

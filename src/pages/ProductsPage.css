@@ -475,8 +475,9 @@
 .catalog-detail-content > .catalog-card-meta span {
   padding: 6px 10px;
   border-radius: 999px;
-  background: #f3f7f5;
+  background: #315d47;
   white-space: nowrap;
+  color: white;
 }
 
 .catalog-detail-content > .catalog-card-meta span:last-child {
@@ -884,7 +885,7 @@
   top: 14px;
   padding: 7px 11px;
   border-radius: 999px;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 900;
   backdrop-filter: blur(10px);
 }

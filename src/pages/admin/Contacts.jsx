@@ -1,5 +1,6 @@
-﻿import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { fetchAdminContact, fetchAdminContacts, replyAdminContact, updateAdminContactStatus } from '../../api/admin';
+import { filterContacts } from '../../utils/contactFilters';
 import { formatAddressForDisplay } from '../../utils/profileAddress';
 
 const STATUS = {
@@ -31,6 +32,7 @@ export default function Contacts({ user }) {
   const [items, setItems] = useState([]);
   const [selected, setSelected] = useState(null);
   const [reply, setReply] = useState('');
+  const [filters, setFilters] = useState({ status: 'all', search: '' });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -54,7 +56,7 @@ export default function Contacts({ user }) {
     return () => { active = false; };
   }, []);
 
-  const visible = items;
+  const visible = useMemo(() => filterContacts(items, filters), [items, filters]);
 
   const counts = {
     all: items.length,
@@ -110,16 +112,7 @@ export default function Contacts({ user }) {
 
   return (
     <div className="admin-contacts-page">
-      <section className="admin-contact-titlebar">
-        <div>
-          <h1>ติดต่อและปัญหา</h1>
-          <p>ตรวจสอบและตอบกลับข้อความจากผู้ใช้งาน</p>
-        </div>
-        <div className="admin-contact-user-summary">
-          <strong>{user?.full_name || user?.email || 'ผู้ดูแลระบบ'}</strong>
-          <span>{formatHeaderDate()}</span>
-        </div>
-      </section>
+      
 
       {error ? <div className="admin-error">{error}</div> : null}
 
@@ -140,13 +133,33 @@ export default function Contacts({ user }) {
           </div>
           <p>{visible.length} รายการ</p>
         </div>
+
+        <div className="admin-contact-toolbar">
+          <input
+            type="search"
+            value={filters.search}
+            placeholder="ค้นหา ชื่อ อีเมล หัวข้อ หรือข้อความ..."
+            onChange={(event) => setFilters((current) => ({ ...current, search: event.target.value }))}
+          />
+          <select
+            value={filters.status}
+            onChange={(event) => setFilters((current) => ({ ...current, status: event.target.value }))}
+          >
+            <option value="all">ทุกสถานะ</option>
+            <option value="new">รอตรวจสอบ</option>
+            <option value="in_progress">กำลังดำเนินการ</option>
+            <option value="resolved">แก้ไขแล้ว</option>
+          </select>
+          <button type="button" onClick={() => setFilters({ status: 'all', search: '' })}>ล้าง</button>
+        </div>
+
         <div className="admin-contact-list">
           {visible.length ? visible.map((item) => (
             <button type="button" key={item.contact_id} onClick={() => open(item.contact_id)}>
               <div>
                 <strong>Ticket #{item.contact_id} · {item.subject || CATEGORIES[item.category]}</strong>
                 <span>{item.name} · {item.email}</span>
-                <small>{CATEGORIES[item.category] || item.category}{item.order_id ? ` · คำสั่งซื้อ #${item.order_id}` : ''} · {formatDate(item.created_at)}</small>
+                <small>{CATEGORIES[item.category] || item.category} · {formatDate(item.created_at)}</small>
               </div>
               <b className={`admin-contact-status is-${item.status}`}>{STATUS[item.status] || item.status}</b>
             </button>
@@ -167,9 +180,7 @@ export default function Contacts({ user }) {
             <div className="admin-contact-meta">
               <span>{selected.name}</span>
               <span>{selected.email}</span>
-              <span>{CATEGORIES[selected.category]}</span>
-              {selected.order_id ? <span>คำสั่งซื้อ #{selected.order_id}</span> : null}
-              <select value={selected.status === 'read' ? 'new' : selected.status} disabled={saving} onChange={(event) => changeStatus(event.target.value)}>
+              <span>{CATEGORIES[selected.category]}</span><select value={selected.status === 'read' ? 'new' : selected.status} disabled={saving} onChange={(event) => changeStatus(event.target.value)}>
                 <option value="new">รอตรวจสอบ</option>
                 <option value="in_progress">กำลังดำเนินการ</option>
                 <option value="resolved">แก้ไขแล้ว</option>

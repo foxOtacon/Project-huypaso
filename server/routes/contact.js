@@ -15,15 +15,9 @@ router.post("/", optionalAuthenticate, asyncHandler(async (req, res) => {
   const category = clean(req.body?.category || 'general', 40);
   const subject = clean(req.body?.subject, 255);
   const message = clean(req.body?.message);
-  const orderId = req.body?.order_id ? Number(req.body.order_id) : null;
   if (!name || !email || !message) return res.status(400).json({ success: false, message: "กรุณากรอกชื่อ อีเมล และรายละเอียดปัญหา" });
-  if (orderId && (!Number.isInteger(orderId) || orderId <= 0)) return res.status(400).json({ success: false, message: "เลขคำสั่งซื้อไม่ถูกต้อง" });
-  if (orderId && req.user?.role !== 'admin') {
-    const orders = await query(`SELECT order_id FROM orders WHERE order_id = ? AND user_id = ? LIMIT 1`, [orderId, req.user?.user_id || -1]);
-    if (!orders.length) return res.status(400).json({ success: false, message: "ไม่พบคำสั่งซื้อในบัญชีของคุณ" });
-  }
-  const result = await query(`INSERT INTO contacts (user_id, name, email, category, order_id, subject, message, status, ticket_status, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, 'new', 'new', NOW())`, [req.user?.user_id || null, name, email, category, orderId, subject || null, message]);
+  const result = await query(`INSERT INTO contacts (user_id, name, email, category, subject, message, status, ticket_status, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, 'new', 'new', NOW())`, [req.user?.user_id || null, name, email, category, subject || null, message]);
   const ticket = await getTicket(result.insertId);
   res.status(201).json({ success: true, data: ticket });
 }));

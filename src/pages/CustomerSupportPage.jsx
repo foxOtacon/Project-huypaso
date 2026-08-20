@@ -31,13 +31,12 @@ function emptyForm(user) {
     name: user?.full_name || '',
     email: user?.email || '',
     category: 'general',
-    order_id: '',
     subject: '',
     message: '',
   };
 }
 
-export default function CustomerSupportPage({ user, onNavigate, onLogout }) {
+export default function CustomerSupportPage({ user, onNavigate, onLogout, onSupportViewed }) {
   const [tickets, setTickets] = useState([]);
   const [selected, setSelected] = useState(null);
   const [form, setForm] = useState(() => emptyForm(user));
@@ -81,10 +80,7 @@ export default function CustomerSupportPage({ user, onNavigate, onLogout }) {
     try {
       setSaving(true);
       setError('');
-      const created = await createContactTicket({
-        ...form,
-        order_id: form.order_id.trim() || null,
-      });
+      const created = await createContactTicket(form);
       setForm(emptyForm(user));
       setMessage('ส่งเรื่องสอบถามเรียบร้อยแล้ว');
       await loadTickets();
@@ -99,8 +95,13 @@ export default function CustomerSupportPage({ user, onNavigate, onLogout }) {
   async function openTicket(ticketId) {
     try {
       setError('');
-      setSelected(await fetchContactTicket(ticketId));
+      const ticket = await fetchContactTicket(ticketId);
+      setSelected(ticket);
       setReply('');
+      onSupportViewed?.([{
+        contact_id: ticketId,
+        last_reply_at: ticket?.last_reply_at || ticket?.updated_at || new Date().toISOString(),
+      }]);
     } catch (err) {
       setError(err.message || 'ไม่สามารถโหลดรายละเอียดได้');
     }
@@ -152,7 +153,6 @@ export default function CustomerSupportPage({ user, onNavigate, onLogout }) {
             <label>ชื่อ - นามสกุล<input name="name" value={form.name} onChange={updateField} required /></label>
             <label>อีเมล<input name="email" type="email" value={form.email} onChange={updateField} required /></label>
             <label>ประเภท<select name="category" value={form.category} onChange={updateField}>{CATEGORIES.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label>
-            <label>เลขคำสั่งซื้อ ถ้ามี<input name="order_id" inputMode="numeric" value={form.order_id} onChange={updateField} placeholder="เช่น 20" /></label>
             <label className="is-wide">หัวข้อ<input name="subject" value={form.subject} onChange={updateField} placeholder="สรุปเรื่องที่ต้องการสอบถาม" /></label>
             <label className="is-wide">รายละเอียด<textarea name="message" rows="6" value={form.message} onChange={updateField} placeholder="พิมพ์รายละเอียดปัญหาหรือคำถามของคุณ..." required /></label>
             <button type="submit" disabled={saving}>{saving ? 'กำลังส่ง...' : 'ส่งเรื่องสอบถาม'}</button>
@@ -190,9 +190,7 @@ export default function CustomerSupportPage({ user, onNavigate, onLogout }) {
               <button type="button" onClick={() => setSelected(null)} aria-label="ปิด">×</button>
             </header>
             <div className="support-modal-meta">
-              <span>{CATEGORY_LABELS[selected.category] || selected.category}</span>
-              {selected.order_id ? <span>คำสั่งซื้อ #{selected.order_id}</span> : null}
-              <b className={`is-${selected.status}`}>{STATUS_LABELS[selected.status] || selected.status}</b>
+              <span>{CATEGORY_LABELS[selected.category] || selected.category}</span><b className={`is-${selected.status}`}>{STATUS_LABELS[selected.status] || selected.status}</b>
             </div>
             <div className="support-thread">
               <article className="is-customer">

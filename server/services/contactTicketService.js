@@ -46,11 +46,10 @@ async function ensureContactTicketSchema() {
 }
 
 async function getTicket(contactId) {
-  const rows = await query(`SELECT c.*, o.order_id AS linked_order_id,
+  const rows = await query(`SELECT c.*,
       u.full_name AS account_name, u.email AS account_email,
       u.phone AS account_phone, u.address AS account_address
     FROM contacts c
-    LEFT JOIN orders o ON o.order_id = c.order_id
     LEFT JOIN users u ON u.user_id = c.user_id
       OR (c.user_id IS NULL AND LOWER(TRIM(u.email)) = LOWER(TRIM(c.email)))
     WHERE c.contact_id = ? LIMIT 1`, [contactId]);

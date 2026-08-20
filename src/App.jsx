@@ -1,10 +1,11 @@
-﻿import { useEffect } from "react";
+﻿import { useEffect, useState } from "react";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
 import { useHashRoute } from "./hooks/useHashRoute";
 import AdminApp from "./pages/admin/AdminApp";
 import CartPage from "./pages/CartPage";
 import ContactPage from "./pages/ContactPage";
+import { fetchMyContactTickets } from "./api/contact";
 import { isAdminRoute } from "./pages/admin/adminRoutes";
 import CustomerAccountPage from "./pages/CustomerAccountPage";
 import CustomerSupportPage from "./pages/CustomerSupportPage";
@@ -21,9 +22,32 @@ import Register from "./pages/Register";
 import ResetPassword from "./pages/ResetPassword";
 import { isCustomerUser } from "./utils/roles";
 
-function FloatingContactButton({ onNavigate }) {
+const SUPPORT_SEEN_KEY = 'customer_support_seen_ticket_state';
+
+function readSeenSupportState() {
+  try {
+    const values = JSON.parse(sessionStorage.getItem(SUPPORT_SEEN_KEY) || '{}');
+    if (!values || typeof values !== 'object') return {};
+    return Object.fromEntries(
+      Object.entries(values).filter(([, value]) => value !== null && value !== undefined),
+    );
+  } catch {
+    return {};
+  }
+}
+
+function saveSeenSupportState(values) {
+  sessionStorage.setItem(SUPPORT_SEEN_KEY, JSON.stringify(values));
+}
+
+function FloatingContactButton({ onNavigate, notificationCount = 0 }) {
   return (
     <button type="button" className="floating-contact-button" onClick={() => onNavigate('/support')}>
+      {notificationCount > 0 ? (
+        <span className="floating-contact-badge" aria-label={`${notificationCount} แจ้งเตือน`}>
+          {notificationCount > 99 ? '99+' : notificationCount}
+        </span>
+      ) : null}
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <path d="M5 6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v6A2.5 2.5 0 0 1 16.5 15H12l-4.2 3.2A.8.8 0 0 1 6.5 17.6V15A2.5 2.5 0 0 1 4 12.5v-6Z" />
         <path d="M8 8h8M8 11h5" />
@@ -58,6 +82,7 @@ function AppRoutes() {
   const { route, navigate } = useHashRoute();
   const routePath = route.split('?')[0];
   const { user, loading, logout } = useAuth();
+  const [supportNotificationCount, setSupportNotificationCount] = useState(0);
   const showFloatingContact = isCustomerUser(user);
 
   const goHome = () => navigate("/");
@@ -81,7 +106,7 @@ function AppRoutes() {
     return (
       <>
         {content}
-        <FloatingContactButton onNavigate={navigate} />
+        <FloatingContactButton onNavigate={navigate} notificationCount={supportNotificationCount} />
       </>
     );
   }
@@ -108,6 +133,43 @@ function AppRoutes() {
       navigate('/admin');
     }
   }, [loading, user, routePath, navigate]);
+
+  useEffect(() => {
+    if (loading || !user || user.role !== 'customer') {
+      setSupportNotificationCount(0);
+      return;
+    }
+
+    let active = true;
+
+    async function loadSupportNotification() {
+      try {
+        const tickets = await fetchMyContactTickets();
+        if (!active) return;
+
+        const seenState = readSeenSupportState();
+        const count = tickets.filter((ticket) => {
+          const ticketId = String(ticket.contact_id);
+          const activityTime = new Date(ticket.last_reply_at || ticket.updated_at || ticket.created_at || 0).getTime();
+          const seenTime = seenState[ticketId] ? new Date(seenState[ticketId]).getTime() : 0;
+          const hasUnreadAdminReply = Number(ticket.admin_reply_count || 0) > 0 && activityTime > seenTime;
+          return hasUnreadAdminReply;
+        }).length;
+
+        setSupportNotificationCount(count);
+      } catch {
+        if (active) setSupportNotificationCount(0);
+      }
+    }
+
+    loadSupportNotification();
+    const timer = window.setInterval(loadSupportNotification, 15000);
+
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+    };
+  }, [loading, user, routePath]);
 
   useEffect(() => {
     if (loading || !user) return;
@@ -291,6 +353,24 @@ function AppRoutes() {
             user={user}
             onNavigate={navigate}
             onLogout={handleLogout}
+            onSupportViewed={(ticketIds = []) => {
+              const seenState = readSeenSupportState();
+              const nextState = { ...seenState };
+
+              ticketIds.forEach((entry) => {
+                const ticketId = String(entry && typeof entry === 'object' ? (entry.contact_id ?? entry.ticket_id ?? entry.id) : entry);
+                if (!ticketId) return;
+
+                const value = entry && typeof entry === 'object'
+                  ? (entry.last_reply_at || entry.updated_at || new Date().toISOString())
+                  : new Date().toISOString();
+
+                nextState[ticketId] = value;
+              });
+
+              saveSeenSupportState(nextState);
+              setSupportNotificationCount((current) => Math.max(0, current - ticketIds.filter((entry) => !!(entry && typeof entry === 'object' ? (entry.contact_id ?? entry.ticket_id ?? entry.id) : entry)).length));
+            }}
           />
         );
       }
