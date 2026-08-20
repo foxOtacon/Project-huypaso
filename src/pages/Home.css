@@ -498,7 +498,7 @@
 .history-visual figcaption {
   padding: 16px 20px;
   color: #607168;
-  font-size: 13px;
+  font-size: 16px;
   text-align: center;
 }
 
@@ -1824,7 +1824,7 @@
   border-radius: 4px;
   background: rgba(248, 250, 247, 0.92);
   color: #35452f;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 800;
   line-height: 1;
 }
@@ -1866,7 +1866,7 @@
   border-radius: 8px;
   background: #f3f8f5;
   color: #315542;
-  font-size: 12px;
+  font-size: 15px;
   font-weight: 800;
   line-height: 1.45;
 }
