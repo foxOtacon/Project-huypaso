@@ -343,7 +343,7 @@
   display: inline-block;
   margin-top: 6px;
   color: #71837a;
-  font-size: 13px;
+  font-size: 15px;
 }
 
 .customer-badge {
@@ -387,7 +387,7 @@
 
 .customer-order-meta dt {
   color: #71837a;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 900;
 }
 
@@ -563,7 +563,7 @@
 
 .customer-detail-info dt {
   color: #71837a;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 900;
 }
 
@@ -1020,7 +1020,7 @@
 .customer-hero-stats span {
   margin-top: 2px;
   color: rgba(255, 255, 255, 0.68);
-  font-size: 10px;
+  font-size: 14px;
 }
 
 .customer-status-card {

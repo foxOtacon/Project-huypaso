@@ -13,6 +13,7 @@ import { isCustomerUser } from '../utils/roles';
 import { getImageUrl, resolveImageUrlsInHtml } from '../utils/imageUrl';
 import './Home.css';
 import './ProductsPage.css';
+import Toast from '../components/Toast';
 
 const FEATURED_KEYWORDS = ['ชา', 'กาแฟ', 'tea', 'coffee'];
 const FALLBACK_PRODUCT_IMAGE =
@@ -155,7 +156,9 @@ export default function Home({ user, onNavigate, onLogout }) {
   const [featuredError, setFeaturedError] = useState('');
   const [featuredStrategy, setFeaturedStrategy] = useState('general');
   const [addedProductId, setAddedProductId] = useState(null);
+  const [toastMessage, setToastMessage] = useState('');
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [modalQuantity, setModalQuantity] = useState(1);
   const [latestNews, setLatestNews] = useState([]);
   const [newsLoading, setNewsLoading] = useState(true);
   const [newsError, setNewsError] = useState('');
@@ -313,18 +316,21 @@ export default function Home({ user, onNavigate, onLogout }) {
     };
   }, []);
 
-  function handleFeaturedAddToCart(product) {
+  function handleFeaturedAddToCart(product, quantity = 1) {
     if (!isCustomerUser(user)) {
       onNavigate('/login');
       return;
     }
 
-    addItem(product, 1);
+    addItem(product, quantity);
     setAddedProductId(product.product_id);
+    setToastMessage('เพิ่มสินค้าแล้ว');
+    window.setTimeout(() => setToastMessage(''), 1400);
     window.setTimeout(() => setAddedProductId(null), 1300);
   }
 
   function openFeaturedProductDetail(product) {
+    setModalQuantity(1);
     setSelectedProduct({ ...product, imageUrl: getProductImage(product) });
     if (token && isCustomerUser(user)) {
       recordProductView(token, product.product_id).catch(() => {});
@@ -687,6 +693,7 @@ export default function Home({ user, onNavigate, onLogout }) {
                 <button type="button" onClick={() => onNavigate('/products')}>เลือกชมสินค้าทั้งหมด</button>
               </div>
             ) : null}
+            <Toast message={toastMessage} onClose={() => setToastMessage('')} />
           </div>
         </section>
 
@@ -812,13 +819,24 @@ export default function Home({ user, onNavigate, onLogout }) {
                 </span>
               </div>
 
+              {Number(selectedProduct.stock_quantity || 0) > 0 ? (
+                <div className="catalog-detail-quantity">
+                  <span>จำนวน</span>
+                  <div>
+                    <button type="button" aria-label="ลดจำนวน" disabled={modalQuantity <= 1} onClick={() => setModalQuantity((value) => Math.max(1, value - 1))}>−</button>
+                    <input type="number" min="1" max={Number(selectedProduct.stock_quantity || 0)} value={modalQuantity} aria-label="จำนวนสินค้า" onChange={(event) => setModalQuantity(Math.min(Number(selectedProduct.stock_quantity || 0), Math.max(1, Number(event.target.value) || 1)))} />
+                    <button type="button" aria-label="เพิ่มจำนวน" disabled={modalQuantity >= Number(selectedProduct.stock_quantity || 0)} onClick={() => setModalQuantity((value) => Math.min(Number(selectedProduct.stock_quantity || 0), value + 1))}>+</button>
+                  </div>
+                </div>
+              ) : null}
+
               <button
                 type="button"
                 className="catalog-detail-cart"
                 disabled={Number(selectedProduct.stock_quantity || 0) <= 0}
                 onClick={() => {
                   setSelectedProduct(null);
-                  handleFeaturedAddToCart(selectedProduct);
+                  handleFeaturedAddToCart(selectedProduct, modalQuantity);
                 }}
               >
                 {Number(selectedProduct.stock_quantity || 0) <= 0 ? 'หมดสต็อก' : 'ใส่ตะกร้า'}

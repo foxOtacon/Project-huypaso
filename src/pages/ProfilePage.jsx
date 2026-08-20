@@ -184,6 +184,12 @@ export default function ProfilePage({ user, onNavigate, onLogout }) {
   ]);
 
   const handleChange = (field, value) => {
+    if (field === 'phone') {
+      const digits = String(value).replace(/\D/g, '').slice(0, 10);
+      setForm((current) => ({ ...current, phone: digits }));
+      return;
+    }
+
     setForm((current) => ({ ...current, [field]: value }));
   };
 

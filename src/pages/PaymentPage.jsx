@@ -566,7 +566,7 @@ export default function PaymentPage({ user, onNavigate, onLogout }) {
             <div className="payment-alert-content">
               <p>ยังไม่ได้ชำระเงิน</p>
               <h2>คำสั่งซื้อของคุณยังไม่ได้ชำระเงิน</h2>
-              <div className="payment-cancel-description">หากออกจากหน้านี้ คุณสามารถกลับมาชำระต่อได้จากประวัติการสั่งซื้อก่อนหมดเวลาชำระ</div>
+              <div className="payment-cancel-description">หากออกจากหน้านี้ คุณสามารถกลับมาชำระต่อได้จากหน้าการสั่งซื้อของฉันก่อนหมดเวลาชำระ</div>
             </div>
             <div className="payment-cancel-actions">
               <button type="button" autoFocus onClick={() => setLeaveTarget(null)}>ชำระเงินต่อ</button>

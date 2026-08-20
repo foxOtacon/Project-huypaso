@@ -11,6 +11,7 @@ import { getSearchScore, normalizeSearchText } from '../utils/search';
 import { getImageUrl as resolveImageUrl } from '../utils/imageUrl';
 import './Home.css';
 import './ProductsPage.css';
+import Toast from '../components/Toast';
 
 const fallbackImages = [
   'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=900&q=80',
@@ -101,7 +102,9 @@ export default function ProductsPage({ user, onNavigate, onLogout }) {
   const [sortBy, setSortBy] = useState('newest');
   const [profileOpen, setProfileOpen] = useState(false);
   const [addedProductId, setAddedProductId] = useState(null);
+  const [toastMessage, setToastMessage] = useState('');
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [modalQuantity, setModalQuantity] = useState(1);
   const profileRef = useRef(null);
 
   useEffect(() => {
@@ -214,7 +217,7 @@ export default function ProductsPage({ user, onNavigate, onLogout }) {
     onNavigate(path);
   }
 
-  function handleAddToCart(product) {
+  function handleAddToCart(product, quantity = 1) {
     if (product.status === 'suspended' || Number(product.stock_quantity || 0) <= 0) return;
 
     if (!isCustomerUser(user)) {
@@ -222,8 +225,10 @@ export default function ProductsPage({ user, onNavigate, onLogout }) {
       return;
     }
 
-    addItem(product, 1);
+    addItem(product, quantity);
     setAddedProductId(product.product_id);
+    setToastMessage('เพิ่มสินค้าแล้ว');
+    window.setTimeout(() => setToastMessage(''), 1400);
     window.setTimeout(() => setAddedProductId(null), 1300);
   }
 
@@ -232,6 +237,7 @@ export default function ProductsPage({ user, onNavigate, onLogout }) {
   }
 
   function openProductDetail(product, index) {
+    setModalQuantity(1);
     setSelectedProduct({ ...product, imageUrl: getImageUrl(product, index) });
     if (token && isCustomerUser(user)) {
       recordProductView(token, product.product_id).catch(() => {});
@@ -515,11 +521,22 @@ export default function ProductsPage({ user, onNavigate, onLogout }) {
                 </span>
               </div>
 
+              {Number(selectedProduct.stock_quantity || 0) > 0 ? (
+                <div className="catalog-detail-quantity">
+                  <span>จำนวน</span>
+                  <div>
+                    <button type="button" aria-label="ลดจำนวน" disabled={modalQuantity <= 1} onClick={() => setModalQuantity((value) => Math.max(1, value - 1))}>−</button>
+                    <input type="number" min="1" max={Number(selectedProduct.stock_quantity || 0)} value={modalQuantity} aria-label="จำนวนสินค้า" onChange={(event) => setModalQuantity(Math.min(Number(selectedProduct.stock_quantity || 0), Math.max(1, Number(event.target.value) || 1)))} />
+                    <button type="button" aria-label="เพิ่มจำนวน" disabled={modalQuantity >= Number(selectedProduct.stock_quantity || 0)} onClick={() => setModalQuantity((value) => Math.min(Number(selectedProduct.stock_quantity || 0), value + 1))}>+</button>
+                  </div>
+                </div>
+              ) : null}
+
               <button
                 type="button"
                 className="catalog-detail-cart"
                 disabled={Number(selectedProduct.stock_quantity || 0) <= 0}
-                onClick={() => handleAddToCart(selectedProduct)}
+                onClick={() => handleAddToCart(selectedProduct, modalQuantity)}
               >
                 {Number(selectedProduct.stock_quantity || 0) <= 0
                   ? 'หมดสต็อก'
@@ -531,6 +548,7 @@ export default function ProductsPage({ user, onNavigate, onLogout }) {
           </section>
         </div>
       )}
+      <Toast message={toastMessage} onClose={() => setToastMessage('')} />
     </div>
   );
 }

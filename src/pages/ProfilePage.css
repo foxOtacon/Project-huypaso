@@ -459,7 +459,7 @@
   align-items: center;
   gap: 8px;
   color: #e1c27d;
-  font-size: 10px;
+  font-size: 14px;
   font-weight: 900;
   letter-spacing: 0.13em;
 }
@@ -503,7 +503,7 @@
 
 .account-hero-status > span {
   color: rgba(255, 255, 255, 0.58);
-  font-size: 10px;
+  font-size: 14px;
 }
 
 .account-hero-status strong {
@@ -552,7 +552,7 @@
 
 .account-card-header p {
   color: #96713b;
-  font-size: 10px;
+  font-size: 14px;
   font-weight: 900;
   letter-spacing: 0.08em;
 }
@@ -600,7 +600,7 @@
 
 .account-details span {
   color: #87938c;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 800;
 }
 

@@ -910,7 +910,7 @@
 .news-card p {
   margin: 0;
   color: #67766f;
-  font-size: 13px;
+  font-size: 16px;
   line-height: 1.58;
 }
 
@@ -1913,7 +1913,7 @@
 .product-card .product-footer span {
   display: inline;
   margin: 0 0 0 4px;
-  font-size: 10px;
+  font-size: 16px;
 }
 
 .product-card .product-footer button {
@@ -1921,6 +1921,7 @@
   padding: 8px 14px;
   border-radius: 7px;
   background: #50331f;
+  font-size: 14px;
 }
 
 .product-card .product-footer button:hover {
@@ -2042,7 +2043,7 @@
   align-items: center;
   gap: 9px;
   color: #d7b878;
-  font-size: 12px;
+  font-size: 16px;
   font-weight: 900;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -2126,6 +2127,7 @@
   display: inline-flex;
   align-items: center;
   gap: 9px;
+  font-size: 16px;
 }
 
 .hero-proof span::before {
@@ -2185,7 +2187,7 @@
 .impact-grid span {
   margin-top: 4px;
   color: #748078;
-  font-size: 12px;
+  font-size: 16px;
 }
 
 .history-section {
@@ -2237,7 +2239,7 @@
 }
 
 .section-heading p {
-  font-size: 15px;
+  font-size: 18px;
 }
 
 .product-card,

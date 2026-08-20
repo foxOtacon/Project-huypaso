@@ -341,7 +341,13 @@ export default function Register({ onNavigate, onSuccess, variant, onClose }) {
             type="tel"
             placeholder="08x-xxx-xxxx"
             value={form.phone}
-            onChange={(e) => updateField('phone', e.target.value)}
+            onChange={(e) => {
+              // allow only digits and limit to 10 characters
+              const digits = e.target.value.replace(/\D/g, '').slice(0, 10);
+              updateField('phone', digits);
+            }}
+            inputMode="numeric"
+            maxLength={10}
             autoComplete="tel"
             disabled={loading}
           />

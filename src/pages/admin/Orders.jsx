@@ -260,7 +260,7 @@ export default function Orders() {
       <section className="admin-panel orders-table-panel">
         <div className="orders-table-heading">
           <div><span>รายการทั้งหมด</span><h2>คำสั่งซื้อ</h2></div>
-          <p>คลิกแถวเพื่อดูรายละเอียดและอัปเดตสถานะ</p>
+          
         </div>
         <div className="admin-table-wrap">
           <table className="admin-table orders-table">

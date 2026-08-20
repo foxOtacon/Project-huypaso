@@ -266,6 +266,7 @@
   -webkit-line-clamp: 4;
   -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 42%, rgba(0, 0, 0, 0.72) 68%, transparent 100%);
   mask-image: linear-gradient(to bottom, #000 0%, #000 42%, rgba(0, 0, 0, 0.72) 68%, transparent 100%);
+  font-size: 14px;
 }
 
 .catalog-card-footer {
@@ -281,7 +282,7 @@
 
 .catalog-card-footer small {
   color: #6d7b72;
-  font-size: 12px;
+  font-size: 16px;
   font-weight: 700;
 }
 
@@ -537,6 +538,63 @@
   font-weight: 800;
 }
 
+.catalog-detail-quantity {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  color: #52665d;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.catalog-detail-quantity > div {
+  display: grid;
+  grid-template-columns: 40px 58px 40px;
+  overflow: hidden;
+  border: 1px solid #d9e4de;
+  border-radius: 999px;
+  background: #fff;
+}
+
+.catalog-detail-quantity button,
+.catalog-detail-quantity input {
+  width: 100%;
+  height: 40px;
+  border: 0;
+  background: transparent;
+  color: #294838;
+  font: inherit;
+  font-weight: 900;
+  text-align: center;
+}
+
+.catalog-detail-quantity button {
+  cursor: pointer;
+  font-size: 20px;
+}
+
+.catalog-detail-quantity button:hover:not(:disabled) {
+  background: #edf5f1;
+}
+
+.catalog-detail-quantity button:disabled {
+  cursor: not-allowed;
+  color: #b7c2bc;
+}
+
+.catalog-detail-quantity input {
+  border-right: 1px solid #e3ebe7;
+  border-left: 1px solid #e3ebe7;
+  appearance: textfield;
+}
+
+.catalog-detail-quantity input::-webkit-inner-spin-button,
+.catalog-detail-quantity input::-webkit-outer-spin-button {
+  margin: 0;
+  appearance: none;
+}
+
 .catalog-detail-cart {
   min-height: 44px;
   padding: 0 18px;
@@ -664,7 +722,7 @@
   max-width: 600px;
   margin: 0;
   color: #67766e;
-  font-size: 16px;
+  font-size: 20px;
   line-height: 1.8;
 }
 
@@ -682,6 +740,7 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  font-size: 16px;
 }
 
 .catalog-benefits span::before {
@@ -725,12 +784,13 @@
 
 .catalog-filter-heading span {
   color: #8a958f;
-  font-size: 12px;
+  font-size: 14px;
 }
 
 .catalog-filters label > span {
   color: #51675b;
   font-weight: 850;
+  font-size: 18px;
 }
 
 .catalog-filters input,
@@ -739,6 +799,7 @@
   border-color: #dce4df;
   border-radius: 12px;
   background: #fbfcfa;
+  font-size: 14px;
 }
 
 .catalog-filters input:focus,

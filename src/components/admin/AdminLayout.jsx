@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import BrandLogo from '../BrandLogo';
-import { fetchAdminPayments, fetchOrders } from '../../api/admin';
+import { fetchAdminPayments, fetchOrders, fetchProducts } from '../../api/admin';
 import { useAuth } from '../../context/AuthContext';
 import '../../styles/admin.css';
 
 const NOTIFICATION_POLL_MS = 10000;
 const SEEN_ORDERS_KEY = 'admin_seen_order_ids';
 const SEEN_PAYMENTS_KEY = 'admin_seen_payment_ids';
+const OUT_OF_STOCK_PRODUCTS_KEY = 'admin_out_of_stock_product_ids';
 
 function readSeenIds(key) {
   try {
@@ -96,7 +97,7 @@ const PAGE_HEADERS = {
 export default function AdminLayout({ route, user, onNavigate, onLogout, children }) {
   const { sessionValidated } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [notificationCounts, setNotificationCounts] = useState({ orders: 0, payments: 0 });
+  const [notificationCounts, setNotificationCounts] = useState({ orders: 0, payments: 0, products: 0 });
   const [notification, setNotification] = useState(null);
   const activePath = route === '/admin/dashboard' ? '/admin' : route;
   const pageHeader = PAGE_HEADERS[route] || PAGE_HEADERS['/admin'];
@@ -116,19 +117,32 @@ export default function AdminLayout({ route, user, onNavigate, onLogout, childre
       polling = true;
 
       try {
-        const [orders, payments] = await Promise.all([fetchOrders(), fetchAdminPayments()]);
+        const [orders, payments, products] = await Promise.all([
+          fetchOrders(),
+          fetchAdminPayments(),
+          fetchProducts(),
+        ]);
         if (!active) return;
 
         const pendingOrders = orders.filter((order) => order.order_status === 'pending');
         const pendingPayments = payments.filter((payment) => payment.payment_status === 'pending');
-        setNotificationCounts({ orders: pendingOrders.length, payments: pendingPayments.length });
+        const outOfStockProducts = products.filter(
+          (product) => product.status === 'active' && Number(product.stock_quantity || 0) <= 0,
+        );
+        setNotificationCounts({
+          orders: pendingOrders.length,
+          payments: pendingPayments.length,
+          products: outOfStockProducts.length,
+        });
 
         const currentOrderIds = new Set(orders.map((order) => String(order.order_id)));
         const currentPaymentIds = new Set(payments.map((payment) => String(payment.payment_id)));
         const seenOrderIds = readSeenIds(SEEN_ORDERS_KEY);
         const seenPaymentIds = readSeenIds(SEEN_PAYMENTS_KEY);
+        const previousOutOfStockIds = readSeenIds(OUT_OF_STOCK_PRODUCTS_KEY);
         const hasOrderBaseline = sessionStorage.getItem(SEEN_ORDERS_KEY) !== null;
         const hasPaymentBaseline = sessionStorage.getItem(SEEN_PAYMENTS_KEY) !== null;
+        const hasStockBaseline = sessionStorage.getItem(OUT_OF_STOCK_PRODUCTS_KEY) !== null;
         const newOrders = hasOrderBaseline
           ? orders.filter((order) => !seenOrderIds.has(String(order.order_id)))
           : [];
@@ -136,19 +150,34 @@ export default function AdminLayout({ route, user, onNavigate, onLogout, childre
           ? payments.filter((payment) => !seenPaymentIds.has(String(payment.payment_id)))
           : [];
 
+        const newOutOfStockProducts = hasStockBaseline
+          ? outOfStockProducts.filter(
+              (product) => !previousOutOfStockIds.has(String(product.product_id)),
+            )
+          : [];
+
         saveSeenIds(SEEN_ORDERS_KEY, currentOrderIds);
         saveSeenIds(SEEN_PAYMENTS_KEY, currentPaymentIds);
+        saveSeenIds(
+          OUT_OF_STOCK_PRODUCTS_KEY,
+          new Set(outOfStockProducts.map((product) => String(product.product_id))),
+        );
 
         if (initialCheck) {
           initialCheck = false;
-          if (pendingOrders.length || pendingPayments.length) {
+          if (pendingOrders.length || pendingPayments.length || outOfStockProducts.length) {
             setNotification({
               orders: pendingOrders.length,
               payments: pendingPayments.length,
+              products: outOfStockProducts,
             });
           }
-        } else if (newOrders.length || newPayments.length) {
-          setNotification({ orders: newOrders.length, payments: newPayments.length });
+        } else if (newOrders.length || newPayments.length || newOutOfStockProducts.length) {
+          setNotification({
+            orders: newOrders.length,
+            payments: newPayments.length,
+            products: newOutOfStockProducts,
+          });
         }
       } catch {
         // Individual admin pages display API errors; notification polling stays silent.
@@ -213,6 +242,9 @@ export default function AdminLayout({ route, user, onNavigate, onLogout, childre
               {item.path === '/admin/transactions' && notificationCounts.payments > 0 ? (
                 <span className="admin-nav-badge">{notificationCounts.payments > 99 ? '99+' : notificationCounts.payments}</span>
               ) : null}
+              {item.path === '/admin/products' && notificationCounts.products > 0 ? (
+                <span className="admin-nav-badge">{notificationCounts.products > 99 ? '99+' : notificationCounts.products}</span>
+              ) : null}
             </button>
           ))}
         </nav>
@@ -259,10 +291,21 @@ export default function AdminLayout({ route, user, onNavigate, onLogout, childre
             <div id="admin-notification-description" className="admin-notification-summary">
               {notification.orders > 0 ? <p>คำสั่งซื้อใหม่ <strong>{notification.orders}</strong> รายการ</p> : null}
               {notification.payments > 0 ? <p>ธุรกรรมใหม่ <strong>{notification.payments}</strong> รายการ</p> : null}
+              {notification.products?.length > 0 ? (
+                <div className="admin-stock-notification-list">
+                  <p>สินค้าสต๊อกหมด <strong>{notification.products.length}</strong> รายการ</p>
+                  <ul>
+                    {notification.products.map((product) => (
+                      <li key={product.product_id}>{product.product_name || `สินค้า ${product.product_id}`}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
             </div>
             <div className="admin-notification-actions">
               {notification.orders > 0 ? <button type="button" onClick={() => { setNotification(null); handleNavigate('/admin/orders'); }}>ดูคำสั่งซื้อ</button> : null}
               {notification.payments > 0 ? <button type="button" onClick={() => { setNotification(null); handleNavigate('/admin/transactions'); }}>ดูธุรกรรม</button> : null}
+              {notification.products?.length > 0 ? <button type="button" onClick={() => { setNotification(null); handleNavigate('/admin/products'); }}>ดูสินค้า</button> : null}
               <button type="button" className="is-dismiss" onClick={() => setNotification(null)}>รับทราบ</button>
             </div>
           </section>
