@@ -17,8 +17,39 @@
 .pagination button:disabled { cursor: not-allowed; opacity: .42; }
 .admin-pagination { justify-content: flex-end; margin: 0; padding: 16px 20px; border-top: 1px solid rgba(42, 61, 52, .12); }
 @media (max-width: 640px) {
-  .pagination { align-items: stretch; flex-direction: column; }
-  .pagination > button { width: 100%; }
+  .pagination {
+    width: 100%;
+    align-items: center;
+    justify-content: flex-start;
+    flex-direction: row;
+    gap: 6px;
+    margin: 18px 0;
+    padding: 2px 0 6px;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+
+  .pagination-pages {
+    flex: 0 0 auto;
+    flex-wrap: nowrap;
+    gap: 5px;
+  }
+
+  .pagination button {
+    min-width: 38px;
+    height: 38px;
+    flex: 0 0 auto;
+    padding: 0 10px;
+    font-size: 13px;
+  }
+
+  .pagination > button {
+    width: auto;
+  }
+
+  .admin-pagination {
+    padding: 12px 14px;
+  }
 }
 @media (prefers-reduced-motion: reduce) { .pagination button { transition: none; } }
 

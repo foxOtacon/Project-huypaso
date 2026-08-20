@@ -381,6 +381,7 @@
 .news-card p {
   color: #68776f;
   line-height: 1.75;
+  font-size: 16px;
 }
 
 .news-featured button,
@@ -415,7 +416,7 @@
 
 .news-list-heading span {
   color: #89958e;
-  font-size: 13px;
+  font-size: 16px;
 }
 
 .news-grid {

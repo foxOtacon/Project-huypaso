@@ -1306,3 +1306,100 @@
     padding-inline: 18px;
   }
 }
+
+/* Keep the customer order detail usable on narrow mobile screens. */
+@media (max-width: 460px) {
+  .customer-modal-backdrop {
+    align-items: end;
+    justify-items: stretch;
+    padding: 0;
+  }
+
+  .customer-detail-modal {
+    width: 100%;
+    max-width: none;
+    max-height: 100dvh;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border-right: 0;
+    border-bottom: 0;
+    border-left: 0;
+    border-radius: 20px 20px 0 0;
+  }
+
+  .customer-detail-header {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    padding: 18px 16px;
+  }
+
+  .customer-detail-header h2 {
+    font-size: 24px;
+  }
+
+  .customer-detail-header button {
+    width: 36px;
+    height: 36px;
+    flex: 0 0 36px;
+  }
+
+  .customer-detail-summary {
+    gap: 7px;
+    padding: 14px 16px;
+  }
+
+  .customer-detail-summary span,
+  .customer-detail-summary strong {
+    padding: 7px 10px;
+    font-size: 12px;
+  }
+
+  .customer-detail-summary strong {
+    margin-left: 0;
+  }
+
+  .customer-detail-info {
+    gap: 16px;
+    padding: 20px 16px;
+  }
+
+  .customer-detail-info dd {
+    overflow-wrap: anywhere;
+  }
+
+  .customer-detail-items {
+    padding: 0 16px max(24px, env(safe-area-inset-bottom));
+  }
+
+  .customer-detail-item {
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .customer-detail-item > div {
+    min-width: 0;
+  }
+
+  .customer-detail-item strong {
+    overflow-wrap: anywhere;
+  }
+}
+
+@media (max-width: 340px) {
+  .customer-detail-header {
+    padding: 16px 14px;
+  }
+
+  .customer-detail-summary,
+  .customer-detail-info {
+    padding-right: 14px;
+    padding-left: 14px;
+  }
+
+  .customer-detail-items {
+    padding-right: 14px;
+    padding-left: 14px;
+  }
+}

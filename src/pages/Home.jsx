@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import DOMPurify from 'dompurify';
 import BrandLogo from '../components/BrandLogo';
 import GoogleProfileAlert from '../components/GoogleProfileAlert';
@@ -23,10 +23,11 @@ const HISTORY_SANITIZE_OPTIONS = {
     'p', 'br', 'h2', 'h3', 'h4', 'strong', 'em', 'u', 's', 'a',
     'ul', 'ol', 'li', 'blockquote', 'hr', 'figure', 'figcaption', 'img',
     'table', 'caption', 'thead', 'tbody', 'tfoot', 'tr', 'th', 'td', 'span',
+    'div', 'pre', 'code', 'mark', 'sub', 'sup', 'oembed',
   ],
   ALLOWED_ATTR: [
     'href', 'title', 'target', 'rel', 'class', 'style', 'src', 'alt',
-    'width', 'height', 'colspan', 'rowspan', 'scope',
+    'width', 'height', 'colspan', 'rowspan', 'scope', 'id', 'start', 'reversed', 'type', 'url',
   ],
   FORBID_TAGS: ['script', 'style', 'iframe', 'object', 'embed', 'form', 'input', 'button'],
   FORBID_ATTR: ['srcset'],

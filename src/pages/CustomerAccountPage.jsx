@@ -3,6 +3,7 @@ import { cancelMyOrder, fetchMyOrderDetail, fetchMyOrders } from '../api/custome
 import CustomerNavbar from '../components/CustomerNavbar';
 import Pagination from '../components/Pagination';
 import TrackingGuideModal from '../components/TrackingGuideModal';
+import Toast from '../components/Toast';
 import usePagination from '../hooks/usePagination';
 import { copyTrackingNumber, resolveTrackingProvider } from '../utils/tracking';
 import { useAuth } from '../context/AuthContext';
@@ -79,6 +80,7 @@ export default function CustomerAccountPage({ user, onNavigate, onLogout }) {
   const [loadingOrderId, setLoadingOrderId] = useState(null);
   const [detailError, setDetailError] = useState('');
   const [trackingGuide, setTrackingGuide] = useState(null);
+  const [toastMessage, setToastMessage] = useState('');
   const [cancelTarget, setCancelTarget] = useState(null);
   const [cancelling, setCancelling] = useState(false);
   const [clock, setClock] = useState(0);
@@ -202,6 +204,7 @@ export default function CustomerAccountPage({ user, onNavigate, onLogout }) {
 
     const attemptId = copyAttemptRef.current + 1;
     copyAttemptRef.current = attemptId;
+    setToastMessage('');
     setTrackingGuide((current) => (current ? { ...current, copyStatus: 'pending' } : current));
 
     const copied = await copyTrackingNumber(trackingGuide.trackingNumber);
@@ -210,6 +213,7 @@ export default function CustomerAccountPage({ user, onNavigate, onLogout }) {
     setTrackingGuide((current) => (
       current ? { ...current, copyStatus: copied ? 'success' : 'error' } : current
     ));
+    if (copied) setToastMessage('คัดลอกเสร็จแล้ว');
   }
 
   function openTrackingWebsite() {
@@ -444,6 +448,8 @@ export default function CustomerAccountPage({ user, onNavigate, onLogout }) {
           onClose={closeTrackingGuide}
         />
       ) : null}
+
+      <Toast message={toastMessage} onClose={() => setToastMessage('')} />
 
       {cancelTarget ? (
         <div className="customer-modal-backdrop" role="presentation" onMouseDown={() => !cancelling && setCancelTarget(null)}>
