@@ -36,11 +36,6 @@ export default function HomeHeroBanner({ onNavigate, onCommunity, onScrollNext, 
         </div>
       </div>
       {onScrollNext ? <button type="button" className="scroll-cue" onClick={onScrollNext} aria-label="เลื่อนไปยังเนื้อหา">↓</button> : null}
-      <div className="hero-slide-dots" aria-label="เลือกภาพแบนเนอร์">
-        {HERO_SLIDES.map((slide, index) => (
-          <button key={slide.src} type="button" className={index === slideIndex ? 'is-active' : ''} onClick={() => setSlideIndex(index)} aria-label={slide.label} aria-current={index === slideIndex ? 'true' : undefined} />
-        ))}
-      </div>
     </section>
   );
 }

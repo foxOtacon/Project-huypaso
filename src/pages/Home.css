@@ -1996,37 +1996,6 @@
   z-index: 2;
 }
 
-.hero-slide-dots {
-  position: absolute;
-  z-index: 3;
-  right: clamp(20px, 4vw, 64px);
-  bottom: 30px;
-  display: flex;
-  gap: 9px;
-}
-
-.hero-slide-dots button {
-  width: 10px;
-  height: 10px;
-  padding: 0;
-  border: 1px solid rgba(255, 255, 255, 0.88);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.3);
-  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.2);
-  cursor: pointer;
-  transition: width 180ms ease, background-color 180ms ease;
-}
-
-.hero-slide-dots button.is-active {
-  width: 28px;
-  background: #f0d28c;
-}
-
-.hero-slide-dots button:focus-visible {
-  outline: 3px solid rgba(255, 255, 255, 0.82);
-  outline-offset: 3px;
-}
-
 .hero-overlay {
   background:
     linear-gradient(90deg, rgba(9, 28, 20, 0.82) 0%, rgba(15, 44, 31, 0.56) 44%, rgba(13, 38, 27, 0.1) 78%),
