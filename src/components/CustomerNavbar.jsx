@@ -23,7 +23,6 @@ export default function CustomerNavbar({ user, onNavigate, onLogout }) {
     { label: 'หน้าหลัก', path: '/' },
     { label: 'สินค้า', path: '/products' },
     { label: 'ข่าว', path: '/news' },
-    { label: 'ติดต่อ', path: '/contact' },
   ];
 
   function isActivePath(path) {
@@ -244,6 +243,9 @@ export default function CustomerNavbar({ user, onNavigate, onLogout }) {
     </>
   );
 }
+
+
+
 
 
 

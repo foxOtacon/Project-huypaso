@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+﻿import { useEffect, useMemo, useRef, useState } from 'react';
 import DOMPurify from 'dompurify';
 import BrandLogo from '../components/BrandLogo';
 import GoogleProfileAlert from '../components/GoogleProfileAlert';
@@ -427,7 +427,6 @@ export default function Home({ user, onNavigate, onLogout }) {
             <button type="button" className="active" aria-current="page" onClick={() => scrollTo('top')}>หน้าหลัก</button>
             <button type="button" onClick={() => onNavigate('/products')}>สินค้า</button>
             <button type="button" onClick={() => scrollTo('news')}>ข่าว</button>
-            <button type="button" onClick={() => onNavigate('/contact')}>ติดต่อ</button>
           </nav>
 
           <div className="account-actions">

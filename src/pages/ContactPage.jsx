@@ -36,7 +36,10 @@ export default function ContactPage({ user, onNavigate, onLogout }) {
       try {
         const res = await fetch((import.meta.env.VITE_API_URL || '/api') + '/contact', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            ...(localStorage.getItem('token') ? { Authorization: `Bearer ${localStorage.getItem('token')}` } : {}),
+          },
           body: JSON.stringify(form),
         });
         if (!res.ok) throw new Error('ไม่สามารถส่งข้อความได้');

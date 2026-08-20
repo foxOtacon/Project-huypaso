@@ -284,3 +284,37 @@ ON CONFLICT (carrier_name) DO UPDATE SET
   tracking_url = EXCLUDED.tracking_url,
   description = EXCLUDED.description,
   status = 'active';
+
+-- Support tickets and two-way contact replies.
+CREATE TABLE IF NOT EXISTS contacts (
+    contact_id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT REFERENCES users(user_id) ON DELETE SET NULL,
+    name VARCHAR(200) NOT NULL,
+    email VARCHAR(200) NOT NULL,
+    category VARCHAR(40) NOT NULL DEFAULT 'general',
+    order_id BIGINT REFERENCES orders(order_id) ON DELETE SET NULL,
+    subject VARCHAR(255),
+    message TEXT NOT NULL,
+    status VARCHAR(30) NOT NULL DEFAULT 'new',
+    ticket_status VARCHAR(30) NOT NULL DEFAULT 'new',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    last_reply_at TIMESTAMPTZ
+);
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS user_id BIGINT REFERENCES users(user_id) ON DELETE SET NULL;
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS category VARCHAR(40) NOT NULL DEFAULT 'general';
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS order_id BIGINT REFERENCES orders(order_id) ON DELETE SET NULL;
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS ticket_status VARCHAR(30) NOT NULL DEFAULT 'new';
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+ALTER TABLE contacts ADD COLUMN IF NOT EXISTS last_reply_at TIMESTAMPTZ;
+CREATE TABLE IF NOT EXISTS contact_replies (
+    reply_id BIGSERIAL PRIMARY KEY,
+    contact_id BIGINT NOT NULL REFERENCES contacts(contact_id) ON DELETE CASCADE,
+    sender_id BIGINT REFERENCES users(user_id) ON DELETE SET NULL,
+    sender_role VARCHAR(20) NOT NULL,
+    message TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_contacts_user_id ON contacts(user_id);
+CREATE INDEX IF NOT EXISTS idx_contacts_ticket_status ON contacts(ticket_status);
+CREATE INDEX IF NOT EXISTS idx_contact_replies_contact_id ON contact_replies(contact_id);

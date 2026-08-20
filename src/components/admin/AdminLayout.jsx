@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import BrandLogo from '../BrandLogo';
-import { fetchAdminPayments, fetchOrders, fetchProducts } from '../../api/admin';
+import { fetchAdminContacts, fetchAdminPayments, fetchOrders, fetchProducts } from '../../api/admin';
 import { useAuth } from '../../context/AuthContext';
 import '../../styles/admin.css';
 
@@ -30,6 +30,7 @@ const MENU_ITEMS = [
   { path: '/admin/products', label: 'สินค้า' },
   { path: '/admin/categories', label: 'หมวดหมู่สินค้า' },
   { path: '/admin/shipping-carriers', label: 'บริษัทขนส่ง' },
+  { path: '/admin/contacts', label: 'ติดต่อและปัญหา' },
   { path: '/admin/history', label: 'ความเป็นมา' },
   { path: '/admin/news', label: 'ข่าว' },
   { path: '/admin/users', label: 'ผู้ใช้งาน' },
@@ -76,6 +77,10 @@ const PAGE_HEADERS = {
     title: 'บริษัทขนส่ง',
     subtitle: 'จัดการบริษัทขนส่งและลิงก์ติดตามพัสดุ',
   },
+  '/admin/contacts': {
+    title: 'ติดต่อและปัญหา',
+    subtitle: 'ตรวจสอบและตอบกลับข้อความจากผู้ใช้งาน',
+  },
   '/admin/history': {
     title: 'ความเป็นมา',
     subtitle: 'แก้ไขเนื้อหาเรื่องราวของชุมชนที่แสดงบนหน้าแรก',
@@ -97,7 +102,7 @@ const PAGE_HEADERS = {
 export default function AdminLayout({ route, user, onNavigate, onLogout, children }) {
   const { sessionValidated } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [notificationCounts, setNotificationCounts] = useState({ orders: 0, payments: 0, products: 0 });
+  const [notificationCounts, setNotificationCounts] = useState({ orders: 0, payments: 0, products: 0, contacts: 0 });
   const [notification, setNotification] = useState(null);
   const activePath = route === '/admin/dashboard' ? '/admin' : route;
   const pageHeader = PAGE_HEADERS[route] || PAGE_HEADERS['/admin'];
@@ -117,10 +122,11 @@ export default function AdminLayout({ route, user, onNavigate, onLogout, childre
       polling = true;
 
       try {
-        const [orders, payments, products] = await Promise.all([
+        const [orders, payments, products, contacts] = await Promise.all([
           fetchOrders(),
           fetchAdminPayments(),
           fetchProducts(),
+          fetchAdminContacts(),
         ]);
         if (!active) return;
 
@@ -133,6 +139,7 @@ export default function AdminLayout({ route, user, onNavigate, onLogout, childre
           orders: pendingOrders.length,
           payments: pendingPayments.length,
           products: outOfStockProducts.length,
+          contacts: contacts.filter((item) => ['new', 'read'].includes(item.status)).length,
         });
 
         const currentOrderIds = new Set(orders.map((order) => String(order.order_id)));
@@ -244,6 +251,9 @@ export default function AdminLayout({ route, user, onNavigate, onLogout, childre
               ) : null}
               {item.path === '/admin/products' && notificationCounts.products > 0 ? (
                 <span className="admin-nav-badge">{notificationCounts.products > 99 ? '99+' : notificationCounts.products}</span>
+              ) : null}
+              {item.path === '/admin/contacts' && notificationCounts.contacts > 0 ? (
+                <span className="admin-nav-badge">{notificationCounts.contacts > 99 ? '99+' : notificationCounts.contacts}</span>
               ) : null}
             </button>
           ))}

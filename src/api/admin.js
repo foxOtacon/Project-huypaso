@@ -313,3 +313,20 @@ export async function updateHistoryContent(contentHtml) {
   });
   return res.data;
 }
+
+export async function fetchAdminContacts() {
+  const res = await request('/admin/contacts');
+  return res.data || [];
+}
+export async function fetchAdminContact(contactId) {
+  const res = await request(`/admin/contacts/${contactId}`);
+  return res.data;
+}
+export async function updateAdminContactStatus(contactId, status) {
+  const res = await request(`/admin/contacts/${contactId}/status`, { method: 'PUT', body: JSON.stringify({ status }) });
+  return res.data;
+}
+export async function replyAdminContact(contactId, message) {
+  const res = await request(`/admin/contacts/${contactId}/replies`, { method: 'POST', body: JSON.stringify({ message }) });
+  return res.data;
+}

@@ -7,6 +7,7 @@ import CartPage from "./pages/CartPage";
 import ContactPage from "./pages/ContactPage";
 import { isAdminRoute } from "./pages/admin/adminRoutes";
 import CustomerAccountPage from "./pages/CustomerAccountPage";
+import CustomerSupportPage from "./pages/CustomerSupportPage";
 import ForgotPassword from "./pages/ForgotPassword";
 import GoogleCallback from "./pages/GoogleCallback";
 import Home from "./pages/Home";
@@ -20,11 +21,23 @@ import Register from "./pages/Register";
 import ResetPassword from "./pages/ResetPassword";
 import { isCustomerUser } from "./utils/roles";
 
+function FloatingContactButton({ onNavigate }) {
+  return (
+    <button type="button" className="floating-contact-button" onClick={() => onNavigate('/support')}>
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M5 6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v6A2.5 2.5 0 0 1 16.5 15H12l-4.2 3.2A.8.8 0 0 1 6.5 17.6V15A2.5 2.5 0 0 1 4 12.5v-6Z" />
+        <path d="M8 8h8M8 11h5" />
+      </svg>
+      <span>ติดต่อ</span>
+    </button>
+  );
+}
 const CUSTOMER_ACCOUNT_ROUTES = [
   "/profile",
   "/payment",
   "/order-status",
   "/payment-status",
+  "/support",
 ];
 const CUSTOMER_ROUTES = [
   "/",
@@ -45,6 +58,7 @@ function AppRoutes() {
   const { route, navigate } = useHashRoute();
   const routePath = route.split('?')[0];
   const { user, loading, logout } = useAuth();
+  const showFloatingContact = isCustomerUser(user);
 
   const goHome = () => navigate("/");
   const goAdmin = () => navigate("/admin");
@@ -61,6 +75,16 @@ function AppRoutes() {
     logout();
     goHome();
   };
+
+  function withFloatingContact(content) {
+    if (!showFloatingContact) return content;
+    return (
+      <>
+        {content}
+        <FloatingContactButton onNavigate={navigate} />
+      </>
+    );
+  }
 
   const redirectToCurrentCustomerRoute = (loggedInUser) => {
     if (loggedInUser?.role === "admin") {
@@ -152,30 +176,30 @@ function AppRoutes() {
 
   if (route.startsWith("/payment-success")) {
     return (
-      <PaymentSuccessPage
+      withFloatingContact(<PaymentSuccessPage
         user={user}
         onNavigate={navigate}
         onLogout={handleLogout}
-      />
+      />)
     );
   }
 
   if (route.startsWith("/news")) {
     return (
-      <NewsPage
+      withFloatingContact(<NewsPage
         route={route}
         user={user}
         onNavigate={navigate}
         onLogout={handleLogout}
-      />
+      />)
     );
   }
 
   switch (routePath) {
     case "/contact":
-      return <ContactPage user={user} onNavigate={navigate} onLogout={handleLogout} />;
+      return withFloatingContact(<ContactPage user={user} onNavigate={navigate} onLogout={handleLogout} />);
     case "/products":
-      return (
+      return withFloatingContact(
         <ProductsPage
           user={user}
           onNavigate={navigate}
@@ -197,7 +221,7 @@ function AppRoutes() {
         );
       }
 
-      return (
+      return withFloatingContact(
         <CartPage
           user={user}
           onNavigate={navigate}
@@ -235,6 +259,7 @@ function AppRoutes() {
     case "/payment":
     case "/order-status":
     case "/payment-status":
+    case "/support":
     case "/profile":
       if (!user) {
         return (
@@ -251,7 +276,7 @@ function AppRoutes() {
       }
 
       if (routePath === "/profile") {
-        return (
+        return withFloatingContact(
           <ProfilePage
             user={user}
             onNavigate={navigate}
@@ -260,8 +285,18 @@ function AppRoutes() {
         );
       }
 
+      if (routePath === "/support") {
+        return withFloatingContact(
+          <CustomerSupportPage
+            user={user}
+            onNavigate={navigate}
+            onLogout={handleLogout}
+          />
+        );
+      }
+
       if (routePath === "/payment") {
-        return (
+        return withFloatingContact(
           <PaymentPage
             user={user}
             onNavigate={navigate}
@@ -270,7 +305,7 @@ function AppRoutes() {
         );
       }
 
-      return (
+      return withFloatingContact(
         <CustomerAccountPage
           route={route}
           user={user}
@@ -279,7 +314,7 @@ function AppRoutes() {
         />
       );
     default:
-      return <Home user={user} onNavigate={navigate} onLogout={handleLogout} />;
+      return withFloatingContact(<Home user={user} onNavigate={navigate} onLogout={handleLogout} />);
   }
 }
 
@@ -294,5 +329,12 @@ function App() {
 }
 
 export default App;
+
+
+
+
+
+
+
 
 

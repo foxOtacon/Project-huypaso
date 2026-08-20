@@ -1,8 +1,9 @@
-import { lazy, Suspense } from 'react';
+﻿import { lazy, Suspense } from 'react';
 import AdminLayout from '../../components/admin/AdminLayout';
 import AdminPlaceholder from './AdminPlaceholder';
 import Analytics from './Analytics';
 import Categories from './Categories';
+import Contacts from './Contacts';
 import Dashboard from './Dashboard';
 import News from './News';
 import Orders from './Orders';
@@ -40,6 +41,10 @@ function AdminPageContent({ route, user }) {
     return <ShippingCarriers />;
   }
 
+  if (route === '/admin/contacts') {
+    return <Contacts user={user} />;
+  }
+
   if (route === '/admin/history') {
     return (
       <Suspense fallback={<div className="admin-loading">กำลังเปิดตัวแก้ไขความเป็นมา...</div>}>
@@ -72,3 +77,4 @@ export default function AdminApp({ route, user, onNavigate, onLogout }) {
     </AdminLayout>
   );
 }
+

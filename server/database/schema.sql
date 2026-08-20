@@ -183,3 +183,14 @@ CREATE TABLE IF NOT EXISTS contacts (
     status ENUM('new','read') NOT NULL DEFAULT 'new',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS contact_replies (
+    reply_id INT AUTO_INCREMENT PRIMARY KEY,
+    contact_id INT NOT NULL,
+    sender_id INT NULL,
+    sender_role VARCHAR(20) NOT NULL,
+    message TEXT NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_contact_replies_contact FOREIGN KEY (contact_id) REFERENCES contacts(contact_id) ON DELETE CASCADE,
+    CONSTRAINT fk_contact_replies_sender FOREIGN KEY (sender_id) REFERENCES users(user_id) ON DELETE SET NULL
+);

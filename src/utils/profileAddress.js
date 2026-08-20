@@ -78,10 +78,10 @@ export function formatAddressForDisplay(address) {
     .filter((part) => {
       if (!part) return false;
       const definition = ADDRESS_PARTS.find(([, label]) => part.startsWith(`${label} `));
-      if (!definition) return part !== '-';
+      if (!definition) return part !== '-' && part !== 'ลบ';
       const [, label] = definition;
       const value = part.slice(label.length).trim();
-      return value && value !== '-';
+      return value && value !== '-' && value !== 'ลบ';
     })
     .join(' ');
 }
