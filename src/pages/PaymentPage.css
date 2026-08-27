@@ -98,6 +98,7 @@
   display: grid;
   gap: 14px;
   padding: 20px;
+  min-width: 0;
 }
 
 .payment-card h2,
@@ -117,8 +118,11 @@
 }
 
 .payment-card input,
-.payment-card textarea {
+.payment-card textarea,
+.payment-card select {
+  box-sizing: border-box;
   width: 100%;
+  max-width: 100%;
   padding: 11px 12px;
   color: #2f4639;
   background: #fff;
@@ -176,10 +180,12 @@
 }
 
 .payment-method-selector { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.payment-method-selector button { min-height: 42px; border: 1px solid #d5e1da; border-radius: 8px; background: #fff; color: #52665c; font: inherit; font-weight: 800; cursor: pointer; }
+.payment-method-selector button { min-width: 0; min-height: 42px; border: 1px solid #d5e1da; border-radius: 8px; background: #fff; color: #52665c; font: inherit; font-weight: 800; cursor: pointer; }
 .payment-method-selector button.active { border-color: #315542; background: #315542; color: #fff; }
 .payment-method-selector button:disabled { cursor: not-allowed; opacity: 0.45; }
-.payment-bank-transfer-box { display: grid; gap: 5px; padding: 18px; border: 1px solid #d8e4dd; border-radius: 10px; background: #f3f8f5; }
+.payment-bank-transfer-box { display: grid; min-width: 0; gap: 5px; padding: 18px; border: 1px solid #d8e4dd; border-radius: 10px; background: #f3f8f5; }
+.payment-bank-transfer-box > label { min-width: 0; }
+.payment-bank-transfer-box select { min-width: 0; appearance: auto; }
 .payment-bank-transfer-box p { margin: 8px 0 0; color: #718178; font-size: 12px; font-weight: 800; }
 .payment-bank-transfer-box strong { color: #243e31; font-size: 18px; }
 .payment-bank-transfer-box > button { width: fit-content; min-height: 36px; margin-top: 8px; padding: 0 13px; border: 1px solid #cbd9d1; border-radius: 7px; background: #fff; color: #315542; font: inherit; font-weight: 800; cursor: pointer; }
@@ -193,7 +199,8 @@
 .payment-bank-logo-fallback { display: grid; place-items: center; background: #315542; color: #fff; font-size: 28px; font-weight: 900; }
 .payment-bank-brand > div { display: grid; gap: 2px; min-width: 0; }
 .payment-bank-transfer-box .payment-bank-brand p { margin: 0; }
-.payment-bank-brand strong { overflow-wrap: anywhere; }
+.payment-bank-brand strong,
+.payment-bank-transfer-box > strong { overflow-wrap: anywhere; }
 
 .payment-slip-preview {
   width: 100%;
@@ -251,6 +258,9 @@
   justify-content: space-between;
   gap: 12px;
 }
+
+.payment-summary-list div > * { min-width: 0; }
+.payment-summary-list div > strong { flex: 0 0 auto; white-space: nowrap; }
 
 .payment-summary .payment-remove-item {
   min-height: 30px;

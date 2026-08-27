@@ -27,6 +27,7 @@ const MENU_ITEMS = [
   { path: '/admin/orders', label: 'คำสั่งซื้อ' },
   { path: '/admin/transactions', label: 'ธุรกรรม' },
   { path: '/admin/payment-settings', label: 'ตั้งค่าการชำระเงิน' },
+  { path: '/admin/bank-transfer-accounts', label: 'บัญชีรับโอน' },
   { path: '/admin/products', label: 'สินค้า' },
   { path: '/admin/categories', label: 'หมวดหมู่สินค้า' },
   { path: '/admin/shipping-carriers', label: 'บริษัทขนส่ง' },
@@ -48,6 +49,10 @@ const PAGE_HEADERS = {
   '/admin/payment-settings': {
     title: 'ตั้งค่าการชำระเงิน',
     subtitle: 'จัดการรูป QR Code หมายเลขพร้อมเพย์ และชื่อบัญชีผู้รับเงิน',
+  },
+  '/admin/bank-transfer-accounts': {
+    title: 'บัญชีรับโอน',
+    subtitle: 'เพิ่ม แก้ไข ลบ และกำหนดสถานะบัญชีธนาคารสำหรับรับโอนเงิน',
   },
   '/admin': {
     title: 'Dashboard',

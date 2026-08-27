@@ -109,6 +109,15 @@ ALTER TABLE payment_settings ADD COLUMN IF NOT EXISTS bank_name VARCHAR(100);
 ALTER TABLE payment_settings ADD COLUMN IF NOT EXISTS bank_account_number VARCHAR(50);
 ALTER TABLE payment_settings ADD COLUMN IF NOT EXISTS bank_account_name VARCHAR(150);
 
+CREATE TABLE IF NOT EXISTS bank_transfer_accounts (
+    bank_transfer_account_id BIGSERIAL PRIMARY KEY,
+    bank_name VARCHAR(100) NOT NULL,
+    account_number VARCHAR(50) NOT NULL UNIQUE,
+    account_name VARCHAR(150) NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'inactive')),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 -- Idempotent migration for editable public site content.
 -- Run this file in the Supabase SQL editor for an existing database.
 

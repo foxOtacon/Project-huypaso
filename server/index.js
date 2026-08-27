@@ -1,4 +1,4 @@
-﻿const path = require("path");
+const path = require("path");
 require("dotenv").config({ path: path.join(__dirname, ".env") });
 
 const express = require("express");
@@ -25,6 +25,7 @@ const userProductViewsRoutes = require("./routes/userProductViews");
 const productRecommendationsRoutes = require("./routes/productRecommendations");
 const uploadsRoutes = require("./routes/uploads");
 const shippingCarriersRoutes = require("./routes/shippingCarriers");
+const bankTransferAccountsRoutes = require("./routes/bankTransferAccounts");
 const automationRoutes = require("./routes/automation");
 const siteContentRoutes = require("./routes/siteContent");
 const contactRoutes = require("./routes/contact");
@@ -122,6 +123,7 @@ app.use("/api/user-product-views", userProductViewsRoutes);
 app.use("/api/product-recommendations", productRecommendationsRoutes);
 app.use("/api/uploads", uploadsRoutes);
 app.use("/api/shipping-carriers", shippingCarriersRoutes);
+app.use("/api/bank-transfer-accounts", bankTransferAccountsRoutes);
 app.use("/api/automation", automationRoutes);
 app.use("/api/site-content", siteContentRoutes);
 app.use("/api/contact", contactRoutes);

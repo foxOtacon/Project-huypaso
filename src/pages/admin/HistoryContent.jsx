@@ -72,12 +72,15 @@ const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 
 class HistoryImageUploadAdapter {
-  constructor(loader) {
+  constructor(loader, onUploadStateChange = () => {}) {
     this.loader = loader;
+    this.onUploadStateChange = onUploadStateChange;
     this.controller = new AbortController();
   }
 
   async upload() {
+    this.onUploadStateChange(1);
+    try {
     const file = await this.loader.file;
     if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
       throw new Error('รองรับเฉพาะไฟล์ JPEG, PNG, WebP และ GIF');
@@ -110,6 +113,9 @@ class HistoryImageUploadAdapter {
     const url = payload.url || payload.data?.url;
     if (!url) throw new Error('เซิร์ฟเวอร์ไม่ส่ง URL ของรูปกลับมา');
     return { default: getImageUrl(url) };
+    } finally {
+      this.onUploadStateChange(-1);
+    }
   }
 
   abort() {
@@ -119,9 +125,11 @@ class HistoryImageUploadAdapter {
 
 function HistoryUploadAdapterPlugin(editor) {
   editor.plugins.get('FileRepository').createUploadAdapter = (loader) => (
-    new HistoryImageUploadAdapter(loader)
+    new HistoryImageUploadAdapter(loader, HistoryUploadAdapterPlugin.onUploadStateChange)
   );
 }
+
+HistoryUploadAdapterPlugin.onUploadStateChange = () => {};
 
 const EDITOR_CONFIG = {
   licenseKey: import.meta.env.VITE_CKEDITOR_LICENSE_KEY || 'GPL',
@@ -195,10 +203,12 @@ const EDITOR_CONFIG = {
       'tableColumn', 'tableRow', 'mergeTableCells', 'tableProperties',
       'tableCellProperties', 'toggleTableCaption',
     ],
-  },
+  },
 };
 
 function hasReadableText(html) {
+  if (/<img\b/i.test(String(html || ''))) return true;
+
   return String(html || '')
     .replace(/<[^>]*>/g, '')
     .replace(/&nbsp;|&#160;/gi, ' ')
@@ -229,8 +239,19 @@ export default function HistoryContent() {
   const [success, setSuccess] = useState('');
   const [saveAlertOpen, setSaveAlertOpen] = useState(false);
   const [reloadVersion, setReloadVersion] = useState(0);
+  const [pendingUploads, setPendingUploads] = useState(0);
 
   const isDirty = content !== savedContent;
+
+  useEffect(() => {
+    HistoryUploadAdapterPlugin.onUploadStateChange = (change) => {
+      setPendingUploads((current) => Math.max(0, current + change));
+    };
+
+    return () => {
+      HistoryUploadAdapterPlugin.onUploadStateChange = () => {};
+    };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -275,6 +296,12 @@ export default function HistoryContent() {
 
   async function handleSave(event) {
     event.preventDefault();
+
+    if (pendingUploads > 0) {
+      setSuccess('');
+      setError('กรุณารอให้อัปโหลดรูปภาพเสร็จก่อนบันทึก');
+      return;
+    }
 
     if (!hasReadableText(content)) {
       setSuccess('');
@@ -384,8 +411,8 @@ export default function HistoryContent() {
             >
               ยกเลิกการเปลี่ยนแปลง
             </button>
-            <button type="submit" className="history-editor-save" disabled={!isDirty || saving}>
-              {saving ? 'กำลังบันทึก...' : 'บันทึกเนื้อหา'}
+            <button type="submit" className="history-editor-save" disabled={!isDirty || saving || pendingUploads > 0}>
+              {pendingUploads > 0 ? 'กำลังอัปโหลดรูป...' : saving ? 'กำลังบันทึก...' : 'บันทึกเนื้อหา'}
             </button>
           </div>
         </footer>

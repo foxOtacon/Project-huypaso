@@ -1,11 +1,26 @@
 const paymentModel = require("../models/paymentModel");
 const paymentSettingsModel = require("../models/paymentSettingsModel");
+const { query } = require("../config/db");
 const { createSignedImageUrl, uploadImage } = require('./storageService');
+const generatePromptPayPayload = require("promptpay-qr");
+const QRCode = require("qrcode");
 const {
   PAYMENT_EXPIRATION_MINUTES,
   cancelExpiredUnpaidOrders,
 } = require("./orderExpirationService");
 
+async function getActiveBankTransferAccounts() {
+  await query(`CREATE TABLE IF NOT EXISTS bank_transfer_accounts (
+    bank_transfer_account_id BIGSERIAL PRIMARY KEY,
+    bank_name VARCHAR(100) NOT NULL,
+    account_number VARCHAR(50) NOT NULL UNIQUE,
+    account_name VARCHAR(150) NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'inactive')),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`);
+  return query(`SELECT bank_transfer_account_id, bank_name, account_number, account_name
+    FROM bank_transfer_accounts WHERE status = 'active' ORDER BY bank_transfer_account_id DESC`);
+}
 function assertCustomer(user) {
   if (user?.role !== "customer" && user?.role !== "user") {
     const error = new Error("Only customer users can use payment checkout");
@@ -75,14 +90,26 @@ async function generatePromptPayQr(user, orderId) {
   );
   const expiredAt = expiredAtDate.toISOString();
   const settings = await paymentSettingsModel.getPaymentSettings();
-  const hasPromptPay = Boolean(settings?.promptpay_number && settings?.account_name && settings?.qr_image_url);
-  const hasBankTransfer = Boolean(settings?.bank_name && settings?.bank_account_number && settings?.bank_account_name);
+  const hasPromptPay = Boolean(settings?.promptpay_number && settings?.account_name);
+  const bankAccounts = await getActiveBankTransferAccounts();
+  const availableBankAccounts = bankAccounts;
+  const hasBankTransfer = availableBankAccounts.length > 0;
   if (!hasPromptPay && !hasBankTransfer) {
     const error = new Error("Payment settings are not configured");
     error.status = 503;
     throw error;
   }
 
+  const promptPayPayload = hasPromptPay
+    ? generatePromptPayPayload(settings.promptpay_number, { amount })
+    : null;
+  const qrCode = promptPayPayload
+    ? await QRCode.toDataURL(promptPayPayload, {
+        errorCorrectionLevel: "M",
+        margin: 1,
+        width: 320,
+      })
+    : null;
   return {
     success: true,
     order_id: order.order_id,
@@ -91,12 +118,9 @@ async function generatePromptPayQr(user, orderId) {
     promptPayId: settings.promptpay_number,
     promptpay_number: settings.promptpay_number,
     account_name: settings.account_name,
-    bank_name: settings.bank_name,
-    bank_account_number: settings.bank_account_number,
-    bank_account_name: settings.bank_account_name,
-    qr_image_url: settings.qr_image_url,
-    qr_code: settings.qr_image_url,
-    qrCode: settings.qr_image_url,
+    bank_accounts: availableBankAccounts,
+    qr_code: qrCode,
+    qrCode: qrCode,
     expired_at: expiredAt,
     expires_in_seconds: expiresInSeconds,
     available_methods: { promptpay: hasPromptPay, bank_transfer: hasBankTransfer },

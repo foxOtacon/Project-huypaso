@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   cancelPromptPayOrder,
   createPromptPayOrder,
@@ -11,7 +11,6 @@ import CustomerNavbar from '../components/CustomerNavbar';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { formatAddressForDisplay } from '../utils/profileAddress';
-import { getImageUrl } from '../utils/imageUrl';
 import { findThaiBank } from '../utils/thaiBanks';
 import './PaymentPage.css';
 
@@ -55,10 +54,15 @@ export default function PaymentPage({ user, onNavigate, onLogout }) {
   const [loadingResume, setLoadingResume] = useState(() => Boolean(new URLSearchParams(window.location.hash.split('?')[1] || '').get('orderId')));
   const [copiedPromptPay, setCopiedPromptPay] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('promptpay');
+  const [selectedBankAccountId, setSelectedBankAccountId] = useState('');
   const paymentFormRef = useRef(null);
   const displayItems = createdOrder && resumeItems.length ? resumeItems : items;
   const awaitingPayment = Boolean(createdOrder && !completed && createdOrder.order_status === 'pending' && createdOrder.payment_status === 'pending' && !createdOrder.slip_image && secondsLeft > 0);
-  const selectedBank = findThaiBank(promptPayQr?.bank_name);
+  const bankAccounts = promptPayQr?.bank_accounts || [];
+  const selectedBankAccount = selectedBankAccountId
+    ? bankAccounts.find((account) => String(account.bank_transfer_account_id) === String(selectedBankAccountId)) || null
+    : (bankAccounts.length === 1 ? bankAccounts[0] : null);
+  const selectedBank = findThaiBank(selectedBankAccount?.bank_name);
 
   function guardedNavigate(path) {
     if (awaitingPayment) setLeaveTarget(path);
@@ -77,9 +81,9 @@ export default function PaymentPage({ user, onNavigate, onLogout }) {
   }
 
   async function copyBankAccountNumber() {
-    if (!promptPayQr?.bank_account_number) return;
+    if (!selectedBankAccount?.account_number) return;
     try {
-      await navigator.clipboard.writeText(promptPayQr.bank_account_number);
+      await navigator.clipboard.writeText(selectedBankAccount.account_number);
       setCopiedPromptPay(true);
       window.setTimeout(() => setCopiedPromptPay(false), 1800);
     } catch {
@@ -389,14 +393,25 @@ export default function PaymentPage({ user, onNavigate, onLogout }) {
               </div>
               {paymentMethod === 'bank_transfer' && promptPayQr?.available_methods?.bank_transfer ? (
                 <div className="payment-bank-transfer-box">
+                  {bankAccounts.length > 1 ? (
+                    <label>
+                      เลือกธนาคาร
+                      <select value={selectedBankAccount?.bank_transfer_account_id || ''} onChange={(event) => setSelectedBankAccountId(event.target.value)}>
+                        <option value="">เลือกธนาคาร</option>
+                        {bankAccounts.map((account) => (
+                          <option key={account.bank_transfer_account_id} value={account.bank_transfer_account_id}>{account.bank_name}</option>
+                        ))}
+                      </select>
+                    </label>
+                  ) : null}
                   <header className="payment-bank-brand">
                     {selectedBank
                       ? <img src={selectedBank.logo} alt="" aria-hidden="true" />
                       : <span className="payment-bank-logo-fallback" aria-hidden="true">฿</span>}
-                    <div><p>ธนาคาร</p><strong>{promptPayQr.bank_name}</strong></div>
+                    <div><p>ธนาคาร</p><strong>{selectedBankAccount?.bank_name}</strong></div>
                   </header>
-                  <p>เลขบัญชี</p><strong>{promptPayQr.bank_account_number}</strong>
-                  <p>ชื่อบัญชี</p><strong>{promptPayQr.bank_account_name}</strong>
+                  <p>เลขบัญชี</p><strong>{selectedBankAccount?.account_number}</strong>
+                  <p>ชื่อบัญชี</p><strong>{selectedBankAccount?.account_name}</strong>
                   <button type="button" onClick={copyBankAccountNumber}>{copiedPromptPay ? 'คัดลอกแล้ว' : 'คัดลอกเลขบัญชี'}</button>
                   <div><span>ยอดที่ต้องชำระ</span><b>{formatPrice(createdOrder?.total_amount || totalAmount)}</b></div>
                   <small>กรุณาโอนให้ตรงตามยอดและอัปโหลดสลิปก่อนหมดเวลา</small>
@@ -411,7 +426,7 @@ export default function PaymentPage({ user, onNavigate, onLogout }) {
 
               {promptPayQr && paymentMethod === 'promptpay' && promptPayQr.available_methods?.promptpay && (
                 <div className="payment-qr-box">
-                  <img src={getImageUrl(promptPayQr.qr_code || promptPayQr.qrCode)} alt="PromptPay QR Code" />
+                  <img src={promptPayQr.qr_code || promptPayQr.qrCode} alt="PromptPay QR Code" />
                   <strong>ชื่อบัญชี: {promptPayQr.account_name}</strong>
                   <span>หมายเลขพร้อมเพย์: {promptPayQr.promptpay_number}</span>
                   <button type="button" className="payment-copy-promptpay" onClick={copyPromptPayNumber}>{copiedPromptPay ? 'คัดลอกแล้ว' : 'คัดลอกหมายเลขพร้อมเพย์'}</button>

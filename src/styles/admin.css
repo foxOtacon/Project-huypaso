@@ -1,4 +1,4 @@
-﻿.admin-shell {
+.admin-shell {
   display: flex;
   height: 100svh;
   overflow: hidden;
@@ -73,11 +73,390 @@
   font: inherit;
   font-weight: 900;
   cursor: pointer;
+  justify-self: start;
+  padding: 0 22px;
+  min-width: 160px;
 }
 
 .admin-payment-settings-form>button:disabled {
   opacity: .6;
   cursor: wait;
+}
+
+.admin-bank-transfer-page {
+  max-width: 1200px;
+}
+
+.admin-bank-transfer-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.admin-bank-transfer-stat-grid article {
+  position: relative;
+  overflow: hidden;
+  min-height: 120px;
+  padding: 18px 18px 14px;
+  border: 1px solid rgba(44, 79, 61, 0.12);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 1px 1px rgba(15, 23, 42, 0.02);
+}
+
+.admin-bank-transfer-stat-grid article::after {
+  position: absolute;
+  right: -26px;
+  bottom: -35px;
+  width: 106px;
+  height: 106px;
+  border-radius: 50%;
+  background: rgba(181, 139, 74, 0.06);
+  content: "";
+}
+
+.admin-bank-transfer-stat-grid article:nth-child(1) { border-top: 3px solid #5279a5; }
+.admin-bank-transfer-stat-grid article:nth-child(2) { border-top: 3px solid #4d9168; }
+.admin-bank-transfer-stat-grid article:nth-child(3) { border-top: 3px solid #c66a5d; }
+.admin-bank-transfer-stat-grid article:nth-child(4) { border-top: 3px solid #8b68a8; }
+
+.admin-bank-transfer-stat-grid span,
+.admin-bank-transfer-stat-grid strong {
+  position: relative;
+  z-index: 1;
+  display: block;
+}
+
+.admin-bank-transfer-stat-grid span {
+  color: #75857c;
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.admin-bank-transfer-stat-grid strong {
+  margin-top: 8px;
+  color: #244a36;
+  font-size: 31px;
+  letter-spacing: -0.025em;
+}
+
+.admin-bank-transfer-toolbar {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding: 20px;
+  border: 1px solid rgba(44, 79, 61, 0.12);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.admin-bank-transfer-toolbar-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e9eeea;
+}
+
+.admin-bank-transfer-toolbar-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 180px 160px;
+  gap: 12px;
+  align-items: center;
+}
+
+.admin-bank-transfer-toolbar-heading span,
+.admin-bank-transfer-toolbar-heading h2,
+.admin-bank-transfer-table-heading span,
+.admin-bank-transfer-table-heading h2 {
+  margin: 0;
+}
+
+.admin-bank-transfer-toolbar-heading span,
+.admin-bank-transfer-table-heading span {
+  color: #a07940;
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: 0.09em;
+}
+
+.admin-bank-transfer-toolbar-heading h2,
+.admin-bank-transfer-table-heading h2 {
+  margin-top: 3px;
+  color: #294737;
+  font-size: 18px;
+  font-weight: 850;
+}
+
+.admin-bank-transfer-toolbar-heading>strong {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #eef3ef;
+  color: #607269;
+  font-size: 14px;
+}
+
+.admin-bank-transfer-toolbar input,
+.admin-bank-transfer-toolbar select {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid #dfe6df;
+  border-radius: 10px;
+  background: #fff;
+  color: #111827;
+  font: inherit;
+  padding: 0 12px;
+}
+
+.admin-bank-transfer-toolbar input:focus,
+.admin-bank-transfer-toolbar select:focus {
+  border-color: #527862;
+  outline: 0;
+  box-shadow: 0 0 0 4px rgba(82, 120, 98, 0.1);
+}
+
+.admin-bank-transfer-add-button {
+  width: 100%;
+  min-height: 42px;
+  border: none;
+  border-radius: 10px;
+  background: #285b45;
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 160ms ease, transform 160ms ease;
+}
+
+.admin-bank-transfer-add-button:hover {
+  background: #1f4739;
+  transform: translateY(-1px);
+}
+
+.admin-bank-transfer-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.admin-bank-transfer-form-panel {
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid rgba(44, 79, 61, 0.09);
+  border-radius: 18px;
+  box-shadow: 0 14px 37px rgba(38, 68, 53, 0.075);
+}
+
+.admin-bank-transfer-form-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e9eeea;
+  background: #fbfcfa;
+}
+
+.admin-bank-transfer-form-header span {
+  color: #a07940;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-bank-transfer-form-header h2 {
+  margin: 5px 0 0;
+  color: #294737;
+  font-size: 20px;
+}
+
+.admin-bank-transfer-form-grid {
+  display: grid;
+  gap: 18px;
+  padding: 24px;
+}
+
+.admin-bank-transfer-form-grid label {
+  display: grid;
+  gap: 8px;
+  color: #40594c;
+  font-weight: 800;
+}
+
+.admin-bank-transfer-form-grid input,
+.admin-bank-transfer-form-grid select {
+  min-height: 46px;
+  border: 1px solid #dce5df;
+  border-radius: 10px;
+  background: #fafbf9;
+  color: #111827;
+  font: inherit;
+  padding: 0 12px;
+}
+
+.admin-bank-transfer-actions {
+  padding: 18px 24px 24px;
+  border-top: 1px solid #e8ede9;
+  background: #fafbf9;
+  justify-content: flex-start;
+}
+
+.admin-bank-transfer-table-panel {
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid rgba(44, 79, 61, 0.09);
+  border-radius: 18px;
+  box-shadow: 0 14px 37px rgba(38, 68, 53, 0.075);
+}
+
+.admin-bank-transfer-table-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e9eeea;
+  background: #fbfcfa;
+}
+
+.admin-bank-transfer-table-heading p {
+  margin: 0;
+  color: #8a968f;
+  font-size: 14px;
+}
+
+.admin-bank-transfer-table th {
+  padding-top: 13px;
+  padding-bottom: 13px;
+  background: #f1f4f1;
+  color: #617269;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.admin-bank-transfer-table td {
+  padding-top: 14px;
+  padding-bottom: 14px;
+  border-bottom-color: #edf1ee;
+}
+
+.admin-bank-transfer-table tbody tr:hover {
+  background: #fafbf9;
+}
+
+.bank-transfer-status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 120px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.bank-transfer-status-badge.status-active {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.bank-transfer-status-badge.status-inactive {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.bank-transfer-toggle-button {
+  min-height: 32px;
+  border: none;
+  border-radius: 999px;
+  padding: 7px 12px;
+  color: #fff;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.bank-transfer-toggle-button:hover {
+  transform: translateY(-1px);
+  opacity: 0.96;
+}
+
+.bank-transfer-toggle-button.is-active {
+  background: linear-gradient(135deg, #ff7a59, #de5b3f);
+}
+
+.bank-transfer-toggle-button.is-inactive {
+  background: linear-gradient(135deg, #2ca36d, #157b4e);
+}
+
+.admin-bank-transfer-modal {
+  width: min(560px, calc(100vw - 24px));
+}
+
+.admin-bank-transfer-modal-grid {
+  gap: 16px;
+  padding: 24px;
+}
+
+@media (max-width: 991.98px) {
+  .admin-bank-transfer-stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-bank-transfer-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-bank-transfer-toolbar-controls {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .admin-bank-transfer-add-button {
+    width: 100%;
+  }
+
+  .admin-bank-transfer-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .admin-bank-transfer-stat-grid {
+    gap: 10px;
+  }
+
+  .admin-bank-transfer-stat-grid article {
+    padding: 15px;
+    border-radius: 14px;
+  }
+
+  .admin-bank-transfer-toolbar,
+  .admin-bank-transfer-table-heading,
+  .admin-bank-transfer-form-header {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .admin-bank-transfer-toolbar-heading,
+  .admin-bank-transfer-table-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 7px;
+  }
+
+  .admin-bank-transfer-form-grid,
+  .admin-bank-transfer-actions {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
 }
 
 .admin-payment-qr-preview {
@@ -6258,3 +6637,247 @@
 
 
 
+
+/* Bank transfer account UI refinements */
+.admin-bank-transfer-page {
+  width: 100%;
+  max-width: none;
+}
+
+.admin-bank-transfer-toolbar {
+  align-items: center;
+  padding: 18px 20px;
+}
+
+.admin-bank-transfer-toolbar-heading {
+  min-height: 49px;
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.admin-bank-transfer-table {
+  table-layout: fixed;
+}
+
+.admin-bank-transfer-table th:nth-child(1) { width: 7%; }
+.admin-bank-transfer-table th:nth-child(2) { width: 25%; }
+.admin-bank-transfer-table th:nth-child(3) { width: 16%; }
+.admin-bank-transfer-table th:nth-child(4) { width: 19%; }
+.admin-bank-transfer-table th:nth-child(5) { width: 13%; }
+.admin-bank-transfer-table th:nth-child(6) { width: 20%; }
+
+.admin-bank-transfer-table td {
+  vertical-align: middle;
+}
+
+.admin-bank-transfer-table td:first-child strong,
+.admin-bank-transfer-table td:nth-child(3) {
+  overflow-wrap: anywhere;
+}
+
+.admin-bank-transfer-table td:first-child strong {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.bank-transfer-row-actions {
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.bank-transfer-row-actions .products-edit-button,
+.bank-transfer-row-actions .products-delete-button,
+.bank-transfer-row-actions .bank-transfer-toggle-button {
+  min-width: 52px;
+  padding-right: 9px;
+  padding-left: 9px;
+}
+
+@media (max-width: 767.98px) {
+  .admin-bank-transfer-table-panel {
+    overflow: visible;
+  }
+
+  .admin-bank-transfer-table-panel .admin-table-wrap {
+    overflow: visible;
+  }
+
+  .admin-bank-transfer-table,
+  .admin-bank-transfer-table tbody,
+  .admin-bank-transfer-table tr,
+  .admin-bank-transfer-table td {
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .admin-bank-transfer-table thead {
+    display: none;
+  }
+
+  .admin-bank-transfer-table tbody {
+    padding: 12px;
+  }
+
+  .admin-bank-transfer-table tbody tr {
+    overflow: hidden;
+    margin-bottom: 12px;
+    border: 1px solid #e3ebe6;
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: 0 6px 18px rgba(38, 68, 53, 0.06);
+  }
+
+  .admin-bank-transfer-table tbody tr:last-child {
+    margin-bottom: 0;
+  }
+
+  .admin-bank-transfer-table td:not(.admin-table-empty) {
+    display: grid;
+    grid-template-columns: minmax(88px, 0.62fr) minmax(0, 1fr);
+    gap: 12px;
+    padding: 11px 14px;
+    text-align: right;
+  }
+
+  .admin-bank-transfer-table td:not(.admin-table-empty)::before {
+    color: #718178;
+    content: attr(data-label);
+    font-size: 12px;
+    font-weight: 850;
+    text-align: left;
+  }
+
+  .admin-bank-transfer-table td:first-child strong {
+    display: block;
+    -webkit-line-clamp: unset;
+    text-align: right;
+  }
+
+  .admin-bank-transfer-table td:last-child {
+    align-items: center;
+  }
+
+  .bank-transfer-row-actions {
+    justify-content: flex-end;
+  }
+
+  .bank-transfer-status-badge {
+    justify-self: end;
+    min-width: 104px;
+  }
+}
+
+@media (max-width: 430px) {
+  .admin-bank-transfer-toolbar-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-bank-transfer-table tbody {
+    padding: 9px;
+  }
+
+  .admin-bank-transfer-table td:not(.admin-table-empty) {
+    grid-template-columns: 1fr;
+    gap: 5px;
+    text-align: left;
+  }
+
+  .admin-bank-transfer-table td:not(.admin-table-empty)::before,
+  .admin-bank-transfer-table td:first-child strong {
+    text-align: left;
+  }
+
+  .bank-transfer-status-badge {
+    justify-self: start;
+  }
+
+  .bank-transfer-row-actions {
+    justify-content: flex-start;
+  }
+}
+/* Keep the bank-transfer workspace visually aligned with the category manager. */
+.admin-bank-transfer-page.admin-carriers-page .admin-bank-transfer-toolbar-controls {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 170px;
+  gap: 12px;
+}
+
+.admin-bank-transfer-page.admin-carriers-page .admin-bank-transfer-toolbar-heading {
+  min-height: auto;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #e9eeea;
+}
+
+.admin-bank-transfer-page.admin-carriers-page .admin-bank-transfer-form-panel,
+.admin-bank-transfer-page.admin-carriers-page .admin-bank-transfer-table-panel {
+  border-color: rgba(44, 79, 61, 0.09);
+  border-radius: 18px;
+  box-shadow: 0 14px 37px rgba(38, 68, 53, 0.075);
+}
+
+.admin-bank-transfer-page.admin-carriers-page .admin-bank-transfer-form-header,
+.admin-bank-transfer-page.admin-carriers-page .admin-bank-transfer-table-heading {
+  background: #fbfcfa;
+}
+
+.admin-bank-transfer-page.admin-carriers-page .products-actions button,
+.admin-bank-transfer-page.admin-carriers-page .bank-transfer-toggle-button {
+  border-radius: 999px;
+}
+
+@media (max-width: 991.98px) {
+  .admin-bank-transfer-page.admin-carriers-page .admin-bank-transfer-toolbar-controls {
+    grid-template-columns: minmax(0, 1fr) 170px;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .admin-bank-transfer-page.admin-carriers-page .admin-bank-transfer-toolbar-controls {
+    grid-template-columns: 1fr;
+  }
+}
+
+.admin-bank-transfer-page.admin-carriers-page .admin-bank-transfer-add-button {
+  width: auto;
+  min-width: 148px;
+  justify-self: start;
+}
+/* Keep Bank Transfer search controls and action on one desktop row. */
+.admin-bank-transfer-page.admin-carriers-page .admin-bank-transfer-toolbar {
+  grid-template-columns: minmax(0, 1fr) 170px auto;
+}
+
+.admin-bank-transfer-page.admin-carriers-page .admin-bank-transfer-toolbar-heading {
+  grid-column: 1 / -1;
+}
+
+.admin-bank-transfer-page.admin-carriers-page .admin-bank-transfer-toolbar-controls {
+  grid-column: 1 / 3;
+}
+
+.admin-bank-transfer-page.admin-carriers-page .admin-bank-transfer-add-button {
+  grid-column: 3;
+  min-width: 130px;
+  justify-self: end;
+}
+
+@media (max-width: 575.98px) {
+  .admin-bank-transfer-page.admin-carriers-page .admin-bank-transfer-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-bank-transfer-page.admin-carriers-page .admin-bank-transfer-toolbar-heading,
+  .admin-bank-transfer-page.admin-carriers-page .admin-bank-transfer-toolbar-controls,
+  .admin-bank-transfer-page.admin-carriers-page .admin-bank-transfer-add-button {
+    grid-column: auto;
+  }
+
+  .admin-bank-transfer-page.admin-carriers-page .admin-bank-transfer-add-button {
+    width: 100%;
+  }
+}

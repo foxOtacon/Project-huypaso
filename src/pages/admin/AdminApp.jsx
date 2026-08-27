@@ -1,4 +1,4 @@
-﻿import { lazy, Suspense } from 'react';
+import { lazy, Suspense } from 'react';
 import AdminLayout from '../../components/admin/AdminLayout';
 import AdminPlaceholder from './AdminPlaceholder';
 import Analytics from './Analytics';
@@ -11,6 +11,7 @@ import Products from './Products';
 import ShippingCarriers from './ShippingCarriers';
 import Transactions from './Transactions';
 import PaymentSettings from './PaymentSettings';
+import BankTransferAccounts from './BankTransferAccounts';
 import Users from './Users';
 
 const HistoryContent = lazy(() => import('./HistoryContent'));
@@ -32,6 +33,7 @@ function AdminPageContent({ route, user }) {
     return <Products user={user} />;
   }
   if (route === '/admin/payment-settings') return <PaymentSettings />;
+  if (route === '/admin/bank-transfer-accounts') return <BankTransferAccounts />;
 
   if (route === '/admin/categories') {
     return <Categories />;
