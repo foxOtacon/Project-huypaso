@@ -1,7 +1,7 @@
-﻿import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import DOMPurify from 'dompurify';
 import BrandLogo from '../components/BrandLogo';
-import GoogleProfileAlert from '../components/GoogleProfileAlert';
+import CustomerNavbar from '../components/CustomerNavbar';
 import HomeHeroBanner from '../components/HomeHeroBanner';
 import { fetchCatalogCategories, fetchCatalogProducts } from '../api/catalog';
 import { fetchPublishedNews } from '../api/news';
@@ -415,100 +415,7 @@ export default function Home({ user, onNavigate, onLogout }) {
 
   return (
     <div className="home-page">
-      <GoogleProfileAlert user={user} onNavigate={onNavigate} />
-      <header className="site-header">
-        <div className="site-shell nav-shell">
-          <button type="button" className="brand-link" onClick={() => scrollTo('top')}>
-            <BrandLogo />
-            ห้วยหยวกป่าโซ
-          </button>
-
-          <nav className="main-nav" aria-label="เมนูหลัก">
-            <button type="button" className="active" aria-current="page" onClick={() => scrollTo('top')}>หน้าหลัก</button>
-            <button type="button" onClick={() => onNavigate('/products')}>สินค้า</button>
-            <button type="button" onClick={() => scrollTo('news')}>ข่าว</button>
-          </nav>
-
-          <div className="account-actions">
-            {isCustomer && (
-              <button type="button" className="home-cart-button" onClick={() => onNavigate('/cart')}>
-                ตะกร้า
-                <span>{itemCount}</span>
-              </button>
-            )}
-
-            {user ? (
-              <div className="profile-menu" ref={profileRef}>
-                <button
-                  type="button"
-                  className="profile-trigger"
-                  aria-haspopup="menu"
-                  aria-expanded={profileOpen}
-                  onClick={() => setProfileOpen((open) => !open)}
-                >
-                  <span className="profile-avatar" aria-hidden="true">
-                    {profileInitial}
-                  </span>
-                  <span className="profile-name">{user.full_name}</span>
-                  <svg className="profile-chevron" viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="m7 10 5 5 5-5" />
-                  </svg>
-                </button>
-
-                {profileOpen && (
-                  <div className="profile-dropdown" role="menu">
-                    <div className="profile-dropdown-head">
-                      <span className="profile-avatar profile-avatar-large" aria-hidden="true">
-                        {profileInitial}
-                      </span>
-                      <div>
-                        <p>สวัสดี</p>
-                        <strong>{user.full_name}</strong>
-                      </div>
-                    </div>
-
-                    <div className="profile-dropdown-list">
-                      {profileMenuItems.map((item) => (
-                        <button
-                          type="button"
-                          role="menuitem"
-                          key={item.path}
-                          onClick={() => goToProfilePage(item.path)}
-                        >
-                          
-                          <span>{item.label}</span>
-                        </button>
-                      ))}
-                    </div>
-
-                    <button
-                      type="button"
-                      className="profile-logout"
-                      role="menuitem"
-                      onClick={() => {
-                        setProfileOpen(false);
-                        onLogout();
-                      }}
-                    >
-                      
-                      <span>ออกจากระบบ</span>
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <>
-                <button type="button" className="login-button" onClick={() => onNavigate('/login')}>
-                  เข้าสู่ระบบ
-                </button>
-                <button type="button" className="signup-button" onClick={() => onNavigate('/register')}>
-                  สมัครสมาชิก
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-      </header>
+      <CustomerNavbar user={user} onNavigate={onNavigate} onLogout={onLogout} />
 
       <main id="top">
         <HomeHeroBanner onNavigate={onNavigate} onCommunity={() => scrollTo('history')} onScrollNext={() => scrollTo('products')} ariaLabel="หน้าหลัก" />

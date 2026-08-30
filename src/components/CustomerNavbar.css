@@ -1,12 +1,12 @@
-﻿.google-profile-alert-backdrop {
+
+.google-profile-alert-backdrop {
   position: fixed;
   inset: 0;
   z-index: 120;
   display: grid;
   place-items: center;
   padding: 20px;
-  background: rgba(19, 32, 25, 0.58);
-  backdrop-filter: blur(5px);
+  background: rgba(19, 32, 25, 0.78);
   animation: google-profile-alert-fade 180ms ease-out both;
 }
 

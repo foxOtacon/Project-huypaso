@@ -707,8 +707,7 @@
   display: grid;
   place-items: center;
   padding: 24px;
-  background: rgba(15, 35, 25, .58);
-  backdrop-filter: blur(6px);
+  background: rgba(15, 35, 25, .78);
 }
 
 .admin-payment-alert-dialog {
@@ -949,8 +948,7 @@
   display: grid;
   place-items: center;
   padding: 20px;
-  background: rgba(10, 28, 20, 0.58);
-  backdrop-filter: blur(6px);
+  background: rgba(10, 28, 20, 0.78);
 }
 
 .admin-notification-dialog {
@@ -2240,8 +2238,7 @@
 }
 
 .users-warning-modal-backdrop {
-  background: rgba(20, 31, 25, 0.66);
-  backdrop-filter: blur(7px);
+  background: rgba(20, 31, 25, 0.82);
 }
 
 .users-warning-modal {
@@ -3557,10 +3554,9 @@
 .dashboard-welcome-status {
   min-width: 170px;
   padding: 15px 17px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.09);
-  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.18);
 }
 
 .dashboard-welcome-right {
@@ -4017,8 +4013,7 @@
 }
 
 .orders-page .orders-modal-backdrop {
-  background: rgba(12, 33, 22, 0.58);
-  backdrop-filter: blur(8px);
+  background: rgba(12, 33, 22, 0.78);
 }
 
 .orders-page .orders-modal {
@@ -4359,8 +4354,7 @@
 }
 
 .transactions-page .transactions-drawer-backdrop {
-  background: rgba(12, 33, 22, 0.58);
-  backdrop-filter: blur(8px);
+  background: rgba(12, 33, 22, 0.78);
 }
 
 .transactions-page .transactions-drawer {
@@ -4665,8 +4659,7 @@
 }
 
 .admin-products-page .products-modal-backdrop {
-  background: rgba(12, 33, 22, 0.58);
-  backdrop-filter: blur(8px);
+  background: rgba(12, 33, 22, 0.78);
 }
 
 .admin-products-page .products-modal {
@@ -4982,8 +4975,7 @@
 }
 
 .admin-carriers-page .products-modal-backdrop {
-  background: rgba(12, 33, 22, 0.58);
-  backdrop-filter: blur(8px);
+  background: rgba(12, 33, 22, 0.78);
 }
 
 .admin-carriers-page .carrier-modal {
@@ -5344,8 +5336,7 @@
 }
 
 .admin-news-page .products-modal-backdrop {
-  background: rgba(12, 33, 22, 0.58);
-  backdrop-filter: blur(8px);
+  background: rgba(12, 33, 22, 0.78);
 }
 
 .admin-news-page .products-modal {
@@ -5712,9 +5703,8 @@
 
 .analytics-page .analytics-run-badge {
   border: 1px solid rgba(255, 255, 255, .16);
-  background: rgba(255, 255, 255, .11);
+  background: rgba(255, 255, 255, .18);
   color: #fff;
-  backdrop-filter: blur(9px);
 }
 
 .analytics-page .analytics-run-badge.queued {
@@ -6450,8 +6440,7 @@
   display: grid;
   place-items: center;
   padding: 20px;
-  background: rgba(18, 36, 29, 0.58);
-  backdrop-filter: blur(4px);
+  background: rgba(18, 36, 29, 0.78);
 }
 
 .admin-confirm-dialog {
@@ -6608,7 +6597,7 @@
 .admin-contact-status { flex: 0 0 auto; padding: 7px 10px; border-radius: 999px; background: #fff4d7; color: #8a6500; font-size: 12px; }
 .admin-contact-status.is-in_progress { background: #e7f1ff; color: #315f8f; }
 .admin-contact-status.is-resolved { background: #e6f6eb; color: #247645; }
-.admin-contact-backdrop { position: fixed; inset: 0; z-index: 2500; display: grid; place-items: center; padding: 20px; background: rgba(12,31,21,.64); backdrop-filter: blur(6px); }
+.admin-contact-backdrop { position: fixed; inset: 0; z-index: 2500; display: grid; place-items: center; padding: 20px; background: rgba(12,31,21,.78); }
 .admin-contact-dialog {
   display: flex;
   flex-direction: column;
@@ -7060,8 +7049,7 @@
   align-items: center;
   justify-content: center;
   padding: 20px;
-  background: rgba(15, 30, 22, 0.65);
-  backdrop-filter: blur(8px);
+  background: rgba(15, 30, 22, 0.78);
   animation: report-backdrop-in 200ms ease-out;
 }
 

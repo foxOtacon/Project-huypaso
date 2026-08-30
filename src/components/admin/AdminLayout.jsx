@@ -4,7 +4,7 @@ import { fetchAdminContacts, fetchAdminPayments, fetchOrders, fetchProducts } fr
 import { useAuth } from '../../context/AuthContext';
 import '../../styles/admin.css';
 
-const NOTIFICATION_POLL_MS = 10000;
+const NOTIFICATION_POLL_MS = 45000;
 const SEEN_ORDERS_KEY = 'admin_seen_order_ids';
 const SEEN_PAYMENTS_KEY = 'admin_seen_payment_ids';
 const OUT_OF_STOCK_PRODUCTS_KEY = 'admin_out_of_stock_product_ids';
@@ -148,11 +148,23 @@ export default function AdminLayout({ route, user, onNavigate, onLogout, childre
         const outOfStockProducts = products.filter(
           (product) => product.status === 'active' && Number(product.stock_quantity || 0) <= 0,
         );
-        setNotificationCounts({
+        const nextCounts = {
           orders: pendingOrders.length,
           payments: pendingPayments.length,
           products: outOfStockProducts.length,
           contacts: contacts.filter((item) => ['new', 'read'].includes(item.status)).length,
+        };
+        setNotificationCounts((prev) => {
+          if (
+            prev &&
+            prev.orders === nextCounts.orders &&
+            prev.payments === nextCounts.payments &&
+            prev.products === nextCounts.products &&
+            prev.contacts === nextCounts.contacts
+          ) {
+            return prev;
+          }
+          return nextCounts;
         });
 
         const currentOrderIds = new Set(orders.map((order) => String(order.order_id)));

@@ -1,4 +1,4 @@
-﻿.home-page {
+.home-page {
   min-height: 100svh;
   background: #ffffff;
   color: #25372f;
@@ -15,9 +15,8 @@
   top: 0;
   z-index: 20;
   border-bottom: 1px solid rgba(42, 61, 52, 0.12);
-  background: rgba(255, 255, 255, 0.86);
-  backdrop-filter: blur(12px);
-  box-shadow: 0 5px 18px rgba(31, 48, 40, 0.08);
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 4px 16px rgba(31, 48, 40, 0.06);
   animation: headerDrop 720ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
@@ -430,9 +429,8 @@
 
 .hero-secondary {
   border: 1px solid rgba(255, 255, 255, 0.86);
-  background: rgba(0, 0, 0, 0.18);
+  background: rgba(0, 0, 0, 0.35);
   color: #ffffff;
-  backdrop-filter: blur(8px);
 }
 
 .hero-primary:hover {
@@ -2071,9 +2069,8 @@
 
 .hero-secondary {
   border: 1px solid rgba(255, 255, 255, 0.5);
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.35);
   color: #fff;
-  backdrop-filter: blur(10px);
 }
 
 .hero-secondary:hover {
@@ -2121,9 +2118,8 @@
   overflow: hidden;
   border: 1px solid rgba(45, 78, 62, 0.1);
   border-radius: 22px;
-  background: rgba(255, 255, 255, 0.96);
+  background: rgba(255, 255, 255, 0.98);
   box-shadow: 0 24px 60px rgba(26, 56, 42, 0.14);
-  backdrop-filter: blur(14px);
 }
 
 .impact-grid > div {

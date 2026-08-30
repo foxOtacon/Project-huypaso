@@ -242,6 +242,8 @@ export default function Reports() {
       };
     });
 
+    const maxChartRevenue = Math.max(...chartPoints.map((p) => p.revenue), 1);
+
     return {
       salesToday,
       salesWeek,
@@ -250,6 +252,7 @@ export default function Reports() {
       periodOrdersCount,
       estimatedNetProfit,
       chartPoints,
+      maxChartRevenue,
       filteredOrders: filteredPeriodOrders,
       dateRangeText,
     };
@@ -314,11 +317,16 @@ export default function Reports() {
 
   // Inventory / Stock Report Data
   const inventoryData = useMemo(() => {
+    const soldQuantityMap = new Map();
+    orderItems.forEach((item) => {
+      const pId = Number(item.product_id);
+      const qty = Number(item.quantity || 1);
+      soldQuantityMap.set(pId, (soldQuantityMap.get(pId) || 0) + qty);
+    });
+
     const list = products.map((p) => {
       const pId = Number(p.product_id);
-      const totalSold = orderItems
-        .filter((item) => Number(item.product_id) === pId)
-        .reduce((sum, item) => sum + Number(item.quantity || 1), 0);
+      const totalSold = soldQuantityMap.get(pId) || 0;
 
       const stock = Number(p.stock_quantity || 0);
       let status = 'sufficient';
@@ -753,7 +761,7 @@ export default function Reports() {
             <h3>แนวโน้มรายได้และประมาณการกำไรตามช่วงเวลา</h3>
             <div className="sales-bar-chart">
               {salesData.chartPoints.map((point, index) => {
-                const maxVal = Math.max(...salesData.chartPoints.map((p) => p.revenue), 1);
+                const maxVal = salesData.maxChartRevenue || 1;
                 const heightPercent = (point.revenue / maxVal) * 100;
 
                 return (
@@ -814,7 +822,7 @@ export default function Reports() {
                       <td>
                         <div className="table-product-cell">
                           {item.imageUrl ? (
-                            <img src={item.imageUrl} alt={item.name} className="report-product-img" />
+                            <img src={item.imageUrl} alt={item.name} className="report-product-img" loading="lazy" decoding="async" />
                           ) : (
                             <div className="report-product-placeholder">📦</div>
                           )}

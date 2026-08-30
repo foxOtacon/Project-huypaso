@@ -14,8 +14,7 @@
   gap: 20px;
   padding: 0 32px;
   border-bottom: 1px solid rgba(42, 61, 52, 0.12);
-  background: rgba(255, 255, 255, 0.86);
-  backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.98);
 }
 
 .customer-brand,
@@ -459,7 +458,7 @@
   display: grid;
   place-items: center;
   padding: 20px;
-  background: rgba(18, 31, 25, 0.46);
+  background: rgba(18, 31, 25, 0.72);
 }
 
 .customer-detail-modal {
@@ -680,7 +679,7 @@
   display: grid;
   place-items: center;
   padding: 20px;
-  background: rgba(18, 31, 25, 0.62);
+  background: rgba(18, 31, 25, 0.72);
 }
 
 .tracking-guide-modal {
@@ -1002,8 +1001,7 @@
   padding: 13px 16px;
   border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.09);
-  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.16);
 }
 
 .customer-hero-stats strong,
@@ -1030,9 +1028,8 @@
   padding: 22px 26px;
   border: 1px solid rgba(255, 255, 255, 0.8);
   border-radius: 19px;
-  background: rgba(255, 255, 255, 0.96);
+  background: rgba(255, 255, 255, 0.98);
   box-shadow: 0 22px 52px rgba(33, 66, 49, 0.14);
-  backdrop-filter: blur(14px);
 }
 
 .customer-status-card p {
