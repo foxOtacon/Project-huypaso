@@ -12,13 +12,18 @@ import ShippingCarriers from './ShippingCarriers';
 import Transactions from './Transactions';
 import PaymentSettings from './PaymentSettings';
 import BankTransferAccounts from './BankTransferAccounts';
+import Reports from './Reports';
 import Users from './Users';
 
 const HistoryContent = lazy(() => import('./HistoryContent'));
 
-function AdminPageContent({ route, user }) {
+function AdminPageContent({ route, user, onNavigate }) {
   if (route === '/admin' || route === '/admin/dashboard') {
-    return <Dashboard />;
+    return <Dashboard onNavigate={onNavigate} />;
+  }
+
+  if (route === '/admin/reports' || route === '/reports') {
+    return <Reports user={user} />;
   }
 
   if (route === '/admin/orders') {
@@ -75,7 +80,7 @@ function AdminPageContent({ route, user }) {
 export default function AdminApp({ route, user, onNavigate, onLogout }) {
   return (
     <AdminLayout route={route} user={user} onNavigate={onNavigate} onLogout={onLogout}>
-      <AdminPageContent key={route} route={route} user={user} />
+      <AdminPageContent key={route} route={route} user={user} onNavigate={onNavigate} />
     </AdminLayout>
   );
 }

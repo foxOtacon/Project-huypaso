@@ -13,6 +13,8 @@ const ADMIN_ROUTES = new Set([
   '/admin/news',
   '/admin/users',
   '/admin/analytics',
+  '/admin/reports',
+  '/reports',
 ]);
 
 export function isAdminRoute(route) {

@@ -62,6 +62,14 @@ const PAGE_HEADERS = {
     title: 'Dashboard',
     subtitle: 'ภาพรวมสถิติและข้อมูลธุรกิจ',
   },
+  '/reports': {
+    title: 'รายงานสรุปผลงาน',
+    subtitle: 'ศูนย์รายงานยอดขาย สินค้า สต็อก และพฤติกรรมลูกค้า',
+  },
+  '/admin/reports': {
+    title: 'รายงานสรุปผลงาน',
+    subtitle: 'ศูนย์รายงานยอดขาย สินค้า สต็อก และพฤติกรรมลูกค้า',
+  },
   '/admin/orders': {
     title: 'จัดการคำสั่งซื้อ',
     subtitle: 'ตรวจสอบและจัดการคำสั่งซื้อทั้งหมด',
@@ -109,7 +117,7 @@ export default function AdminLayout({ route, user, onNavigate, onLogout, childre
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notificationCounts, setNotificationCounts] = useState({ orders: 0, payments: 0, products: 0, contacts: 0 });
   const [notification, setNotification] = useState(null);
-  const activePath = route === '/admin/dashboard' ? '/admin' : route;
+  const activePath = route === '/admin/dashboard' ? '/admin' : (route === '/reports' ? '/admin/reports' : route);
   const pageHeader = PAGE_HEADERS[route] || PAGE_HEADERS['/admin'];
 
   const handleNavigate = (path) => {

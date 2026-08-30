@@ -10,7 +10,7 @@ const STAT_CARDS = [
   { key: 'customerCount', label: 'ลูกค้าทั้งหมด', description: 'สมาชิกประเภทลูกค้า', iconClass: 'stat-icon-purple' },
 ];
 
-export default function Dashboard() {
+export default function Dashboard({ onNavigate }) {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -18,7 +18,11 @@ export default function Dashboard() {
   useEffect(() => {
     async function loadData() {
       try {
-        const [orders, users] = await Promise.all([fetchOrders(), fetchUsers()]);
+        const [orders, users] = await Promise.all([
+          fetchOrders(),
+          fetchUsers(),
+        ]);
+
         setStats(computeDashboardStats(orders, users));
       } catch (err) {
         setError(err.message);
@@ -38,6 +42,12 @@ export default function Dashboard() {
     return <div className="admin-error">{error}</div>;
   }
 
+  const goToReports = () => {
+    if (onNavigate) {
+      onNavigate('/admin/reports');
+    }
+  };
+
   return (
     <div className="dashboard-page">
       <section className="dashboard-welcome">
@@ -46,13 +56,16 @@ export default function Dashboard() {
           <h2>ข้อมูลสำคัญในที่เดียว</h2>
           <span>ติดตามยอดขาย คำสั่งซื้อ และการเติบโตของลูกค้าได้อย่างรวดเร็ว</span>
         </div>
-        <div className="dashboard-welcome-status">
-          <i />
-          <span>ข้อมูลอัปเดตล่าสุด</span>
-          <strong>{new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} น.</strong>
+        <div className="dashboard-welcome-right">
+          <div className="dashboard-welcome-status">
+            <i />
+            <span>ข้อมูลอัปเดตล่าสุด</span>
+            <strong>{new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} น.</strong>
+          </div>
         </div>
       </section>
 
+      {/* Summary Stats Cards */}
       <section className="stat-grid">
         {STAT_CARDS.map((card) => {
           const raw = stats[card.key];
@@ -71,6 +84,24 @@ export default function Dashboard() {
         })}
       </section>
 
+      {/* Reports Section (ส่วนรายงาน) */}
+      <section className="admin-panel dashboard-reports-panel">
+        <div className="dashboard-panel-heading">
+          <div>
+            <span>ศูนย์รายงานและสถิติ</span>
+            <h2>รายงาน (Reports)</h2>
+          </div>
+          <button
+            type="button"
+            className="admin-btn admin-btn-primary"
+            onClick={goToReports}
+          >
+            📊 ไปหน้ารายงาน →
+          </button>
+        </div>
+      </section>
+
+      {/* Revenue Trend Chart */}
       <section className="admin-panel dashboard-chart-panel">
         <div className="dashboard-panel-heading">
           <div><span>แนวโน้มรายได้</span><h2>รายได้ตามเดือนในปีนี้</h2></div>
@@ -79,6 +110,7 @@ export default function Dashboard() {
         <RevenueChart data={stats.monthlyRevenue} />
       </section>
 
+      {/* Latest Orders Table */}
       <section className="admin-panel dashboard-orders-panel">
         <div className="dashboard-panel-heading">
           <div><span>รายการล่าสุด</span><h2>คำสั่งซื้อล่าสุด</h2></div>
