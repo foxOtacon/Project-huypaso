@@ -93,10 +93,10 @@ export default function Dashboard({ onNavigate }) {
           </div>
           <button
             type="button"
-            className="admin-btn admin-btn-primary"
+            className="dashboard-reports-cta"
             onClick={goToReports}
           >
-            📊 ไปหน้ารายงาน →
+            <span>ไปหน้ารายงาน</span>
           </button>
         </div>
       </section>

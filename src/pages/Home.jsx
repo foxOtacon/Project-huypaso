@@ -432,7 +432,7 @@ export default function Home({ user, onNavigate, onLogout }) {
         <section id="history" className="section history-section" aria-labelledby="history-title">
           <div className="site-shell history-layout">
             <figure className="history-visual reveal-on-scroll">
-              <img src="/images/community-history.jpg" alt="บรรยากาศบ้านห้วยหยวกป่าโซ" />
+              <img src="/images/community-history.jpg" alt="บรรยากาศบ้านห้วยหยวกป่าโซ" loading="lazy" decoding="async" />
               <figcaption>บ้านห้วยหยวกป่าโซ จังหวัดเชียงราย</figcaption>
             </figure>
             <article className="history-content reveal-on-scroll">
@@ -543,7 +543,7 @@ export default function Home({ user, onNavigate, onLogout }) {
                 return (
                 <article className="product-card reveal-on-scroll is-visible" key={product.product_id}>
                   <div className="product-media">
-                    <img src={getProductImage(product)} alt={product.product_name} />
+                    <img src={getProductImage(product)} alt={product.product_name} loading="lazy" decoding="async" />
                     <span className="product-category-badge">
                       {featuredCategories[String(product.category_id)] || 'สินค้าเกษตร'}
                     </span>
@@ -656,7 +656,7 @@ export default function Home({ user, onNavigate, onLogout }) {
               {!newsLoading && !newsError
                 ? latestNews.map((item, index) => (
                     <article className="news-card" key={item.news_id}>
-                      <img src={getNewsImage(item, index)} alt={item.title} />
+                      <img src={getNewsImage(item, index)} alt={item.title} loading="lazy" decoding="async" />
                       <div className="news-body">
                         <time dateTime={item.created_at}>{formatNewsDate(item.created_at)}</time>
                         <h3>{item.title}</h3>
@@ -697,6 +697,8 @@ export default function Home({ user, onNavigate, onLogout }) {
             <img
               src={selectedProduct.imageUrl || getProductImage(selectedProduct)}
               alt={selectedProduct.product_name}
+              loading="lazy"
+              decoding="async"
             />
 
             <div className="catalog-detail-content">
