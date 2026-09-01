@@ -412,7 +412,7 @@ export default function PaymentPage({ user, onNavigate, onLogout }) {
                   </header>
                   <p>เลขบัญชี</p><strong>{selectedBankAccount?.account_number}</strong>
                   <p>ชื่อบัญชี</p><strong>{selectedBankAccount?.account_name}</strong>
-                  <button type="button" onClick={copyBankAccountNumber}>{copiedPromptPay ? 'คัดลอกแล้ว' : 'คัดลอกเลขบัญชี'}</button>
+                  <button type="button" className="payment-copy-bank-account" onClick={copyBankAccountNumber}>{copiedPromptPay ? 'คัดลอกแล้ว' : 'คัดลอกเลขบัญชี'}</button>
                   <div><span>ยอดที่ต้องชำระ</span><b>{formatPrice(createdOrder?.total_amount || totalAmount)}</b></div>
                   <small>กรุณาโอนให้ตรงตามยอดและอัปโหลดสลิปก่อนหมดเวลา</small>
                 </div>

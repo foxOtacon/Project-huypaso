@@ -189,6 +189,7 @@
 .payment-bank-transfer-box p { margin: 8px 0 0; color: #718178; font-size: 12px; font-weight: 800; }
 .payment-bank-transfer-box strong { color: #243e31; font-size: 18px; }
 .payment-bank-transfer-box > button { width: fit-content; min-height: 36px; margin-top: 8px; padding: 0 13px; border: 1px solid #cbd9d1; border-radius: 7px; background: #fff; color: #315542; font: inherit; font-weight: 800; cursor: pointer; }
+.payment-bank-transfer-box > .payment-copy-bank-account { display: none; }
 .payment-bank-transfer-box > div { display: flex; justify-content: space-between; gap: 12px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #d8e4dd; }
 .payment-bank-transfer-box b { color: #8c6b39; font-size: 20px; }
 .payment-bank-transfer-box small { color: #6b7e73; font-weight: 700; }
@@ -235,7 +236,7 @@
   display: block;
 }
 
-.payment-qr-box .payment-copy-promptpay { min-height: 36px; padding: 0 13px; border: 1px solid #cbd9d1; border-radius: 7px; background: #eef6f1; color: #315542; font: inherit; font-weight: 800; cursor: pointer; }
+.payment-qr-box .payment-copy-promptpay { display: none; min-height: 36px; padding: 0 13px; border: 1px solid #cbd9d1; border-radius: 7px; background: #eef6f1; color: #315542; font: inherit; font-weight: 800; cursor: pointer; }
 
 .payment-qr-box small {
   color: #6b7e73;
@@ -536,6 +537,17 @@
 }
 
 @media (max-width: 720px) {
+  .payment-bank-transfer-box > .payment-copy-bank-account {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .payment-qr-box .payment-copy-promptpay {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
   .payment-main {
     width: min(1180px, calc(100% - 24px));
     padding: 28px 0 56px;
