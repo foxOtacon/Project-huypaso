@@ -828,7 +828,6 @@ export default function Reports() {
                           )}
                           <div>
                             <strong>{item.name}</strong>
-                            <small className="text-muted">ID: {item.productId}</small>
                           </div>
                         </div>
                       </td>

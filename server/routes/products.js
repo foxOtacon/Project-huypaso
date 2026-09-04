@@ -57,6 +57,12 @@ const controller = createCrudController({
     "unit",
     "image_url",
     "production_source",
+    "product_hook",
+    "product_story",
+    "product_highlights",
+    "product_benefits",
+    "product_usage",
+    "product_details",
     "stock_quantity",
     "status",
     "created_by",
@@ -91,7 +97,10 @@ router.get(
   "/admin/all",
   authenticate,
   authorize("admin"),
-  asyncHandler(controller.getAll),
+  asyncHandler(async (_req, res) => {
+    const rows = await query('SELECT * FROM products ORDER BY product_id DESC');
+    res.json({ success: true, data: rows });
+  }),
 );
 router.get(
   "/:id",
@@ -106,7 +115,7 @@ router.get(
       return;
     }
 
-    res.json({ success: true, data: rows[0] });
+    res.json({ success: true, data: (await attachProductImages(rows))[0] });
   }),
 );
 router.post("/", authenticate, authorize("admin"), validateUniqueProductName, asyncHandler(controller.create));

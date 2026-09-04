@@ -320,10 +320,10 @@ export async function fetchHistoryContent() {
   return res.data;
 }
 
-export async function updateHistoryContent(contentHtml) {
+export async function updateHistoryContent({ contentHtml, latitude, longitude }) {
   const res = await request('/site-content/history', {
     method: 'PUT',
-    body: JSON.stringify({ content_html: contentHtml }),
+    body: JSON.stringify({ content_html: contentHtml, latitude, longitude }),
   });
   return res.data;
 }

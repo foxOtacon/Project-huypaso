@@ -14,6 +14,7 @@ import PaymentSettings from './PaymentSettings';
 import BankTransferAccounts from './BankTransferAccounts';
 import Reports from './Reports';
 import Users from './Users';
+import Gallery from './Gallery';
 
 const HistoryContent = lazy(() => import('./HistoryContent'));
 
@@ -37,6 +38,7 @@ function AdminPageContent({ route, user, onNavigate }) {
   if (route === '/admin/products') {
     return <Products user={user} />;
   }
+  if (route === '/admin/gallery') return <Gallery />;
   if (route === '/admin/payment-settings') return <PaymentSettings />;
   if (route === '/admin/bank-transfer-accounts') return <BankTransferAccounts />;
 

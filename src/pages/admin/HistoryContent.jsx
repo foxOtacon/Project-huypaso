@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import { CKEditor } from '@ckeditor/ckeditor5-react';
 import {
   AccessibilityHelp,
@@ -203,7 +205,8 @@ const EDITOR_CONFIG = {
       'tableColumn', 'tableRow', 'mergeTableCells', 'tableProperties',
       'tableCellProperties', 'toggleTableCaption',
     ],
-  },
+  },
+
 };
 
 function hasReadableText(html) {
@@ -229,9 +232,17 @@ function formatUpdatedAt(value) {
 
 export default function HistoryContent() {
   const editorRef = useRef(null);
+  const locationMapContainerRef = useRef(null);
+  const locationMapRef = useRef(null);
+  const locationMarkerRef = useRef(null);
+  const previewCoordinatesRef = useRef({ latitude: null, longitude: null });
   const discardingRef = useRef(false);
   const [content, setContent] = useState('');
   const [savedContent, setSavedContent] = useState('');
+  const [latitude, setLatitude] = useState('');
+  const [longitude, setLongitude] = useState('');
+  const [savedLatitude, setSavedLatitude] = useState('');
+  const [savedLongitude, setSavedLongitude] = useState('');
   const [updatedAt, setUpdatedAt] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -241,7 +252,75 @@ export default function HistoryContent() {
   const [reloadVersion, setReloadVersion] = useState(0);
   const [pendingUploads, setPendingUploads] = useState(0);
 
-  const isDirty = content !== savedContent;
+  const isDirty = content !== savedContent
+    || latitude !== savedLatitude
+    || longitude !== savedLongitude;
+  const previewLatitude = Number(latitude);
+  const previewLongitude = Number(longitude);
+  const hasPreviewCoordinates = latitude.trim() !== ''
+    && longitude.trim() !== ''
+    && Number.isFinite(previewLatitude)
+    && Number.isFinite(previewLongitude)
+    && previewLatitude >= -90
+    && previewLatitude <= 90
+    && previewLongitude >= -180
+    && previewLongitude <= 180;
+
+  useEffect(() => {
+    previewCoordinatesRef.current = {
+      latitude: previewLatitude,
+      longitude: previewLongitude,
+    };
+  }, [previewLatitude, previewLongitude]);
+
+  useEffect(() => {
+    if (!hasPreviewCoordinates || !locationMapContainerRef.current) return undefined;
+
+    const { latitude: initialLatitude, longitude: initialLongitude } = previewCoordinatesRef.current;
+    const map = L.map(locationMapContainerRef.current).setView(
+      [initialLatitude, initialLongitude],
+      15,
+    );
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors',
+      maxZoom: 19,
+    }).addTo(map);
+
+    const marker = L.circleMarker([initialLatitude, initialLongitude], {
+      radius: 9,
+      color: '#ffffff',
+      weight: 3,
+      fillColor: '#d94b45',
+      fillOpacity: 1,
+    }).addTo(map);
+
+    map.on('click', (event) => {
+      setLatitude(event.latlng.lat.toFixed(7));
+      setLongitude(event.latlng.lng.toFixed(7));
+      setError('');
+      setSuccess('');
+    });
+
+    locationMapRef.current = map;
+    locationMarkerRef.current = marker;
+    window.setTimeout(() => map.invalidateSize(), 0);
+
+    return () => {
+      map.remove();
+      locationMapRef.current = null;
+      locationMarkerRef.current = null;
+    };
+  }, [hasPreviewCoordinates]);
+
+  useEffect(() => {
+    const map = locationMapRef.current;
+    const marker = locationMarkerRef.current;
+    if (!map || !marker || !hasPreviewCoordinates) return;
+
+    const nextPosition = [previewLatitude, previewLongitude];
+    marker.setLatLng(nextPosition);
+    map.setView(nextPosition);
+  }, [hasPreviewCoordinates, previewLatitude, previewLongitude]);
 
   useEffect(() => {
     HistoryUploadAdapterPlugin.onUploadStateChange = (change) => {
@@ -266,8 +345,14 @@ export default function HistoryContent() {
         if (!active) return;
 
         const loadedContent = String(record?.content_html || '');
+        const loadedLatitude = record?.latitude == null ? '' : String(record.latitude);
+        const loadedLongitude = record?.longitude == null ? '' : String(record.longitude);
         setContent(loadedContent);
         setSavedContent(loadedContent);
+        setLatitude(loadedLatitude);
+        setSavedLatitude(loadedLatitude);
+        setLongitude(loadedLongitude);
+        setSavedLongitude(loadedLongitude);
         setUpdatedAt(record?.updated_at || '');
       } catch (err) {
         if (active) setError(err.message || 'ไม่สามารถโหลดเนื้อหาความเป็นมาได้');
@@ -309,14 +394,33 @@ export default function HistoryContent() {
       return;
     }
 
+    const parsedLatitude = latitude.trim() === '' ? null : Number(latitude);
+    const parsedLongitude = longitude.trim() === '' ? null : Number(longitude);
+    if (!Number.isFinite(parsedLatitude) || parsedLatitude < -90 || parsedLatitude > 90) {
+      setSuccess('');
+      setError('Latitude ต้องอยู่ระหว่าง -90 ถึง 90 หรือเว้นว่างได้');
+      return;
+    }
+    if (!Number.isFinite(parsedLongitude) || parsedLongitude < -180 || parsedLongitude > 180) {
+      setSuccess('');
+      setError('Longitude ต้องอยู่ระหว่าง -180 ถึง 180 หรือเว้นว่างได้');
+      return;
+    }
+
     setSaving(true);
     setError('');
     setSuccess('');
     setSaveAlertOpen(false);
 
     try {
-      const saved = await updateHistoryContent(content);
+      const saved = await updateHistoryContent({
+        contentHtml: content,
+        latitude: parsedLatitude,
+        longitude: parsedLongitude,
+      });
       const savedHtml = String(saved?.content_html ?? content);
+      const savedLatitudeValue = saved?.latitude == null ? '' : String(saved.latitude);
+      const savedLongitudeValue = saved?.longitude == null ? '' : String(saved.longitude);
 
       if (savedHtml !== content) {
         editorRef.current?.setData(savedHtml);
@@ -324,6 +428,10 @@ export default function HistoryContent() {
       }
 
       setSavedContent(savedHtml);
+      setLatitude(savedLatitudeValue);
+      setSavedLatitude(savedLatitudeValue);
+      setLongitude(savedLongitudeValue);
+      setSavedLongitude(savedLongitudeValue);
       setUpdatedAt(saved?.updated_at || new Date().toISOString());
       setSuccess('แก้ไขเรียบร้อยแล้ว');
       setSaveAlertOpen(true);
@@ -340,6 +448,8 @@ export default function HistoryContent() {
     const restoredContent = editorRef.current?.getData() ?? savedContent;
     setContent(restoredContent);
     setSavedContent(restoredContent);
+    setLatitude(savedLatitude);
+    setLongitude(savedLongitude);
     setError('');
     setSuccess('ยกเลิกการเปลี่ยนแปลงแล้ว');
   }
@@ -398,6 +508,57 @@ export default function HistoryContent() {
               setError(editorError?.message || 'ตัวแก้ไขข้อความทำงานผิดพลาด กรุณาลองใหม่');
             }}
           />
+        </div>
+
+        <div className="history-location-fields">
+          <div className="history-location-heading">
+            <h3>ที่ตั้งหมู่บ้าน</h3>
+            <p>กรอกพิกัดเพื่อแสดงตำแหน่งบน Google Maps โดยไม่ฝังแผนที่ไว้ในเนื้อหา</p>
+          </div>
+          <div className="history-location-grid">
+            <label>
+              <span>Latitude</span>
+              <input
+                type="number"
+                min="-90"
+                max="90"
+                step="any"
+                value={latitude}
+                onChange={(event) => { setLatitude(event.target.value); setError(''); setSuccess(''); }}
+                placeholder="เช่น 20.1234567"
+              />
+            </label>
+            <label>
+              <span>Longitude</span>
+              <input
+                type="number"
+                min="-180"
+                max="180"
+                step="any"
+                value={longitude}
+                onChange={(event) => { setLongitude(event.target.value); setError(''); setSuccess(''); }}
+                placeholder="เช่น 99.1234567"
+              />
+            </label>
+          </div>
+          {hasPreviewCoordinates ? (
+            <div className="history-location-preview">
+              <div className="history-location-preview-heading">
+                <span>ตัวอย่างตำแหน่ง</span>
+                <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${previewLatitude},${previewLongitude}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  เปิดใน Google Maps
+                </a>
+              </div>
+              <div className="history-location-map-frame">
+                <div ref={locationMapContainerRef} className="history-location-map" />
+              </div>
+              <p>คลิกตำแหน่งบนแผนที่เพื่อเปลี่ยน Latitude/Longitude หรือลากและซูมเพื่อค้นหาตำแหน่ง</p>
+            </div>
+          ) : null}
         </div>
 
         <footer className="history-editor-footer">

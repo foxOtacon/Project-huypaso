@@ -284,6 +284,217 @@
   opacity: 0.68;
 }
 
+.saved-address-list {
+  display: grid;
+  gap: 14px;
+}
+
+.saved-address-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 18px 20px;
+  border: 1px solid rgba(73, 104, 91, 0.16);
+  border-radius: 14px;
+  background: linear-gradient(135deg, #ffffff, #f7fbf8);
+  box-shadow: 0 8px 20px rgba(38, 57, 47, 0.05);
+  transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+
+.saved-address-item:hover {
+  border-color: rgba(73, 104, 91, 0.32);
+  box-shadow: 0 12px 26px rgba(38, 57, 47, 0.09);
+  transform: translateY(-1px);
+}
+
+.saved-address-item strong {
+  display: inline-block;
+  color: #294a38;
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+.saved-address-info {
+  min-width: 0;
+}
+
+.saved-address-recipient {
+  color: #49685b;
+  font-weight: 700;
+}
+
+.saved-address-recipient span {
+  margin: 0 4px;
+  color: #9aae9f;
+}
+
+.saved-address-location {
+  max-width: 760px;
+  overflow-wrap: anywhere;
+}
+
+.saved-address-item p {
+  margin: 7px 0 0;
+  color: #687870;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.saved-address-default {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  color: #286442;
+  background: #edf9f1;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.saved-address-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+}
+
+.saved-address-actions button,
+.saved-address-form button {
+  min-height: 36px;
+  padding: 7px 12px;
+  border: 1px solid #cfd9d2;
+  border-radius: 9px;
+  color: #49685b;
+  background: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: border-color 180ms ease, background 180ms ease, color 180ms ease;
+}
+
+.saved-address-actions button:hover {
+  border-color: #7da18c;
+  color: #315542;
+  background: #eef7f1;
+}
+
+.saved-address-actions button:last-child {
+  color: #9a5149;
+}
+
+.saved-address-actions button:last-child:hover {
+  border-color: #d8aaa5;
+  color: #893d36;
+  background: #fff5f3;
+}
+
+.saved-address-form {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(42, 61, 52, 0.12);
+}
+
+.account-address-book-card .account-card-header {
+  align-items: flex-start;
+}
+
+.account-address-book-card .account-card-header p {
+  margin: 0 0 4px;
+  color: #829087;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.account-address-book-card .account-card-header h2 {
+  margin: 0;
+}
+
+.account-address-book-card .account-edit-button {
+  border-radius: 999px;
+  box-shadow: 0 5px 14px rgba(38, 57, 47, 0.06);
+}
+
+.saved-address-form-heading {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.saved-address-form-heading label,
+.saved-address-fields label {
+  display: grid;
+  gap: 6px;
+  color: #53655b;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.saved-address-form .profile-account-actions {
+  margin-top: 4px;
+}
+
+.saved-address-fields {
+  margin: 0;
+}
+
+.saved-address-form select {
+  width: 100%;
+  min-height: 42px;
+  padding: 9px 12px;
+  border: 1px solid #cfd9d2;
+  border-radius: 6px;
+  color: #2f3d36;
+  background: #fff;
+  font: inherit;
+}
+
+.saved-address-form input,
+.saved-address-form textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #cfd9d2;
+  border-radius: 6px;
+  color: #2f3d36;
+  font: inherit;
+}
+
+.saved-address-form .account-primary-button {
+  width: fit-content;
+  border-color: #557669;
+  color: #fff;
+  background: #557669;
+}
+
+.account-address-empty {
+  margin: 0;
+  color: #74837b;
+}
+
+@media (max-width: 640px) {
+  .saved-address-form-heading {
+    grid-template-columns: 1fr;
+  }
+
+  .saved-address-item {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .saved-address-actions {
+    justify-content: flex-start;
+  }
+
+  .saved-address-actions button {
+    flex: 1 1 auto;
+  }
+}
+
 .account-alert {
   margin-bottom: 14px;
   padding: 11px 13px;

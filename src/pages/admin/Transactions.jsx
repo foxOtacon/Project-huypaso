@@ -171,6 +171,7 @@ export default function Transactions() {
           payment.payment_id === updated.payment_id ? updated : payment,
         ),
       );
+      window.dispatchEvent(new Event('admin-notifications-refresh'));
       setSelectedTransaction(null);
     } catch (err) {
       setError(err.message);

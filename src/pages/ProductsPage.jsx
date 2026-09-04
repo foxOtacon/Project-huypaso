@@ -13,6 +13,7 @@ import './Home.css';
 import './ProductsPage.css';
 import CustomerNavbar from '../components/CustomerNavbar';
 import Toast from '../components/Toast';
+import ProductDetailModal from '../components/ProductDetailModal';
 
 const fallbackImages = [
   'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=900&q=80',
@@ -105,7 +106,6 @@ export default function ProductsPage({ user, onNavigate, onLogout }) {
   const [addedProductId, setAddedProductId] = useState(null);
   const [toastMessage, setToastMessage] = useState('');
   const [selectedProduct, setSelectedProduct] = useState(null);
-  const [modalQuantity, setModalQuantity] = useState(1);
   const profileRef = useRef(null);
 
   useEffect(() => {
@@ -238,7 +238,6 @@ export default function ProductsPage({ user, onNavigate, onLogout }) {
   }
 
   function openProductDetail(product, index) {
-    setModalQuantity(1);
     setSelectedProduct({ ...product, imageUrl: getImageUrl(product, index) });
     if (token && isCustomerUser(user)) {
       recordProductView(token, product.product_id).catch(() => {});
@@ -385,78 +384,14 @@ export default function ProductsPage({ user, onNavigate, onLogout }) {
       </main>
 
       {selectedProduct && (
-        <div className="catalog-modal-backdrop" role="presentation" onMouseDown={() => setSelectedProduct(null)}>
-          <section
-            className="catalog-detail-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="catalog-detail-title"
-            onMouseDown={(event) => event.stopPropagation()}
-          >
-            <button
-              type="button"
-              className="catalog-modal-close"
-              aria-label="ปิดรายละเอียดสินค้า"
-              onClick={() => setSelectedProduct(null)}
-            >
-              ×
-            </button>
-
-            <img src={selectedProduct.imageUrl} alt={selectedProduct.product_name} />
-
-            <div className="catalog-detail-content">
-              <div className="catalog-card-meta">
-                <span>{getProductCategoryName(selectedProduct)}</span>
-                <span>{Number(selectedProduct.stock_quantity || 0) > 0 ? 'พร้อมส่ง' : 'หมดสต็อก'}</span>
-              </div>
-
-              <h2 id="catalog-detail-title">{selectedProduct.product_name}</h2>
-              <p>{selectedProduct.description || 'ผลิตภัณฑ์คุณภาพจากชุมชนห้วยหยวกป่าโซ'}</p>
-
-              {selectedProduct.production_source && (
-                <div className="catalog-detail-block">
-                  <strong>แหล่งผลิต</strong>
-                  <span>{selectedProduct.production_source}</span>
-                </div>
-              )}
-
-              <div className="catalog-detail-stats">
-                <span>
-                  <strong>{formatPrice(selectedProduct.price)}</strong>
-                  <small>/{selectedProduct.unit || 'หน่วย'}</small>
-                </span>
-                <span>
-                  <strong>{Number(selectedProduct.stock_quantity || 0)}</strong>
-                  <small>คงเหลือ</small>
-                </span>
-              </div>
-
-              {Number(selectedProduct.stock_quantity || 0) > 0 ? (
-                <div className="catalog-detail-quantity">
-                  <span>จำนวน</span>
-                  <div>
-                    <button type="button" aria-label="ลดจำนวน" disabled={modalQuantity <= 1} onClick={() => setModalQuantity((value) => Math.max(1, value - 1))}>−</button>
-                    <input type="number" min="1" max={Number(selectedProduct.stock_quantity || 0)} value={modalQuantity} aria-label="จำนวนสินค้า" onChange={(event) => setModalQuantity(Math.min(Number(selectedProduct.stock_quantity || 0), Math.max(1, Number(event.target.value) || 1)))} />
-                    <button type="button" aria-label="เพิ่มจำนวน" disabled={modalQuantity >= Number(selectedProduct.stock_quantity || 0)} onClick={() => setModalQuantity((value) => Math.min(Number(selectedProduct.stock_quantity || 0), value + 1))}>+</button>
-                  </div>
-                </div>
-              ) : null}
-
-              <button
-                type="button"
-                className="catalog-detail-cart"
-                disabled={Number(selectedProduct.stock_quantity || 0) <= 0}
-                onClick={() => handleAddToCart(selectedProduct, modalQuantity)}
-              >
-                {Number(selectedProduct.stock_quantity || 0) <= 0
-                  ? 'หมดสต็อก'
-                  : addedProductId === selectedProduct.product_id
-                    ? 'เพิ่มแล้ว'
-                    : 'ใส่ตะกร้า'}
-              </button>
-            </div>
-          </section>
-        </div>
+        <ProductDetailModal
+          product={selectedProduct}
+          categoryName={getProductCategoryName(selectedProduct)}
+          imageUrl={selectedProduct.imageUrl}
+          onClose={() => setSelectedProduct(null)}
+          added={addedProductId === selectedProduct.product_id}
+          onAddToCart={handleAddToCart}
+        />
       )}
       <Toast message={toastMessage} onClose={() => setToastMessage('')} />
     </div>

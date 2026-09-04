@@ -6,6 +6,7 @@ const ADMIN_ROUTES = new Set([
   '/admin/payment-settings',
   '/admin/bank-transfer-accounts',
   '/admin/products',
+  '/admin/gallery',
   '/admin/categories',
   '/admin/shipping-carriers',
   '/admin/contacts',

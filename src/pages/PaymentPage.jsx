@@ -7,6 +7,7 @@ import {
 } from '../api/checkout';
 import { useRef } from 'react';
 import { fetchMyOrderDetail } from '../api/customer';
+import { fetchAddresses } from '../api/addresses';
 import CustomerNavbar from '../components/CustomerNavbar';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
@@ -55,6 +56,9 @@ export default function PaymentPage({ user, onNavigate, onLogout }) {
   const [copiedPromptPay, setCopiedPromptPay] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('promptpay');
   const [selectedBankAccountId, setSelectedBankAccountId] = useState('');
+  const [savedAddresses, setSavedAddresses] = useState([]);
+  const [selectedAddressId, setSelectedAddressId] = useState('');
+  const [showOtherAddresses, setShowOtherAddresses] = useState(false);
   const paymentFormRef = useRef(null);
   const displayItems = createdOrder && resumeItems.length ? resumeItems : items;
   const awaitingPayment = Boolean(createdOrder && !completed && createdOrder.order_status === 'pending' && createdOrder.payment_status === 'pending' && !createdOrder.slip_image && secondsLeft > 0);
@@ -63,6 +67,37 @@ export default function PaymentPage({ user, onNavigate, onLogout }) {
     ? bankAccounts.find((account) => String(account.bank_transfer_account_id) === String(selectedBankAccountId)) || null
     : (bankAccounts.length === 1 ? bankAccounts[0] : null);
   const selectedBank = findThaiBank(selectedBankAccount?.bank_name);
+
+  useEffect(() => {
+    if (!token) return undefined;
+    let active = true;
+    fetchAddresses(token).then((addresses) => {
+      if (!active) return;
+      setSavedAddresses(addresses);
+      const defaultAddress = addresses.find((address) => address.is_default) || addresses[0];
+      if (defaultAddress && !createdOrder) {
+        setSelectedAddressId(String(defaultAddress.address_id));
+        setForm({
+          shipping_name: defaultAddress.recipient_name,
+          shipping_phone: defaultAddress.phone,
+          shipping_address: defaultAddress.address,
+        });
+      }
+    }).catch(() => {});
+    return () => { active = false; };
+  }, [token, createdOrder]);
+
+  function selectSavedAddress(addressId) {
+    setSelectedAddressId(addressId);
+    setShowOtherAddresses(false);
+    const selected = savedAddresses.find((address) => String(address.address_id) === String(addressId));
+    if (!selected) return;
+    setForm({
+      shipping_name: selected.recipient_name,
+      shipping_phone: selected.phone,
+      shipping_address: selected.address,
+    });
+  }
 
   function guardedNavigate(path) {
     if (awaitingPayment) setLeaveTarget(path);
@@ -337,6 +372,38 @@ export default function PaymentPage({ user, onNavigate, onLogout }) {
           <form ref={paymentFormRef} className="payment-layout" onSubmit={handleCreateOrder}>
             <section className="payment-card">
               <h2>ข้อมูลจัดส่ง</h2>
+              {savedAddresses.length ? (
+                <div className="payment-address-picker">
+                  <fieldset className="payment-address-options" disabled={Boolean(createdOrder)}>
+                    <legend>ที่อยู่ที่เลือก</legend>
+                    {savedAddresses.filter((address) => String(address.address_id) === selectedAddressId).map((address) => (
+                    <label className="payment-address-option" key={address.address_id}>
+                      <input
+                        type="radio"
+                        name="saved_shipping_address"
+                        value={address.address_id}
+                        checked={selectedAddressId === String(address.address_id)}
+                        onChange={(event) => selectSavedAddress(event.target.value)}
+                      />
+                      <span>
+                        <strong>{address.label}{address.is_default ? ' (ค่าเริ่มต้น)' : ''}</strong>
+                        <small>{address.recipient_name} · {address.phone}</small>
+                        <small>{String(address.address || '').replace(/\s*\|\s*/g, ' ')}</small>
+                      </span>
+                    </label>
+                    ))}
+                  </fieldset>
+                  {!createdOrder && savedAddresses.length > 1 ? (
+                    <button
+                      type="button"
+                      className="payment-address-toggle"
+                      onClick={() => setShowOtherAddresses(true)}
+                    >
+                      เลือกที่อยู่อื่น
+                    </button>
+                  ) : null}
+                </div>
+              ) : null}
               <label>
                 ชื่อผู้รับ
                 <input
@@ -353,17 +420,6 @@ export default function PaymentPage({ user, onNavigate, onLogout }) {
                   value={form.shipping_phone}
                   onChange={(event) => updateField('shipping_phone', event.target.value)}
                   placeholder="เบอร์โทรสำหรับติดต่อ"
-                  disabled={Boolean(createdOrder)}
-                />
-              </label>
-              <label>
-                ที่อยู่จัดส่ง
-                <textarea
-                  name="shipping_address"
-                  value={form.shipping_address}
-                  onChange={(event) => updateField('shipping_address', event.target.value)}
-                  placeholder="บ้านเลขที่ หมู่ ตำบล อำเภอ จังหวัด รหัสไปรษณีย์"
-                  rows="4"
                   disabled={Boolean(createdOrder)}
                 />
               </label>
@@ -510,6 +566,46 @@ export default function PaymentPage({ user, onNavigate, onLogout }) {
           </form>
         )}
       </main>
+
+      {showOtherAddresses && (
+        <div className="payment-address-modal-backdrop" role="presentation" onMouseDown={() => setShowOtherAddresses(false)}>
+          <section
+            className="payment-address-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="payment-address-modal-title"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <header className="payment-address-modal-header">
+              <div>
+                <p>ข้อมูลจัดส่ง</p>
+                <h2 id="payment-address-modal-title">เลือกที่อยู่อื่น</h2>
+              </div>
+              <button type="button" aria-label="ปิดหน้าต่างเลือกที่อยู่" onClick={() => setShowOtherAddresses(false)}>×</button>
+            </header>
+            <fieldset className="payment-address-options" disabled={Boolean(createdOrder)}>
+              <legend>ที่อยู่ที่บันทึกไว้</legend>
+              {savedAddresses.map((address) => (
+                <label className="payment-address-option" key={address.address_id}>
+                  <input
+                    type="radio"
+                    name="modal_saved_shipping_address"
+                    value={address.address_id}
+                    checked={selectedAddressId === String(address.address_id)}
+                    onChange={(event) => selectSavedAddress(event.target.value)}
+                  />
+                  <span>
+                    <strong>{address.label}{address.is_default ? ' (ค่าเริ่มต้น)' : ''}</strong>
+                    <small>{address.recipient_name} · {address.phone}</small>
+                    <small>{String(address.address || '').replace(/\s*\|\s*/g, ' ')}</small>
+                  </span>
+                </label>
+              ))}
+            </fieldset>
+            <button type="button" className="payment-address-modal-close" onClick={() => setShowOtherAddresses(false)}>ปิด</button>
+          </section>
+        </div>
+      )}
 
       {validationAlert && (
         <div className="payment-alert-backdrop" role="presentation" onMouseDown={() => setValidationAlert(null)}>

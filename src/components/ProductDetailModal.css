@@ -1,0 +1,316 @@
+.catalog-detail-modal {
+  width: min(1040px, 100%);
+  height: min(760px, calc(100svh - 32px));
+  max-height: calc(100svh - 32px);
+  grid-template-columns: minmax(320px, 0.92fr) minmax(360px, 1.08fr);
+  overflow: hidden;
+  border-radius: 18px;
+  background: #fffdf8;
+  border-color: rgba(49, 93, 71, 0.2);
+  box-shadow: 0 30px 90px rgba(16, 31, 24, 0.34);
+}
+
+.catalog-detail-media {
+  position: relative;
+  height: 100%;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 35%, rgba(255, 255, 255, 0.86), transparent 52%),
+    #e5eee8;
+  border-right: 1px solid rgba(49, 93, 71, 0.12);
+}
+
+.catalog-detail-media img {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  padding: 8px;
+  object-fit: contain;
+  object-position: center;
+}
+
+.catalog-media-caption {
+  position: absolute;
+  left: 22px;
+  bottom: 22px;
+  padding: 8px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.36);
+  border-radius: 999px;
+  color: #fff;
+  background: rgba(28, 65, 48, 0.76);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.catalog-detail-content {
+  min-height: 0;
+  overflow-y: auto;
+  gap: 18px;
+  padding: 34px 36px 32px;
+  scrollbar-color: #a9c8b4 transparent;
+  scrollbar-width: thin;
+}
+
+.catalog-detail-content h2 {
+  font-size: clamp(28px, 3vw, 40px);
+  letter-spacing: 0;
+}
+
+.catalog-product-hook {
+  margin: -8px 0 0;
+  color: #315d47;
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.55;
+}
+
+.catalog-product-description {
+  margin: 0;
+  color: #5f7167;
+  font-size: 15px;
+  line-height: 1.75;
+}
+
+.catalog-product-story-intro {
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  gap: 12px;
+  padding: 18px;
+  border: 1px solid #dce9df;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #f4faf5, #fffdf8);
+}
+
+.catalog-product-story-intro > span {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #dcecdf;
+  font-size: 20px;
+}
+
+.catalog-product-story-intro strong {
+  color: #243e31;
+  font-size: 15px;
+}
+
+.catalog-product-story-intro p {
+  margin: 5px 0 0;
+  color: #5f7167;
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+.catalog-product-highlights {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.catalog-product-highlights article {
+  display: flex;
+  align-items: center;
+  min-height: 58px;
+  padding: 11px 12px;
+  border: 1px solid #dfe9e2;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 7px 18px rgba(38, 57, 47, 0.06);
+  transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease;
+}
+
+.catalog-product-highlights article:hover {
+  transform: translateY(-2px);
+  border-color: #a9c8b4;
+  box-shadow: 0 11px 24px rgba(38, 57, 47, 0.12);
+}
+
+.catalog-product-highlights strong {
+  color: #315542;
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+.catalog-product-accordions {
+  display: grid;
+  gap: 8px;
+  padding-top: 2px;
+  border-top: 1px solid #e0e9e3;
+}
+
+.catalog-accordion {
+  border-bottom: 1px solid #e0e9e3;
+}
+
+.catalog-accordion > button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 48px;
+  padding: 0;
+  border: 0;
+  color: #315542;
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  text-align: left;
+  cursor: pointer;
+}
+
+.catalog-accordion-arrow {
+  color: #6b8375;
+  font-size: 20px;
+  transition: transform 220ms ease;
+}
+
+.catalog-accordion.is-open .catalog-accordion-arrow {
+  transform: rotate(180deg);
+}
+
+.catalog-accordion-content {
+  display: grid;
+  grid-template-rows: 0fr;
+  overflow: hidden;
+  color: #5f7167;
+  font-size: 14px;
+  line-height: 1.7;
+  transition: grid-template-rows 240ms ease;
+}
+
+.catalog-accordion.is-open .catalog-accordion-content {
+  grid-template-rows: 1fr;
+}
+
+.catalog-accordion-content > div {
+  min-height: 0;
+}
+
+.catalog-accordion-content p,
+.catalog-accordion-content ul {
+  margin: 0 0 14px;
+}
+
+.catalog-accordion-content ul {
+  padding-left: 22px;
+  list-style: none;
+}
+
+.catalog-accordion-content li::before {
+  margin-right: 8px;
+  color: #5f8c6e;
+  content: '✓';
+  font-weight: 900;
+}
+
+.catalog-detail-preserve-lines {
+  white-space: pre-line;
+}
+
+.catalog-detail-structured-list {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 14px;
+}
+
+.catalog-detail-structured-list > div {
+  display: grid;
+  grid-template-columns: minmax(92px, 0.35fr) 1fr;
+  gap: 12px;
+  padding-bottom: 9px;
+  border-bottom: 1px solid #e4ece7;
+}
+
+.catalog-detail-structured-list > div:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.catalog-detail-structured-list dt {
+  color: #315542;
+  font-weight: 800;
+}
+
+.catalog-detail-structured-list dd {
+  margin: 0;
+  color: #5f7167;
+}
+
+.catalog-detail-steps {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 14px;
+  padding: 0;
+  list-style: none;
+}
+
+.catalog-detail-steps li {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+}
+
+.catalog-detail-steps li::before {
+  display: none;
+  content: none;
+}
+
+.catalog-detail-steps li > span {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  color: #fff;
+  background: #4f8064;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.catalog-detail-steps p {
+  min-width: 0;
+  margin: 3px 0 0;
+}
+
+@media (max-width: 760px) {
+  .catalog-detail-modal {
+    height: auto;
+    max-height: calc(100svh - 14px);
+    border-radius: 18px 18px 0 0;
+    overflow-y: auto;
+  }
+
+  .catalog-detail-media {
+    position: relative;
+    min-height: 0;
+    height: auto;
+  }
+
+  .catalog-detail-media img {
+    min-height: 0;
+    aspect-ratio: 4 / 3;
+    padding: 8px;
+  }
+
+  .catalog-media-caption {
+    left: 16px;
+    bottom: 16px;
+  }
+
+  .catalog-detail-content {
+    overflow: visible;
+    padding: 24px 20px 26px;
+  }
+
+  .catalog-detail-structured-list > div {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+}

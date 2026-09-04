@@ -4693,8 +4693,17 @@
   background: #fafbf9;
 }
 
-.admin-products-page .products-name-cell img,
-.admin-products-page .products-image-placeholder {
+.admin-products-page .products-name-cell {
+  justify-content: center;
+  text-align: center;
+}
+
+.admin-products-page .products-image-cell {
+  width: 84px;
+}
+
+.admin-products-page .products-image-cell img,
+.admin-products-page .products-image-cell .products-image-placeholder {
   width: 52px;
   height: 52px;
   border-radius: 12px;
@@ -6286,6 +6295,297 @@
   box-shadow: 0 0 0 3px rgba(85, 118, 105, 0.12);
 }
 
+.history-location-fields {
+  padding: 24px 28px;
+  border-top: 1px solid #e8eeea;
+  background: #fbfcfb;
+}
+
+.history-location-heading h3 {
+  margin: 0 0 5px;
+  color: #294a38;
+  font-size: 23px;
+}
+
+.history-location-heading p {
+  margin: 0 0 16px;
+  color: #74837b;
+  line-height: 1.6;
+}
+
+.history-location-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.history-location-grid label {
+  display: grid;
+  gap: 7px;
+  color: #53655b;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.history-location-grid input {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid #cfd9d2;
+  border-radius: 10px;
+  color: #2f3d36;
+  background: #fff;
+  font: inherit;
+}
+
+.history-location-grid input:focus {
+  outline: 3px solid rgba(85, 118, 105, 0.12);
+  border-color: #557669;
+}
+
+.history-location-preview {
+  width: 100%;
+  margin-top: 22px;
+}
+
+.history-location-preview-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 10px;
+  color: #53655b;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.history-location-preview-heading a {
+  color: #315f49;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.history-location-map-frame {
+  height: 420px;
+  overflow: hidden;
+  border: 1px solid #cfd9d2;
+  border-radius: 12px;
+  background: #e8eee9;
+}
+
+.products-gallery-preview {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid #d9e2dc;
+  border-radius: 8px;
+  background: #f7faf8;
+}
+
+.products-gallery-preview img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 6px;
+  object-fit: cover;
+}
+
+.products-gallery-item {
+  position: relative;
+  min-width: 0;
+}
+
+.products-gallery-item button {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  padding: 3px 7px;
+  border: 0;
+  border-radius: 5px;
+  color: #fff;
+  background: rgba(140, 75, 75, 0.92);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.products-gallery-item-actions {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  display: flex;
+  gap: 4px;
+}
+
+.admin-gallery-page {
+  display: grid;
+  gap: 16px;
+}
+
+.admin-gallery-toolbar {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.admin-gallery-toolbar label,
+.admin-gallery-add label {
+  display: grid;
+  gap: 7px;
+  color: #53655b;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.admin-gallery-toolbar select,
+.admin-gallery-add input {
+  min-height: 42px;
+  padding: 9px 12px;
+  border: 1px solid #cfd9d2;
+  border-radius: 7px;
+  background: #fff;
+  font: inherit;
+}
+
+.admin-gallery-card {
+  padding: 24px;
+}
+
+.admin-gallery-card header h2 {
+  margin: 0 0 5px;
+  color: #294a38;
+  font-size: 23px;
+}
+
+.admin-gallery-card header p {
+  margin: 0 0 20px;
+  color: #74837b;
+}
+
+.admin-gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.admin-gallery-item {
+  overflow: hidden;
+  border: 1px solid #d9e2dc;
+  border-radius: 9px;
+  background: #f7faf8;
+}
+
+.admin-gallery-item img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+.admin-gallery-item div {
+  display: flex;
+  gap: 6px;
+  padding: 8px;
+
+}
+
+.admin-gallery-item button,
+.admin-gallery-item label,
+.admin-gallery-add button {
+  flex: 1;
+  min-height: 34px;
+  padding: 6px 8px;
+  border: 1px solid #cfd9d2;
+  border-radius: 6px;
+  color: #315f49;
+  background: #fff;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 800;
+  text-align: center;
+  cursor: pointer;
+}
+
+.admin-gallery-item label input {
+  display: none;
+}
+
+.admin-gallery-item button {
+  color: #8c4b4b;
+}
+
+.admin-gallery-add {
+  display: flex;
+  align-items: end;
+  gap: 12px;
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid #e1e8e3;
+}
+
+.admin-gallery-add label {
+  flex: 1;
+}
+
+.admin-gallery-add button {
+  flex: 0 0 auto;
+  border-color: #426b56;
+  color: #fff;
+  background: #426b56;
+}
+
+@media (max-width: 700px) {
+  .admin-gallery-toolbar,
+  .admin-gallery-add {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-gallery-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.products-gallery-item button,
+.products-gallery-replace {
+  position: static;
+  padding: 3px 7px;
+  border: 0;
+  border-radius: 5px;
+  color: #fff;
+  background: rgba(49, 95, 73, 0.92);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.products-gallery-item-actions button {
+  background: rgba(140, 75, 75, 0.92);
+}
+
+.products-gallery-replace input {
+  display: none;
+}
+
+.history-location-map {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: crosshair;
+}
+
+.history-location-preview > p {
+  margin: 8px 0 0;
+  color: #74837b;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 .history-editor-footer {
   border-top: 1px solid #e8eeea;
   background: #fbfcfb;
@@ -6445,6 +6745,24 @@
 
   .history-editor-shell {
     padding: 18px 20px;
+  }
+
+  .history-location-fields {
+    padding: 20px;
+  }
+
+  .history-location-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .history-location-preview-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .history-location-map-frame {
+    height: 300px;
   }
 
   .history-editor-shell .ck.ck-editor__main>.ck-editor__editable {

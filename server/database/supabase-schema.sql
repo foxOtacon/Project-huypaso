@@ -13,6 +13,21 @@ CREATE TABLE IF NOT EXISTS users (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS user_addresses (
+  address_id BIGSERIAL PRIMARY KEY,
+  user_id BIGINT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+  label VARCHAR(80) NOT NULL,
+  recipient_name VARCHAR(150) NOT NULL,
+  phone VARCHAR(20) NOT NULL,
+  address TEXT NOT NULL,
+  is_default BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS user_addresses_user_id_idx ON user_addresses(user_id);
+CREATE INDEX IF NOT EXISTS user_addresses_default_idx ON user_addresses(user_id, is_default);
+
 CREATE TABLE IF NOT EXISTS categories (
     category_id BIGSERIAL PRIMARY KEY,
     category_name VARCHAR(100) NOT NULL UNIQUE,
@@ -28,11 +43,27 @@ CREATE TABLE IF NOT EXISTS products (
     unit VARCHAR(50) NOT NULL,
     image_url VARCHAR(255),
     production_source TEXT,
+    product_hook TEXT,
+    product_story TEXT,
+    product_highlights TEXT,
+    product_benefits TEXT,
+    product_usage TEXT,
+    product_details TEXT,
     stock_quantity INT NOT NULL DEFAULT 0,
     status VARCHAR(20) NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'suspended')),
     created_by BIGINT NOT NULL REFERENCES users(user_id),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+CREATE TABLE IF NOT EXISTS site_gallery (
+  gallery_id BIGSERIAL PRIMARY KEY,
+  image_url VARCHAR(500) NOT NULL,
+  alt_text VARCHAR(255) NOT NULL DEFAULT '',
+  sort_order INT NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS site_gallery_order_idx ON site_gallery(sort_order, gallery_id);
 
 ALTER TABLE products
 ADD COLUMN IF NOT EXISTS status VARCHAR(20) NOT NULL DEFAULT 'active'
@@ -124,6 +155,8 @@ CREATE TABLE IF NOT EXISTS bank_transfer_accounts (
 CREATE TABLE IF NOT EXISTS site_content (
     content_key VARCHAR(80) PRIMARY KEY,
     content_html TEXT NOT NULL,
+  latitude NUMERIC(10, 7),
+  longitude NUMERIC(10, 7),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_by BIGINT REFERENCES users(user_id) ON DELETE SET NULL
 );

@@ -86,6 +86,17 @@ router.post(
 );
 
 router.post(
+  "/gallery-image",
+  authenticate,
+  authorize('admin'),
+  asyncHandler(async (req, res) => {
+    const { fileName, dataUrl } = req.body;
+    const url = await saveImageUpload({ fileName, dataUrl, folder: "gallery" });
+    res.status(201).json({ success: true, data: { url } });
+  }),
+);
+
+router.post(
   "/payment-slip",
   authenticate,
   asyncHandler(async (req, res) => {

@@ -4,6 +4,8 @@
 CREATE TABLE IF NOT EXISTS site_content (
     content_key VARCHAR(80) PRIMARY KEY,
     content_html TEXT NOT NULL,
+  latitude NUMERIC(10, 7),
+  longitude NUMERIC(10, 7),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_by BIGINT REFERENCES users(user_id) ON DELETE SET NULL
 );

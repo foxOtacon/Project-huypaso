@@ -6,7 +6,7 @@ import '../../styles/admin.css';
 
 const NOTIFICATION_POLL_MS = 45000;
 const SEEN_ORDERS_KEY = 'admin_seen_order_ids';
-const SEEN_PAYMENTS_KEY = 'admin_seen_payment_ids';
+const SEEN_PAYMENTS_KEY = 'admin_seen_pending_payment_slip_ids';
 const OUT_OF_STOCK_PRODUCTS_KEY = 'admin_out_of_stock_product_ids';
 
 function readSeenIds(key) {
@@ -29,6 +29,7 @@ const MENU_ITEMS = [
   { path: '/admin/payment-settings', label: 'ตั้งค่าการชำระเงิน' },
   { path: '/admin/bank-transfer-accounts', label: 'บัญชีรับโอน' },
   { path: '/admin/products', label: 'สินค้า' },
+  { path: '/admin/gallery', label: 'แกลเลอรี่' },
   { path: '/admin/categories', label: 'หมวดหมู่สินค้า' },
   { path: '/admin/shipping-carriers', label: 'บริษัทขนส่ง' },
   { path: '/admin/contacts', label: 'ติดต่อและปัญหา' },
@@ -82,6 +83,10 @@ const PAGE_HEADERS = {
     title: 'สินค้า',
     subtitle: 'จัดการรายการสินค้า',
   },
+  '/admin/gallery': {
+    title: 'แกลเลอรี่',
+    subtitle: 'เพิ่ม แก้ไข และลบรูปภาพแกลเลอรี่ ',
+  },
   '/admin/categories': {
     title: 'หมวดหมู่สินค้า',
     subtitle: 'เพิ่ม แก้ไข และจัดระเบียบหมวดหมู่สินค้า',
@@ -126,6 +131,16 @@ export default function AdminLayout({ route, user, onNavigate, onLogout, childre
   };
 
   useEffect(() => {
+    if (route !== '/admin/transactions') return;
+
+    setNotification((current) => {
+      if (!current?.payments) return current;
+
+      const next = { ...current, payments: 0 };
+      return next.orders || next.products?.length ? next : null;
+    });
+  }, [route]);
+  useEffect(() => {
     let active = true;
     let polling = false;
     let initialCheck = true;
@@ -144,7 +159,9 @@ export default function AdminLayout({ route, user, onNavigate, onLogout, childre
         if (!active) return;
 
         const pendingOrders = orders.filter((order) => order.order_status === 'pending');
-        const pendingPayments = payments.filter((payment) => payment.payment_status === 'pending');
+        const pendingPayments = payments.filter(
+          (payment) => payment.payment_status === 'pending' && payment.slip_image,
+        );
         const outOfStockProducts = products.filter(
           (product) => product.status === 'active' && Number(product.stock_quantity || 0) <= 0,
         );
@@ -167,8 +184,8 @@ export default function AdminLayout({ route, user, onNavigate, onLogout, childre
           return nextCounts;
         });
 
-        const currentOrderIds = new Set(orders.map((order) => String(order.order_id)));
-        const currentPaymentIds = new Set(payments.map((payment) => String(payment.payment_id)));
+        const currentOrderIds = new Set(pendingOrders.map((order) => String(order.order_id)));
+        const currentPaymentIds = new Set(pendingPayments.map((payment) => String(payment.payment_id)));
         const seenOrderIds = readSeenIds(SEEN_ORDERS_KEY);
         const seenPaymentIds = readSeenIds(SEEN_PAYMENTS_KEY);
         const previousOutOfStockIds = readSeenIds(OUT_OF_STOCK_PRODUCTS_KEY);
@@ -176,10 +193,10 @@ export default function AdminLayout({ route, user, onNavigate, onLogout, childre
         const hasPaymentBaseline = sessionStorage.getItem(SEEN_PAYMENTS_KEY) !== null;
         const hasStockBaseline = sessionStorage.getItem(OUT_OF_STOCK_PRODUCTS_KEY) !== null;
         const newOrders = hasOrderBaseline
-          ? orders.filter((order) => !seenOrderIds.has(String(order.order_id)))
+          ? pendingOrders.filter((order) => !seenOrderIds.has(String(order.order_id)))
           : [];
         const newPayments = hasPaymentBaseline
-          ? payments.filter((payment) => !seenPaymentIds.has(String(payment.payment_id)))
+          ? pendingPayments.filter((payment) => !seenPaymentIds.has(String(payment.payment_id)))
           : [];
 
         const newOutOfStockProducts = hasStockBaseline
@@ -223,12 +240,15 @@ export default function AdminLayout({ route, user, onNavigate, onLogout, childre
     const handleVisibility = () => {
       if (document.visibilityState === 'visible') checkNotifications();
     };
+    const handleNotificationRefresh = () => checkNotifications();
     document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('admin-notifications-refresh', handleNotificationRefresh);
 
     return () => {
       active = false;
       window.clearInterval(interval);
       document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('admin-notifications-refresh', handleNotificationRefresh);
     };
   }, [sessionValidated]);
 
@@ -271,7 +291,7 @@ export default function AdminLayout({ route, user, onNavigate, onLogout, childre
               {item.path === '/admin/orders' && notificationCounts.orders > 0 ? (
                 <span className="admin-nav-badge">{notificationCounts.orders > 99 ? '99+' : notificationCounts.orders}</span>
               ) : null}
-              {item.path === '/admin/transactions' && notificationCounts.payments > 0 ? (
+              {item.path === '/admin/transactions' && activePath !== '/admin/transactions' && notificationCounts.payments > 0 ? (
                 <span className="admin-nav-badge">{notificationCounts.payments > 99 ? '99+' : notificationCounts.payments}</span>
               ) : null}
               {item.path === '/admin/products' && notificationCounts.products > 0 ? (

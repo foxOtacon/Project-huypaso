@@ -28,6 +28,8 @@ const shippingCarriersRoutes = require("./routes/shippingCarriers");
 const bankTransferAccountsRoutes = require("./routes/bankTransferAccounts");
 const automationRoutes = require("./routes/automation");
 const siteContentRoutes = require("./routes/siteContent");
+const userAddressesRoutes = require("./routes/userAddresses");
+const siteGalleryRoutes = require("./routes/siteGallery");
 const contactRoutes = require("./routes/contact");
 const { startOrderExpirationJob } = require("./services/orderExpirationService");
 
@@ -98,6 +100,8 @@ app.get("/", (_req, res) => {
       productRecommendations: "POST /api/product-recommendations",
       uploads: "/api/uploads",
       shippingCarriers: "/api/shipping-carriers",
+      userAddresses: "/api/user-addresses",
+      siteGallery: "/api/site-gallery",
     },
   });
 });
@@ -126,6 +130,8 @@ app.use("/api/shipping-carriers", shippingCarriersRoutes);
 app.use("/api/bank-transfer-accounts", bankTransferAccountsRoutes);
 app.use("/api/automation", automationRoutes);
 app.use("/api/site-content", siteContentRoutes);
+app.use("/api/user-addresses", userAddressesRoutes);
+app.use("/api/site-gallery", siteGalleryRoutes);
 app.use("/api/contact", contactRoutes);
 
 app.use((_req, res) => {

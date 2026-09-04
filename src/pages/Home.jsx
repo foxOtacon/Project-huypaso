@@ -7,6 +7,7 @@ import { fetchCatalogCategories, fetchCatalogProducts } from '../api/catalog';
 import { fetchPublishedNews } from '../api/news';
 import { fetchProductRecommendations, recordProductView } from '../api/recommendations';
 import { fetchHistoryContent } from '../api/siteContent';
+import { fetchGalleryImages } from '../api/gallery';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { isCustomerUser } from '../utils/roles';
@@ -14,6 +15,7 @@ import { getImageUrl, resolveImageUrlsInHtml } from '../utils/imageUrl';
 import './Home.css';
 import './ProductsPage.css';
 import Toast from '../components/Toast';
+import ProductDetailModal from '../components/ProductDetailModal';
 
 const FEATURED_KEYWORDS = ['ชา', 'กาแฟ', 'tea', 'coffee'];
 const FALLBACK_PRODUCT_IMAGE =
@@ -152,6 +154,7 @@ export default function Home({ user, onNavigate, onLogout }) {
   const { addItem, itemCount } = useCart();
   const [profileOpen, setProfileOpen] = useState(false);
   const [featuredProducts, setFeaturedProducts] = useState([]);
+  const [galleryImages, setGalleryImages] = useState([]);
   const [featuredCategories, setFeaturedCategories] = useState({});
   const [featuredLoading, setFeaturedLoading] = useState(true);
   const [featuredError, setFeaturedError] = useState('');
@@ -159,11 +162,11 @@ export default function Home({ user, onNavigate, onLogout }) {
   const [addedProductId, setAddedProductId] = useState(null);
   const [toastMessage, setToastMessage] = useState('');
   const [selectedProduct, setSelectedProduct] = useState(null);
-  const [modalQuantity, setModalQuantity] = useState(1);
   const [latestNews, setLatestNews] = useState([]);
   const [newsLoading, setNewsLoading] = useState(true);
   const [newsError, setNewsError] = useState('');
   const [historyHtml, setHistoryHtml] = useState('');
+  const [historyLocation, setHistoryLocation] = useState({ latitude: null, longitude: null });
   const profileRef = useRef(null);
   const featuredTrackRef = useRef(null);
 
@@ -276,6 +279,16 @@ export default function Home({ user, onNavigate, onLogout }) {
 
   useEffect(() => {
     let active = true;
+    fetchGalleryImages()
+      .then((images) => {
+        if (active) setGalleryImages(images.slice(0, 4));
+      })
+      .catch(() => {});
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
 
     async function loadLatestNews() {
       try {
@@ -293,7 +306,7 @@ export default function Home({ user, onNavigate, onLogout }) {
     return () => {
       active = false;
     };
-  }, []);
+  }, [galleryImages.length]);
 
   useEffect(() => {
     let active = true;
@@ -305,6 +318,12 @@ export default function Home({ user, onNavigate, onLogout }) {
 
         if (active && nextHtml) {
           setHistoryHtml(nextHtml);
+        }
+        const latitude = Number(content?.latitude);
+        const longitude = Number(content?.longitude);
+        if (active && Number.isFinite(latitude) && Number.isFinite(longitude)
+          && latitude >= -90 && latitude <= 90 && longitude >= -180 && longitude <= 180) {
+          setHistoryLocation({ latitude, longitude });
         }
       } catch {
         // Keep the built-in community history visible when the CMS is unavailable.
@@ -331,7 +350,6 @@ export default function Home({ user, onNavigate, onLogout }) {
   }
 
   function openFeaturedProductDetail(product) {
-    setModalQuantity(1);
     setSelectedProduct({ ...product, imageUrl: getProductImage(product) });
     if (token && isCustomerUser(user)) {
       recordProductView(token, product.product_id).catch(() => {});
@@ -499,9 +517,44 @@ export default function Home({ user, onNavigate, onLogout }) {
                   <p>ปัจจุบันบ้านห้วยหยวกป่าโซเป็นชุมชนบนพื้นที่สูงที่โดดเด่นด้วยความหลากหลายทางชาติพันธุ์ วิถีชีวิต วัฒนธรรม และภูมิปัญญาท้องถิ่น ชาวบ้านยังคงประกอบอาชีพเกษตรกรรมควบคู่กับการอนุรักษ์ธรรมชาติ โดยเฉพาะการปลูกชาและกาแฟอาราบิกา ซึ่งได้รับการพัฒนาเป็นผลิตภัณฑ์ของชุมชนและเป็นแหล่งรายได้สำคัญที่ช่วยยกระดับคุณภาพชีวิตของประชาชนในหมู่บ้าน</p>
                 </div>
               )}
+
+              <section className="history-map" aria-labelledby="history-map-title">
+                <p className="history-eyebrow">จุดสำคัญของชุมชน</p>
+                <h3 id="history-map-title">ที่ตั้งหมู่บ้าน</h3>
+                {historyLocation.latitude !== null && historyLocation.longitude !== null ? (
+                  <div className="history-map-frame">
+                    <iframe
+                      title="แผนที่ตั้งหมู่บ้านห้วยหยวกป่าโซ"
+                      src={`https://www.google.com/maps?q=${historyLocation.latitude},${historyLocation.longitude}&z=15&output=embed`}
+                      loading="lazy"
+                      referrerPolicy="no-referrer-when-downgrade"
+                    />
+                  </div>
+                ) : (
+                  <p className="history-map-empty">ยังไม่มีข้อมูลตำแหน่งที่ตั้งของหมู่บ้าน</p>
+                )}
+              </section>
+
             </article>
           </div>
         </section>
+
+        {galleryImages.length > 0 ? (
+          <section className="section home-gallery-section" aria-labelledby="home-gallery-title">
+            <div className="site-shell">
+              <div className="section-heading">
+                <h2 id="home-gallery-title">แกลเลอรี่</h2>
+              </div>
+              <div className="featured-gallery-grid" >
+                {galleryImages.map((image) => (
+                  <figure key={image.gallery_id ?? image.image_url}>
+                    <img src={getImageUrl(image.image_url)} alt="บรรยากาศหมู่บ้านห้วยหยวกป่าโซ" loading="lazy" />
+                  </figure>
+                ))}
+              </div>
+            </div>
+          </section>
+        ) : null}
 
         <section id="products" className="section products-section">
           <div className="site-shell">
@@ -600,6 +653,7 @@ export default function Home({ user, onNavigate, onLogout }) {
                 <button type="button" onClick={() => onNavigate('/products')}>เลือกชมสินค้าทั้งหมด</button>
               </div>
             ) : null}
+
             <Toast message={toastMessage} onClose={() => setToastMessage('')} />
           </div>
         </section>
@@ -677,82 +731,17 @@ export default function Home({ user, onNavigate, onLogout }) {
       </main>
 
       {selectedProduct && (
-        <div className="catalog-modal-backdrop" role="presentation" onMouseDown={() => setSelectedProduct(null)}>
-          <section
-            className="catalog-detail-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="catalog-detail-title"
-            onMouseDown={(event) => event.stopPropagation()}
-          >
-            <button
-              type="button"
-              className="catalog-modal-close"
-              aria-label="ปิดรายละเอียดสินค้า"
-              onClick={() => setSelectedProduct(null)}
-            >
-              ×
-            </button>
-
-            <img
-              src={selectedProduct.imageUrl || getProductImage(selectedProduct)}
-              alt={selectedProduct.product_name}
-              loading="lazy"
-              decoding="async"
-            />
-
-            <div className="catalog-detail-content">
-              <div className="catalog-card-meta">
-                <span>{featuredCategories[String(selectedProduct.category_id)] || 'สินค้าเกษตร'}</span>
-                <span>{Number(selectedProduct.stock_quantity || 0) > 0 ? 'พร้อมส่ง' : 'หมดสต็อก'}</span>
-              </div>
-
-              <h2 id="catalog-detail-title">{selectedProduct.product_name}</h2>
-              <p>{selectedProduct.description || 'ผลิตภัณฑ์คุณภาพจากชุมชนห้วยหยวกป่าโซ'}</p>
-
-              {selectedProduct.production_source && (
-                <div className="catalog-detail-block">
-                  <strong>แหล่งผลิต</strong>
-                  <span>{selectedProduct.production_source}</span>
-                </div>
-              )}
-
-              <div className="catalog-detail-stats">
-                <span>
-                  <strong>{formatProductPrice(selectedProduct.price)}</strong>
-                  <small>/{selectedProduct.unit || 'หน่วย'}</small>
-                </span>
-                <span>
-                  <strong>{Number(selectedProduct.stock_quantity || 0)}</strong>
-                  <small>คงเหลือ</small>
-                </span>
-              </div>
-
-              {Number(selectedProduct.stock_quantity || 0) > 0 ? (
-                <div className="catalog-detail-quantity">
-                  <span>จำนวน</span>
-                  <div>
-                    <button type="button" aria-label="ลดจำนวน" disabled={modalQuantity <= 1} onClick={() => setModalQuantity((value) => Math.max(1, value - 1))}>−</button>
-                    <input type="number" min="1" max={Number(selectedProduct.stock_quantity || 0)} value={modalQuantity} aria-label="จำนวนสินค้า" onChange={(event) => setModalQuantity(Math.min(Number(selectedProduct.stock_quantity || 0), Math.max(1, Number(event.target.value) || 1)))} />
-                    <button type="button" aria-label="เพิ่มจำนวน" disabled={modalQuantity >= Number(selectedProduct.stock_quantity || 0)} onClick={() => setModalQuantity((value) => Math.min(Number(selectedProduct.stock_quantity || 0), value + 1))}>+</button>
-                  </div>
-                </div>
-              ) : null}
-
-              <button
-                type="button"
-                className="catalog-detail-cart"
-                disabled={Number(selectedProduct.stock_quantity || 0) <= 0}
-                onClick={() => {
-                  setSelectedProduct(null);
-                  handleFeaturedAddToCart(selectedProduct, modalQuantity);
-                }}
-              >
-                {Number(selectedProduct.stock_quantity || 0) <= 0 ? 'หมดสต็อก' : 'ใส่ตะกร้า'}
-              </button>
-            </div>
-          </section>
-        </div>
+        <ProductDetailModal
+          product={selectedProduct}
+          categoryName={featuredCategories[String(selectedProduct.category_id)]}
+          imageUrl={selectedProduct.imageUrl || getProductImage(selectedProduct)}
+          onClose={() => setSelectedProduct(null)}
+          added={addedProductId === selectedProduct.product_id}
+          onAddToCart={(product, quantity) => {
+            setSelectedProduct(null);
+            handleFeaturedAddToCart(product, quantity);
+          }}
+        />
       )}
 
       <footer id="contact" className="site-footer">

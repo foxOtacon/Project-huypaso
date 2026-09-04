@@ -4,13 +4,14 @@
     "version": "0.0.0",
     "type": "module",
     "scripts": {
-        "dev": "vite",
+        "dev": "vite --force",
         "build": "vite build",
         "lint": "eslint .",
         "preview": "vite preview"
     },
     "dependencies": {
         "@ckeditor/ckeditor5-react": "^11.2.0",
+        "leaflet": "^1.9.4",
         "bcryptjs": "^3.0.2",
         "bootstrap": "^5.3.8",
         "ckeditor5": "^48.4.0",

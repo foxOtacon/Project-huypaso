@@ -22,6 +22,12 @@ const EMPTY_FORM = {
   unit: '',
   image_url: '',
   production_source: '',
+  product_hook: '',
+  product_story: '',
+  product_highlights: '',
+  product_benefits: '',
+  product_usage: '',
+  product_details: '',
   stock_quantity: '',
   status: 'active',
 };
@@ -39,6 +45,12 @@ function buildPayload(form) {
     unit: form.unit.trim(),
     image_url: form.image_url.trim() || null,
     production_source: form.production_source.trim() || null,
+    product_hook: form.product_hook.trim() || null,
+    product_story: form.product_story.trim() || null,
+    product_highlights: form.product_highlights.trim() || null,
+    product_benefits: form.product_benefits.trim() || null,
+    product_usage: form.product_usage.trim() || null,
+    product_details: form.product_details.trim() || null,
     stock_quantity: Number(form.stock_quantity || 0),
     status: form.status,
   };
@@ -139,6 +151,12 @@ export default function Products({ user }) {
       unit: product.unit || '',
       image_url: product.image_url || '',
       production_source: product.production_source || '',
+      product_hook: product.product_hook || '',
+      product_story: product.product_story || '',
+      product_highlights: product.product_highlights || '',
+      product_benefits: product.product_benefits || '',
+      product_usage: product.product_usage || '',
+      product_details: product.product_details || '',
       stock_quantity: product.stock_quantity ?? '',
       status: product.status || 'active',
     });
@@ -325,6 +343,7 @@ export default function Products({ user }) {
             <thead>
               <tr>
                 <th>ลำดับ</th>
+                <th>รูปภาพ</th>
                 <th>สินค้า</th>
                 <th>หมวดหมู่</th>
                 <th>ราคา</th>
@@ -338,7 +357,7 @@ export default function Products({ user }) {
             <tbody>
               {filteredProducts.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="admin-table-empty">
+                  <td colSpan={10} className="admin-table-empty">
                     ไม่พบสินค้า
                   </td>
                 </tr>
@@ -348,13 +367,15 @@ export default function Products({ user }) {
                   return (
                     <tr key={product.product_id}>
                       <td>{(pagination.page - 1) * pagination.pageSize + index + 1}</td>
+                      <td className="products-image-cell">
+                        {product.image_url ? (
+                          <img src={getImageUrl(product.image_url)} alt={product.product_name} />
+                        ) : (
+                          <div className="products-image-placeholder" aria-hidden="true" />
+                        )}
+                      </td>
                       <td>
                         <div className="products-name-cell">
-                          {product.image_url ? (
-                            <img src={getImageUrl(product.image_url)} alt={product.product_name} />
-                          ) : (
-                            <div className="products-image-placeholder" aria-hidden="true" />
-                          )}
                           <div>
                             <strong>{product.product_name}</strong>
                             <span>{product.production_source || '-'}</span>
@@ -485,6 +506,30 @@ export default function Products({ user }) {
               <label className="products-form-wide">
                 รายละเอียด
                 <textarea rows="3" value={form.description} onChange={(event) => handleChange('description', event.target.value)} />
+              </label>
+              <label className="products-form-wide">
+                คำโปรยสินค้า
+                <input value={form.product_hook} onChange={(event) => handleChange('product_hook', event.target.value)} placeholder="จากธรรมชาติ สู่ช่วงเวลาแห่งความผ่อนคลาย" />
+              </label>
+              <label className="products-form-wide">
+                เรื่องราวของสินค้า
+                <textarea rows="4" value={form.product_story} onChange={(event) => handleChange('product_story', event.target.value)} placeholder="เล่าเรื่องแหล่งปลูก วัตถุดิบ และความตั้งใจของชุมชน" />
+              </label>
+              <label>
+                จุดเด่นสินค้า
+                <textarea rows="4" value={form.product_highlights} onChange={(event) => handleChange('product_highlights', event.target.value)} placeholder="หนึ่งจุดเด่นต่อหนึ่งบรรทัด" />
+              </label>
+              <label>
+                คุณประโยชน์
+                <textarea rows="4" value={form.product_benefits} onChange={(event) => handleChange('product_benefits', event.target.value)} placeholder="หนึ่งคุณประโยชน์ต่อหนึ่งบรรทัด" />
+              </label>
+              <label>
+                วิธีใช้ / วิธีชง
+                <textarea rows="4" value={form.product_usage} onChange={(event) => handleChange('product_usage', event.target.value)} />
+              </label>
+              <label>
+                รายละเอียดเพิ่มเติม
+                <textarea rows="4" value={form.product_details} onChange={(event) => handleChange('product_details', event.target.value)} />
               </label>
             </div>
 

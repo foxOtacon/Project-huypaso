@@ -13,6 +13,21 @@ CREATE TABLE users (
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE user_addresses (
+    address_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    label VARCHAR(80) NOT NULL,
+    recipient_name VARCHAR(150) NOT NULL,
+    phone VARCHAR(20) NOT NULL,
+    address TEXT NOT NULL,
+    is_default BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_user_addresses_user FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    INDEX idx_user_addresses_user (user_id),
+    INDEX idx_user_addresses_default (user_id, is_default)
+);
+
 CREATE TABLE categories (
     category_id INT AUTO_INCREMENT PRIMARY KEY,
     category_name VARCHAR(100) NOT NULL UNIQUE,
@@ -28,6 +43,12 @@ CREATE TABLE products (
     unit VARCHAR(50) NOT NULL,
     image_url VARCHAR(255),
     production_source TEXT,
+    product_hook TEXT,
+    product_story TEXT,
+    product_highlights TEXT,
+    product_benefits TEXT,
+    product_usage TEXT,
+    product_details TEXT,
     stock_quantity INT NOT NULL DEFAULT 0,
     status ENUM('active','suspended') NOT NULL DEFAULT 'active',
     created_by INT NOT NULL,
@@ -40,6 +61,16 @@ CREATE TABLE products (
     CONSTRAINT fk_products_user
     FOREIGN KEY (created_by)
     REFERENCES users(user_id)
+);
+
+CREATE TABLE site_gallery (
+    gallery_id INT AUTO_INCREMENT PRIMARY KEY,
+    image_url VARCHAR(500) NOT NULL,
+    alt_text VARCHAR(255) NOT NULL DEFAULT '',
+    sort_order INT NOT NULL DEFAULT 0,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_site_gallery_order (sort_order, gallery_id)
 );
 
 CREATE TABLE cart (
