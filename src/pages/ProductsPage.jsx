@@ -385,6 +385,7 @@ export default function ProductsPage({ user, onNavigate, onLogout }) {
 
       {selectedProduct && (
         <ProductDetailModal
+          key={selectedProduct.product_id}
           product={selectedProduct}
           categoryName={getProductCategoryName(selectedProduct)}
           imageUrl={selectedProduct.imageUrl}

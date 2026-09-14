@@ -405,15 +405,6 @@ export default function PaymentPage({ user, onNavigate, onLogout }) {
                 </div>
               ) : null}
               <label>
-                ชื่อผู้รับ
-                <input
-                  value={form.shipping_name}
-                  onChange={(event) => updateField('shipping_name', event.target.value)}
-                  placeholder="ชื่อ-นามสกุล"
-                  disabled={Boolean(createdOrder)}
-                />
-              </label>
-              <label>
                 เบอร์โทร
                 <input
                   name="shipping_phone"

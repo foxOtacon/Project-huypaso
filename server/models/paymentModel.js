@@ -332,6 +332,13 @@ async function approvePayment(paymentId) {
     if (!locked[0]) {
       const error = new Error("Payment not found"); error.status = 404; throw error;
     }
+
+    if (locked[0].payment_status === "approved") {
+      return { ...locked[0], payment_status: "approved" };
+    }
+    if (locked[0].payment_status === "rejected") {
+      return { ...locked[0], payment_status: "rejected" };
+    }
     if (locked[0].order_status !== "pending" || locked[0].payment_status !== "pending") {
       const error = new Error("Payment is no longer pending"); error.status = 409; throw error;
     }
@@ -387,6 +394,10 @@ async function rejectPayment(paymentId) {
     }
 
     const payment = rows[0];
+
+    if (payment.payment_status === "rejected") {
+      return { ...payment, payment_status: "rejected", order_status: payment.order_status || "cancelled" };
+    }
 
     await run(
       connection,

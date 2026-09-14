@@ -462,12 +462,35 @@
 }
 
 .customer-detail-modal {
-  width: min(100%, 720px);
-  max-height: min(820px, 92svh);
-  overflow: auto;
+  width: min(100%, 920px);
+  max-height: min(880px, 92svh);
+  overflow-y: auto;
+  overflow-x: hidden;
   border-radius: 10px;
   background: #ffffff;
   box-shadow: 0 28px 70px rgba(18, 31, 25, 0.32);
+  scrollbar-width: thin;
+  scrollbar-color: #7d9a8f transparent;
+}
+
+.customer-detail-modal::-webkit-scrollbar {
+  width: 10px;
+}
+
+.customer-detail-modal::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.customer-detail-modal::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: rgba(93, 119, 103, 0.55);
+  background-clip: padding-box;
+}
+
+.customer-detail-modal::-webkit-scrollbar-thumb:hover {
+  background: rgba(93, 119, 103, 0.75);
+  background-clip: padding-box;
 }
 
 .customer-detail-header {
@@ -1182,10 +1205,35 @@
 .customer-cancel-modal button:last-child { border-color: #a33a3a; background: #a33a3a; color: #fff; }
 
 .customer-detail-modal {
-  overflow: hidden;
+  width: min(100%, 720px);
+  max-height: min(820px, 92svh);
+  overflow-y: auto;
+  overflow-x: hidden;
   border: 1px solid rgba(255, 255, 255, 0.7);
   border-radius: 26px;
   box-shadow: 0 35px 90px rgba(12, 34, 22, 0.34);
+  scrollbar-width: thin;
+  scrollbar-color: #7d9a8f transparent;
+}
+
+.customer-detail-modal::-webkit-scrollbar {
+  width: 10px;
+}
+
+.customer-detail-modal::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.customer-detail-modal::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: rgba(93, 119, 103, 0.55);
+  background-clip: padding-box;
+}
+
+.customer-detail-modal::-webkit-scrollbar-thumb:hover {
+  background: rgba(93, 119, 103, 0.75);
+  background-clip: padding-box;
 }
 
 .customer-detail-header {

@@ -4,7 +4,6 @@ const asyncHandler = require('../utils/asyncHandler');
 const { authenticate, authorize } = require('../middleware/auth');
 
 const router = express.Router();
-const MAX_GALLERY_IMAGES = 4;
 
 router.get('/', asyncHandler(async (_req, res) => {
   const rows = await query(
@@ -20,11 +19,6 @@ router.post('/', asyncHandler(async (req, res) => {
   const altText = String(req.body?.alt_text || '').trim();
   if (!imageUrl) {
     res.status(400).json({ success: false, message: 'กรุณาระบุรูปภาพ' });
-    return;
-  }
-  const countRows = await query('SELECT COUNT(*) AS total FROM site_gallery');
-  if (Number(countRows[0]?.total || 0) >= MAX_GALLERY_IMAGES) {
-    res.status(400).json({ success: false, message: `แกลเลอรี่มีได้สูงสุด ${MAX_GALLERY_IMAGES} รูป` });
     return;
   }
   const result = await query(

@@ -169,6 +169,7 @@ export default function Home({ user, onNavigate, onLogout }) {
   const [historyLocation, setHistoryLocation] = useState({ latitude: null, longitude: null });
   const profileRef = useRef(null);
   const featuredTrackRef = useRef(null);
+  const galleryTrackRef = useRef(null);
 
   const sanitizedHistoryHtml = useMemo(() => {
     const content = String(historyHtml || '').trim();
@@ -281,7 +282,10 @@ export default function Home({ user, onNavigate, onLogout }) {
     let active = true;
     fetchGalleryImages()
       .then((images) => {
-        if (active) setGalleryImages(images.slice(0, 4));
+        if (!active) return;
+
+        const randomized = [...images].sort(() => Math.random() - 0.5);
+        setGalleryImages(randomized);
       })
       .catch(() => {});
     return () => { active = false; };
@@ -362,6 +366,18 @@ export default function Home({ user, onNavigate, onLogout }) {
 
     track.scrollBy({
       left: direction * Math.max(track.clientWidth * 0.82, 280),
+      behavior: 'smooth',
+    });
+  }
+
+  function scrollGallery(direction) {
+    const track = galleryTrackRef.current;
+    if (!track) return;
+
+    const firstSlide = track.querySelector('.gallery-slide');
+    const step = firstSlide ? firstSlide.getBoundingClientRect().width + 16 : Math.max(track.clientWidth * 0.8, 280);
+    track.scrollBy({
+      left: direction * step,
       behavior: 'smooth',
     });
   }
@@ -541,14 +557,21 @@ export default function Home({ user, onNavigate, onLogout }) {
 
         {galleryImages.length > 0 ? (
           <section className="section home-gallery-section" aria-labelledby="home-gallery-title">
-            <div className="site-shell">
-              <div className="section-heading">
-                <h2 id="home-gallery-title">แกลเลอรี่</h2>
+            <div className="site-shell home-gallery-shell">
+              <div className="home-gallery-header">
+                <div className="section-heading home-gallery-heading">
+                  <h2 id="home-gallery-title">แกลเลอรี่</h2>
+                </div>
+                <div className="home-gallery-controls" aria-label="เลื่อนภาพแกลเลอรี่">
+                  <button type="button" className="gallery-arrow" aria-label="ดูภาพก่อนหน้า" onClick={() => scrollGallery(-1)}>‹</button>
+                  <button type="button" className="gallery-arrow" aria-label="ดูภาพถัดไป" onClick={() => scrollGallery(1)}>›</button>
+                </div>
               </div>
-              <div className="featured-gallery-grid" >
+
+              <div className="gallery-slider" ref={galleryTrackRef} aria-label="สไลด์ภาพแกลเลอรี่">
                 {galleryImages.map((image) => (
-                  <figure key={image.gallery_id ?? image.image_url}>
-                    <img src={getImageUrl(image.image_url)} alt="บรรยากาศหมู่บ้านห้วยหยวกป่าโซ" loading="lazy" />
+                  <figure key={image.gallery_id ?? image.image_url} className="gallery-slide">
+                    <img src={getImageUrl(image.image_url)} alt="บรรยากาศหมู่บ้านห้วยหยวกป่าโซ" loading="lazy" decoding="async" />
                   </figure>
                 ))}
               </div>
@@ -732,6 +755,7 @@ export default function Home({ user, onNavigate, onLogout }) {
 
       {selectedProduct && (
         <ProductDetailModal
+          key={selectedProduct.product_id}
           product={selectedProduct}
           categoryName={featuredCategories[String(selectedProduct.category_id)]}
           imageUrl={selectedProduct.imageUrl || getProductImage(selectedProduct)}

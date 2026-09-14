@@ -9,8 +9,6 @@ import {
 import { getImageUrl } from '../../utils/imageUrl';
 import '../../styles/admin.css';
 
-const MAX_GALLERY_IMAGES = 4;
-
 function fileToDataUrl(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -35,16 +33,17 @@ export default function Gallery() {
   }, []);
 
   async function addImages() {
-    if (!files.length) return;
-    if (images.length >= MAX_GALLERY_IMAGES) {
-      setError(`แกลเลอรี่มีได้สูงสุด ${MAX_GALLERY_IMAGES} รูป`);
+    const selectedFiles = files;
+    if (!selectedFiles.length) {
+      setError('กรุณาเลือกรูปภาพก่อนเพิ่ม');
       return;
     }
+
     setSaving(true);
     setError('');
     try {
       const added = [];
-      for (const file of files.slice(0, MAX_GALLERY_IMAGES - images.length)) {
+      for (const file of selectedFiles) {
         const dataUrl = await fileToDataUrl(file);
         const uploaded = await uploadGalleryImage({ fileName: file.name, dataUrl });
         added.push(await createGalleryImage({
@@ -109,11 +108,11 @@ export default function Gallery() {
           ))}
         </div>
         <div className="admin-gallery-add"><label>เพิ่มรูป<input type="file" multiple accept="image/png,image/jpeg,image/webp,image/gif" onChange={(event) => {
-          const remainingSlots = MAX_GALLERY_IMAGES - images.length;
           const selectedFiles = Array.from(event.target.files || []);
-          setFiles(selectedFiles.slice(0, Math.max(remainingSlots, 0)));
-          setError(selectedFiles.length > remainingSlots ? `แกลเลอรี่มีได้สูงสุด ${MAX_GALLERY_IMAGES} รูป` : '');
-        }} disabled={saving || images.length >= MAX_GALLERY_IMAGES} /></label><button type="button" onClick={addImages} disabled={saving || !files.length}>{saving ? 'กำลังบันทึก...' : 'เพิ่มรูป'}</button></div>
+          setFiles(selectedFiles);
+          setError('');
+          event.target.value = '';
+        }} disabled={saving} /></label><button type="button" onClick={addImages} disabled={saving || !files.length}>{saving ? 'กำลังบันทึก...' : `เพิ่มรูป (${files.length})`}</button></div>
       </section>
     </section>
   );

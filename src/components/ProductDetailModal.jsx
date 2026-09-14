@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import DOMPurify from 'dompurify';
+import { resolveImageUrlsInHtml } from '../utils/imageUrl';
 import './ProductDetailModal.css';
 
 const FALLBACK_HIGHLIGHTS = [
@@ -14,6 +16,22 @@ const FALLBACK_BENEFITS = [
   'มีกลิ่นหอมจากธรรมชาติ',
   'เหมาะสำหรับดื่มในชีวิตประจำวัน',
 ];
+
+const STORY_SANITIZE_OPTIONS = {
+  ALLOWED_TAGS: [
+    'p', 'br', 'h2', 'h3', 'h4', 'strong', 'em', 'u', 's', 'a',
+    'ul', 'ol', 'li', 'blockquote', 'hr', 'figure', 'figcaption', 'img',
+    'table', 'caption', 'thead', 'tbody', 'tfoot', 'tr', 'th', 'td', 'span',
+    'div', 'pre', 'code', 'mark', 'sub', 'sup', 'oembed',
+  ],
+  ALLOWED_ATTR: [
+    'href', 'title', 'target', 'rel', 'class', 'style', 'src', 'alt',
+    'width', 'height', 'colspan', 'rowspan', 'scope', 'id', 'start', 'reversed', 'type', 'url',
+  ],
+  FORBID_TAGS: ['script', 'style', 'iframe', 'object', 'embed', 'form', 'input', 'button'],
+  FORBID_ATTR: ['srcset'],
+  ALLOW_UNKNOWN_PROTOCOLS: false,
+};
 
 function parseList(value, fallback) {
   if (Array.isArray(value)) return value.filter(Boolean);
@@ -40,7 +58,6 @@ function parseStructuredValue(value) {
 }
 
 const DETAIL_LABELS = {
-  source: 'แหล่งผลิต',
   storage: 'การเก็บรักษา',
   type: 'ประเภทสินค้า',
   note: 'หมายเหตุ',
@@ -62,9 +79,11 @@ function StructuredContent({ value, fallback }) {
     );
   }
 
+  const entries = Object.entries(structuredValue).filter(([key]) => key !== 'source');
+
   return (
     <dl className="catalog-detail-structured-list">
-      {Object.entries(structuredValue).map(([key, entry]) => (
+      {entries.map(([key, entry]) => (
         <div key={key}>
           <dt>{DETAIL_LABELS[key] || key}</dt>
           <dd>{String(entry)}</dd>
@@ -93,14 +112,35 @@ export default function ProductDetailModal({
 }) {
   const [quantity, setQuantity] = useState(1);
   const [openPanel, setOpenPanel] = useState('');
+  const [isStoryModalOpen, setIsStoryModalOpen] = useState(false);
   const stock = Number(product.stock_quantity || 0);
   const highlights = parseList(product.product_highlights, FALLBACK_HIGHLIGHTS).map(normalizeHighlight).filter(({ title }) => title);
   const benefits = parseList(product.product_benefits, FALLBACK_BENEFITS);
   const usage = product.product_usage || 'ชงด้วยน้ำร้อนตามปริมาณที่เหมาะสม แล้วค่อย ๆ ดื่มเพื่อสัมผัสกลิ่นหอมและรสชาติที่เป็นเอกลักษณ์';
   const details = product.product_details || [
-    product.production_source ? `แหล่งผลิต: ${product.production_source}` : '',
     `หน่วยจำหน่าย: ${product.unit || 'หน่วย'}`,
   ].filter(Boolean).join('\n');
+  const storyContent = getStory(product);
+  const sanitizedStoryHtml = useMemo(() => {
+    const content = String(storyContent || '').trim();
+    const sanitized = content ? DOMPurify.sanitize(content, STORY_SANITIZE_OPTIONS).trim() : '';
+    return sanitized ? resolveImageUrlsInHtml(sanitized) : '';
+  }, [storyContent]);
+
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') onClose();
+    };
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [onClose]);
 
   function togglePanel(panel) {
     setOpenPanel((current) => (current === panel ? '' : panel));
@@ -130,10 +170,27 @@ export default function ProductDetailModal({
           <p className="catalog-product-hook">{product.product_hook || 'จากธรรมชาติ สู่ช่วงเวลาแห่งความผ่อนคลาย'}</p>
           <p className="catalog-product-description">{product.description || 'ผลิตภัณฑ์คุณภาพจากชุมชนห้วยหยวกป่าโซ'}</p>
 
-          <div className="catalog-product-story-intro">
-            <span aria-hidden="true">🌿</span>
-            <div><strong>เรื่องราวของสินค้า</strong><p>{getStory(product)}</p></div>
-          </div>
+          {sanitizedStoryHtml ? (
+            <div className="catalog-product-story-intro">
+              <div className="catalog-product-story-header">
+                <span aria-hidden="true">🌿</span>
+                <strong>เรื่องราวของสินค้า</strong>
+              </div>
+              <div className="catalog-product-story-wrapper">
+                <div
+                  className="catalog-product-story-preview"
+                  dangerouslySetInnerHTML={{ __html: sanitizedStoryHtml }}
+                />
+                <button
+                  type="button"
+                  className="catalog-product-story-toggle"
+                  onClick={() => setIsStoryModalOpen(true)}
+                >
+                  อ่านเรื่องราว
+                </button>
+              </div>
+            </div>
+          ) : null}
 
           <div className="catalog-product-highlights" aria-label="จุดเด่นสินค้า">
             {highlights.slice(0, 4).map((highlight) => (
@@ -176,6 +233,32 @@ export default function ProductDetailModal({
           </button>
         </div>
       </section>
+
+      {isStoryModalOpen ? (
+        <div className="catalog-story-modal-backdrop" role="presentation" onMouseDown={() => setIsStoryModalOpen(false)}>
+          <section
+            className="catalog-story-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="catalog-story-title"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <div className="catalog-story-modal-header">
+              <div className="catalog-story-modal-title">
+                <span aria-hidden="true">🌿</span>
+                <h3 id="catalog-story-title">เรื่องราวของ{product.product_name || 'สินค้า'}</h3>
+              </div>
+              <button type="button" className="catalog-story-modal-close" aria-label="ปิดเรื่องราวสินค้า" onClick={() => setIsStoryModalOpen(false)}>×</button>
+            </div>
+            <div className="catalog-story-modal-body">
+              <div
+                className="catalog-story-content"
+                dangerouslySetInnerHTML={{ __html: sanitizedStoryHtml }}
+              />
+            </div>
+          </section>
+        </div>
+      ) : null}
     </div>
   );
 }
